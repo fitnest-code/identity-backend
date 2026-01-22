@@ -1,5 +1,6 @@
 package az.fitnest.iamservice.entity;
 
+import az.fitnest.iamservice.enums.OtpPurpose;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,6 +21,9 @@ public class OTPSession {
     @Column(name = "otp_session_id")
     private Long otpSessionId;
     
+    @Column(name = "session_id", unique = true)
+    private String sessionId;
+    
     @Column(name = "mobile", nullable = false)
     private String mobile;
     
@@ -27,7 +31,8 @@ public class OTPSession {
     private String otpCode;
     
     @Column(name = "purpose")
-    private String purpose;
+    @Enumerated(EnumType.STRING)
+    private OtpPurpose purpose;
     
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
@@ -37,4 +42,13 @@ public class OTPSession {
     
     @Column(name = "status")
     private String status;
+    
+    @Column(name = "verified")
+    private Boolean verified;
+    
+    @Column(name = "locked")
+    private Boolean locked;
+    
+    @Column(name = "resend_available_at")
+    private LocalDateTime resendAvailableAt;
 }

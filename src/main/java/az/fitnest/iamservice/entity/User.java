@@ -1,5 +1,6 @@
 package az.fitnest.iamservice.entity;
 
+import az.fitnest.iamservice.enums.Language;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -36,10 +37,20 @@ public class User {
     private String profileImageUrl;
     
     @Column(name = "language")
-    private String language;
+    @Enumerated(EnumType.STRING)
+    private Language language;
     
     @Column(name = "setup_required")
     private Boolean setupRequired;
+    
+    @Column(name = "has_account")
+    private Boolean hasAccount;
+    
+    @Column(name = "account_locked")
+    private Boolean accountLocked;
+    
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
