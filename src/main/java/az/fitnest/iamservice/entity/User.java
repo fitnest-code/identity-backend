@@ -21,8 +21,11 @@ public class User {
     @Column(name = "user_id")
     private Long userId;
     
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
+    @Column(name = "name", nullable = false)
+    private String name;
+    
+    @Column(name = "surname", nullable = false)
+    private String surname;
     
     @Column(name = "mobile", unique = true)
     private String mobile;
@@ -45,6 +48,9 @@ public class User {
     
     @Column(name = "has_account")
     private Boolean hasAccount;
+    
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts = 0;
     
     @Column(name = "account_locked")
     private Boolean accountLocked;
