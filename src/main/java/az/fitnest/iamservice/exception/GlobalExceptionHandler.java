@@ -1,60 +1,131 @@
 package az.fitnest.iamservice.exception;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import java.util.HashMap;
-import java.util.Map;
+import az.fitnest.iamservice.dto.common.ErrorResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+	
+	private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+	
+	/**
+	 * Centralized handler for all BaseException subclasses.
+	 * Following 2025 Spring Boot best practices for exception handling.
+	 */
+	@ExceptionHandler(BaseException.class)
+	public ResponseEntity<ErrorResponse> handleBaseException(BaseException exception, WebRequest request) {
+		logger.warn("BaseException [{}]: {}", exception.getErrorCode(), exception.getMessage());
+		
+		ErrorResponse.ErrorResponseBuilder builder = ErrorResponse.builder()
+				.message(exception.getMessage())
+				.code(exception.getErrorCode())
+				.path(request.getDescription(false).replace("uri=", ""));
+		
+		// Handle ValidationException specifically for validation errors
+		if (exception instanceof ValidationException) {
+			ValidationException validationException = (ValidationException) exception;
+			BindingResult result = validationException.getBindingResult();
+			if (result != null) {
+				Map<String, Object> details = new HashMap<>();
+				Map<String, String> validationErrors = new HashMap<>();
+				for (FieldError error : result.getFieldErrors()) {
+					validationErrors.put(error.getField(), error.getDefaultMessage());
+				}
+				details.put("validationErrors", validationErrors);
+				builder.details(details);
+			}
+		}
+		
+		ErrorResponse errorResponse = builder.build();
+		return ResponseEntity.status(exception.getHttpStatus()).body(errorResponse);
+	}
+	
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException exception, WebRequest request) {
+		logger.warn("MethodArgumentNotValidException: {}", exception.getMessage());
+		
+		BindingResult result = exception.getBindingResult();
+		Map<String, Object> details = new HashMap<>();
+		Map<String, String> validationErrors = new HashMap<>();
+		
+		for (FieldError error : result.getFieldErrors()) {
+			validationErrors.put(error.getField(), error.getDefaultMessage());
+		}
+		details.put("validationErrors", validationErrors);
+		
+		ErrorResponse errorResponse = ErrorResponse.builder()
+				.message("Validation failed")
+				.code("VALIDATION_ERROR")
+				.path(request.getDescription(false).replace("uri=", ""))
+				.details(details)
+				.build();
+		
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+	
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException exception, WebRequest request) {
+		logger.warn("IllegalArgumentException: {}", exception.getMessage());
+		
+		ErrorResponse errorResponse = ErrorResponse.builder()
+				.message(exception.getMessage())
+				.code("BAD_REQUEST")
+				.path(request.getDescription(false).replace("uri=", ""))
+				.build();
+		
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+	
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException exception, WebRequest request) {
+		logger.warn("HttpMessageNotReadableException: {}", exception.getMessage());
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex, WebRequest request) {
-        Map<String, Object> error = new HashMap<>();
-        error.put("status", HttpStatus.NOT_FOUND.value());
-        error.put("error", "Not Found");
-        error.put("message", ex.getMessage());
-        error.put("path", request.getDescription(false).replace("uri=", ""));
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
+		ErrorResponse errorResponse = ErrorResponse.builder()
+				.message("Invalid request format")
+				.code("HTTP_MESSAGE_NOT_READABLE")
+				.path(request.getDescription(false).replace("uri=", ""))
+				.build();
+		
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+	}
+	
+	@ExceptionHandler(RuntimeException.class)
+	public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, WebRequest request) {
+		logger.error("RuntimeException: {}", ex.getMessage(), ex);
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex, WebRequest request) {
-        String message = ex.getBindingResult().getFieldErrors().stream()
-                .findFirst()
-                .map(error -> error.getField() + " " + error.getDefaultMessage())
-                .orElse(ex.getMessage());
-
-        Map<String, Object> error = new HashMap<>();
-        error.put("status", HttpStatus.BAD_REQUEST.value());
-        error.put("error", "Bad Request");
-        error.put("message", message);
-        error.put("path", request.getDescription(false).replace("uri=", ""));
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
-        Map<String, Object> error = new HashMap<>();
-        error.put("status", HttpStatus.BAD_REQUEST.value());
-        error.put("error", "Bad Request");
-        error.put("message", ex.getMessage());
-        error.put("path", request.getDescription(false).replace("uri=", ""));
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex, WebRequest request) {
-        Map<String, Object> error = new HashMap<>();
-        error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        error.put("error", "Internal Server Error");
-        error.put("message", ex.getMessage());
-        error.put("path", request.getDescription(false).replace("uri=", ""));
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }
+		ErrorResponse errorResponse = ErrorResponse.builder()
+				.message("Internal server error")
+				.code("RUNTIME_EXCEPTION")
+				.path(request.getDescription(false).replace("uri=", ""))
+				.build();
+		
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+	}
+	
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, WebRequest request) {
+		logger.error("Exception: {}", ex.getMessage(), ex);
+		
+		ErrorResponse errorResponse = ErrorResponse.builder()
+				.message("Internal server error")
+				.code("INTERNAL_SERVER_ERROR")
+				.path(request.getDescription(false).replace("uri=", ""))
+				.build();
+		
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+	}
 }
