@@ -1,0 +1,3 @@
+otp:
+  ttl-seconds: 300
+  resend-cooldown-seconds: 60
