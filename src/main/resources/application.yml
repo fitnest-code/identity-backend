@@ -1,3 +1,18 @@
+#spring:
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/iamdb
+#    username: postgres
+#    password: 12345
+#    driver-class-name: org.postgresql.Driver
+#
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#
+#eureka:
+#  client:
+#    enabled: false
+
 otp:
   ttl-seconds: 300
   resend-cooldown-seconds: 60
