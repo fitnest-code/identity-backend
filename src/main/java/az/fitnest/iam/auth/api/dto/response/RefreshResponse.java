@@ -1,6 +1,5 @@
 package az.fitnest.iam.auth.api.dto.response;
 
-import az.fitnest.iam.user.api.dto.response.UserResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,13 +10,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponse {
+public class RefreshResponse {
 
     @JsonProperty("access_token")
     private String accessToken;
 
     @JsonProperty("refresh_token")
     private String refreshToken;
-
-    private UserResponse user;
 }

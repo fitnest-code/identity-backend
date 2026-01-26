@@ -1,6 +1,7 @@
 package az.fitnest.iam.shared.exception;
 
 import az.fitnest.iam.shared.dto.ErrorResponse;
+import az.fitnest.iam.shared.dto.ErrorWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,14 +13,16 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(BaseException.class)
-	public ResponseEntity<ErrorResponse> handleBaseException(
+	public ResponseEntity<ErrorWrapper> handleBaseException(
 			BaseException exception,
 			HttpServletRequest request
 	) {
@@ -40,47 +43,50 @@ public class GlobalExceptionHandler {
 
 		return ResponseEntity
 				.status(exception.getHttpStatus())
-				.body(builder.build());
+				.body(ErrorWrapper.fromErrorResponse(builder.build()));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+	public ResponseEntity<ErrorWrapper> handleMethodArgumentNotValid(
 			MethodArgumentNotValidException exception,
 			HttpServletRequest request
 	) {
-		Map<String, String> validationErrors = new HashMap<>();
+		List<ErrorWrapper.FieldIssue> details = new ArrayList<>();
 		for (FieldError error : exception.getBindingResult().getFieldErrors()) {
-			validationErrors.putIfAbsent(error.getField(), error.getDefaultMessage());
+			details.add(ErrorWrapper.FieldIssue.builder()
+					.field(error.getField())
+					.issue(error.getDefaultMessage())
+					.build());
 		}
 
-		ErrorResponse response = ErrorResponse.builder()
-				.message("Validation failed")
-				.code("VALIDATION_ERROR")
-				.path(request.getRequestURI())
-				.timestamp(LocalDateTime.now())
-				.details(Map.of("validationErrors", validationErrors))
+		ErrorWrapper errorWrapper = ErrorWrapper.builder()
+				.error(ErrorWrapper.ErrorDetail.builder()
+						.code("VALIDATION_ERROR")
+						.message("Validation failed")
+						.details(details)
+						.build())
 				.build();
 
-		return ResponseEntity.badRequest().body(response);
+		return ResponseEntity.badRequest().body(errorWrapper);
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
-	public ResponseEntity<ErrorResponse> handleIllegalArgument(
+	public ResponseEntity<ErrorWrapper> handleIllegalArgument(
 			IllegalArgumentException exception,
 			HttpServletRequest request
 	) {
-		ErrorResponse response = ErrorResponse.builder()
-				.message(exception.getMessage())
-				.code("VALIDATION_ERROR")
-				.path(request.getRequestURI())
-				.timestamp(LocalDateTime.now())
+		ErrorWrapper errorWrapper = ErrorWrapper.builder()
+				.error(ErrorWrapper.ErrorDetail.builder()
+						.code("VALIDATION_ERROR")
+						.message(exception.getMessage())
+						.build())
 				.build();
 
-		return ResponseEntity.badRequest().body(response);
+		return ResponseEntity.badRequest().body(errorWrapper);
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)
-	public ResponseEntity<ErrorResponse> handleNotReadable(
+	public ResponseEntity<ErrorWrapper> handleNotReadable(
 			HttpMessageNotReadableException exception,
 			HttpServletRequest request
 	) {
@@ -88,31 +94,30 @@ public class GlobalExceptionHandler {
 				? exception.getMostSpecificCause().getMessage()
 				: "Malformed JSON";
 
-		ErrorResponse response = ErrorResponse.builder()
-				.message("Invalid request format")
-				.code("HTTP_MESSAGE_NOT_READABLE")
-				.path(request.getRequestURI())
-				.timestamp(LocalDateTime.now())
-				.details(Map.of("cause", detail))
+		ErrorWrapper errorWrapper = ErrorWrapper.builder()
+				.error(ErrorWrapper.ErrorDetail.builder()
+						.code("HTTP_MESSAGE_NOT_READABLE")
+						.message("Invalid request format")
+						.build())
 				.build();
 
-		return ResponseEntity.badRequest().body(response);
+		return ResponseEntity.badRequest().body(errorWrapper);
 	}
 
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ErrorResponse> handleGeneric(
+	public ResponseEntity<ErrorWrapper> handleGeneric(
 			Exception exception,
 			HttpServletRequest request
 	) {
-		ErrorResponse response = ErrorResponse.builder()
-				.message("Internal server error")
-				.code("INTERNAL_SERVER_ERROR")
-				.path(request.getRequestURI())
-				.timestamp(LocalDateTime.now())
+		ErrorWrapper errorWrapper = ErrorWrapper.builder()
+				.error(ErrorWrapper.ErrorDetail.builder()
+						.code("INTERNAL_SERVER_ERROR")
+						.message("Internal server error")
+						.build())
 				.build();
 
 		return ResponseEntity
 				.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(response);
+				.body(errorWrapper);
 	}
 }

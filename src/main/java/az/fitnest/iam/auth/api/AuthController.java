@@ -1,10 +1,13 @@
 package az.fitnest.iam.auth.api;
 
 import az.fitnest.iam.auth.adapter.service.AuthService;
+import az.fitnest.iam.auth.api.dto.request.AppleSocialRequest;
+import az.fitnest.iam.auth.api.dto.request.GoogleSocialRequest;
 import az.fitnest.iam.auth.api.dto.request.LoginRequest;
 import az.fitnest.iam.auth.api.dto.request.RefreshRequest;
 import az.fitnest.iam.auth.api.dto.request.RegisterCompleteRequest;
 import az.fitnest.iam.auth.api.dto.response.LoginResponse;
+import az.fitnest.iam.auth.api.dto.response.RefreshResponse;
 import az.fitnest.iam.shared.exception.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -63,7 +66,7 @@ public class AuthController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Token refreshed successfully",
-                    content = @Content(schema = @Schema(implementation = LoginResponse.class))
+                    content = @Content(schema = @Schema(implementation = RefreshResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -77,8 +80,8 @@ public class AuthController {
             )
     })
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-        LoginResponse response = authService.refresh(request.getRefreshToken());
+    public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+        RefreshResponse response = authService.refresh(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }
 
@@ -118,6 +121,84 @@ public class AuthController {
         String token = extractBearerToken(authorization);
         LoginResponse response = authService.completeRegistration(token, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(
+            summary = "Apple social login",
+            description = "Authenticates a user with Apple ID. Creates a new account if user doesn't exist. " +
+                    "Returns 200 OK for existing accounts, 201 Created for new accounts."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Login successful (existing account)",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Account created and logged in",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid Apple token",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Account conflict: email already registered",
+                    content = @Content
+            )
+    })
+    @PostMapping("/social/apple")
+    public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
+        LoginResponse response = authService.socialLoginApple(request);
+        boolean isNewAccount = response.getUser().getSetupRequired();
+        return ResponseEntity.status(isNewAccount ? HttpStatus.CREATED : HttpStatus.OK).body(response);
+    }
+
+    @Operation(
+            summary = "Google social login",
+            description = "Authenticates a user with Google account. Creates a new account if user doesn't exist. " +
+                    "Returns 200 OK for existing accounts, 201 Created for new accounts."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Login successful (existing account)",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Account created and logged in",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid Google token",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Account conflict: email already registered",
+                    content = @Content
+            )
+    })
+    @PostMapping("/social/google")
+    public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
+        LoginResponse response = authService.socialLoginGoogle(request);
+        boolean isNewAccount = response.getUser().getSetupRequired();
+        return ResponseEntity.status(isNewAccount ? HttpStatus.CREATED : HttpStatus.OK).body(response);
     }
 
     private String extractBearerToken(String authorization) {
