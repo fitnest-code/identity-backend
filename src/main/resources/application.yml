@@ -1,18 +1,76 @@
-#spring:
-#  datasource:
-#    url: jdbc:postgresql://localhost:5432/iamdb
-#    username: postgres
-#    password: 12345
-#    driver-class-name: org.postgresql.Driver
-#
-#  jpa:
-#    hibernate:
-#      ddl-auto: update
-#
-#eureka:
-#  client:
-#    enabled: false
+server:
+  port: 8080
+
+spring:
+  application:
+    name: iam-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/iamdb}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+eureka:
+  client:
+    enabled: false
+
+jwt:
+  secret: ${JWT_SECRET:fitnest_jwt_secret_key_at_least_32_characters_long_for_hs256}
+  issuer: ${JWT_ISSUER:fitnest}
+  access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:3600}
+  refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:604800}
+
+security:
+  redis:
+    access-token-prefix: ${SECURITY_REDIS_ACCESS_TOKEN_PREFIX:auth:token:access:}
 
 otp:
-  ttl-seconds: 300
-  resend-cooldown-seconds: 60
+  ttl-seconds: ${OTP_TTL_SECONDS:300}
+  resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
