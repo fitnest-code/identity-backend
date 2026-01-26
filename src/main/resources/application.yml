@@ -60,12 +60,6 @@ otp:
   ttl-seconds: ${OTP_TTL_SECONDS:300}
   resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
 
-logging:
-  level:
-    root: INFO
-    org.hibernate.SQL: WARN
-    org.hibernate.type.descriptor.sql: WARN
-
 management:
   endpoints:
     web:
