@@ -1,4 +1,3 @@
-// User.java
 package az.fitnest.iam.user.domain.model;
 
 import az.fitnest.iam.shared.persistence.BaseAuditableEntity;

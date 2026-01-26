@@ -30,5 +30,8 @@ public class UserResponse {
     @JsonProperty("setup_required")
     private Boolean setupRequired;
 
+    @JsonProperty("profile_image_url")
+    private String profileImageUrl;
+
     private String language;
 }
