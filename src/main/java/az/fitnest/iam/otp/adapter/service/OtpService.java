@@ -113,6 +113,13 @@ public class OtpService {
         return createSuccessResponse(sessionId);
     }
 
+    private void invalidateActiveSession(OtpPurpose purpose, String email) {
+        otpStore.getActiveSessionPointer(purpose, email).ifPresent(existingSessionId -> {
+            otpStore.deleteSession(existingSessionId);
+            otpStore.deleteActivePointer(purpose, email);
+        });
+    }
+
     private void validateRateLimit(OtpPurpose purpose, String email) {
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, email);
         if (!rateLimitResult.isAllowed()) {

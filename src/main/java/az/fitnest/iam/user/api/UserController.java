@@ -1,9 +1,14 @@
 package az.fitnest.iam.user.api;
 
 import az.fitnest.iam.user.adapter.service.UserService;
+import az.fitnest.iam.user.application.command.UpdateUserProfileCommand;
+import az.fitnest.iam.user.api.dto.request.UpdateProfileImageRequest;
+import az.fitnest.iam.user.api.dto.request.UpdateSetupRequiredRequest;
 import az.fitnest.iam.user.api.dto.request.UpdateUserProfileRequest;
+import az.fitnest.iam.user.api.dto.mapper.UserResponseMapper;
 import az.fitnest.iam.user.api.dto.response.UserResponse;
 import az.fitnest.iam.user.domain.model.User;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,8 +29,12 @@ public class UserController {
     @PutMapping("/{userId}")
     public ResponseEntity<UserResponse> updateUserProfile(
             @PathVariable Long userId,
-            @RequestBody UpdateUserProfileRequest request) {
-        User user = userService.updateUserProfile(userId, request.getFullName(), request.getEmail());
+            @RequestBody @Valid UpdateUserProfileRequest request) {
+        User user = userService.updateUserProfile(userId, UpdateUserProfileCommand.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .build());
         return ResponseEntity.ok(toUserResponse(user));
     }
 
@@ -46,28 +55,6 @@ public class UserController {
     }
 
     private UserResponse toUserResponse(User user) {
-        return UserResponse.builder()
-                .userId(String.valueOf(user.getId()))
-                .fullName(user.getFullName())
-                .mobile(user.getMobile())
-                .email(user.getEmail())
-                .hasAccount(user.getHasAccount())
-                .setupRequired(user.getSetupRequired())
-                .profileImageUrl(user.getProfileImageUrl())
-                .language(user.getLanguage() != null ? user.getLanguage().name() : null)
-                .createdAt(user.getCreatedDate())
-                .build();
-    }
-
-    @lombok.Data
-    public static class UpdateProfileImageRequest {
-        @com.fasterxml.jackson.annotation.JsonProperty("image_url")
-        private String imageUrl;
-    }
-
-    @lombok.Data
-    public static class UpdateSetupRequiredRequest {
-        @com.fasterxml.jackson.annotation.JsonProperty("setup_required")
-        private Boolean setupRequired;
+        return UserResponseMapper.toResponse(user);
     }
 }

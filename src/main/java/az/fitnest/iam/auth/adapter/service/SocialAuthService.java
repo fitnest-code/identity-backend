@@ -56,6 +56,8 @@ public class SocialAuthService {
         
         User newUser = createUserForSocialLogin(
                 email,
+                request.getFirstName(),
+                request.getLastName(),
                 request.getFullName() != null ? request.getFullName() : "User",
                 null);
         
@@ -100,6 +102,8 @@ public class SocialAuthService {
         
         User newUser = createUserForSocialLogin(
                 email,
+                request.getFirstName(),
+                request.getLastName(),
                 request.getFullName() != null ? request.getFullName() : "User",
                 null);
         
@@ -114,10 +118,12 @@ public class SocialAuthService {
         return tokenIssuanceService.issueTokens(newUser);
     }
 
-    private User createUserForSocialLogin(String email, String fullName, String mobile) {
+    private User createUserForSocialLogin(String email, String firstName, String lastName, String fullName, String mobile) {
+        NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
         User user = User.builder()
                 .email(email)
-                .fullName(fullName)
+                .firstName(nameParts.firstName())
+                .lastName(nameParts.lastName())
                 .mobile(mobile != null ? mobile : "")
                 .passwordHash(null)
                 .hasAccount(true)
@@ -127,5 +133,42 @@ public class SocialAuthService {
                 .isDeleted(false)
                 .build();
         return userRepository.save(user);
+    }
+
+    private NameParts resolveNameParts(String firstName, String lastName, String fullName) {
+        String fn = normalizeNamePart(firstName);
+        String ln = normalizeNamePart(lastName);
+        if (fn != null || ln != null) {
+            return new NameParts(fn, ln);
+        }
+        return splitFullName(fullName);
+    }
+
+    private String normalizeNamePart(String value) {
+        if (value == null) {
+            return null;
+        }
+        String v = value.trim();
+        return v.isEmpty() ? null : v;
+    }
+
+    private NameParts splitFullName(String fullName) {
+        if (fullName == null) {
+            return new NameParts(null, null);
+        }
+        String v = fullName.trim();
+        if (v.isEmpty()) {
+            return new NameParts(null, null);
+        }
+        String[] parts = v.split("\\s+");
+        if (parts.length == 1) {
+            return new NameParts(parts[0], null);
+        }
+        String first = parts[0];
+        String last = String.join(" ", java.util.Arrays.copyOfRange(parts, 1, parts.length));
+        return new NameParts(first, last);
+    }
+
+    private record NameParts(String firstName, String lastName) {
     }
 }

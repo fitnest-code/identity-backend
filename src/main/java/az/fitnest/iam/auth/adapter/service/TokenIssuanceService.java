@@ -5,6 +5,7 @@ import az.fitnest.iam.auth.api.dto.response.LoginResponse;
 import az.fitnest.iam.auth.domain.model.AuthToken;
 import az.fitnest.iam.security.JwtService;
 import az.fitnest.iam.security.RedisTokenService;
+import az.fitnest.iam.user.api.dto.mapper.UserResponseMapper;
 import az.fitnest.iam.user.api.dto.response.UserResponse;
 import az.fitnest.iam.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
@@ -34,15 +35,7 @@ public class TokenIssuanceService {
 
         saveAuthToken(user.getId(), accessToken, refreshToken, accessExpiresAt, refreshExpiresAt);
 
-        UserResponse userResponse = UserResponse.builder()
-                .userId(String.valueOf(user.getId()))
-                .fullName(user.getFullName())
-                .mobile(user.getMobile())
-                .email(user.getEmail())
-                .hasAccount(user.getHasAccount())
-                .setupRequired(user.getSetupRequired())
-                .language(user.getLanguage() != null ? user.getLanguage().name() : null)
-                .build();
+        UserResponse userResponse = UserResponseMapper.toResponse(user);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)

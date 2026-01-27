@@ -2,12 +2,11 @@ package az.fitnest.iam.user.api.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -22,20 +21,29 @@ public class UserResponse {
     @JsonProperty("full_name")
     private String fullName;
 
+    @JsonProperty("first_name")
+    private String firstName;
+
+    @JsonProperty("last_name")
+    private String lastName;
+
     private String mobile;
 
     private String email;
 
     @JsonProperty("has_account")
-    private Boolean hasAccount;
+    private boolean hasAccount;
 
     @JsonProperty("setup_required")
-    private Boolean setupRequired;
+    private boolean setupRequired;
 
     @JsonProperty("profile_image_url")
     private String profileImageUrl;
 
     private String language;
+
+    @JsonProperty("account_locked")
+    private boolean accountLocked;
 
     @JsonProperty("created_at")
     private LocalDateTime createdAt;

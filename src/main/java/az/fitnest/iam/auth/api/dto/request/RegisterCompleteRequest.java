@@ -16,6 +16,12 @@ public class RegisterCompleteRequest {
     @JsonAlias("full_name")
     private String fullName;
 
+    @JsonAlias("first_name")
+    private String firstName;
+
+    @JsonAlias("last_name")
+    private String lastName;
+
     @NotBlank
     @Size(min = 8, max = 10)
     private String password;

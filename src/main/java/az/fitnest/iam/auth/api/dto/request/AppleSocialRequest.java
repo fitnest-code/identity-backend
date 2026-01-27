@@ -18,6 +18,12 @@ public class AppleSocialRequest {
     @JsonAlias("full_name")
     private String fullName;
 
+    @JsonAlias("first_name")
+    private String firstName;
+
+    @JsonAlias("last_name")
+    private String lastName;
+
     @JsonAlias("email")
     private String email;
 }

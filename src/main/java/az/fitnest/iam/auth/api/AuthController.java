@@ -170,7 +170,7 @@ public class AuthController {
     @PostMapping("/social/apple")
     public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginApple(request);
-        boolean isNewAccount = response.getUser().getSetupRequired();
+        boolean isNewAccount = response.getUser().isSetupRequired();
         return ResponseEntity.status(isNewAccount ? HttpStatus.CREATED : HttpStatus.OK).body(response);
     }
 
@@ -209,7 +209,7 @@ public class AuthController {
     @PostMapping("/social/google")
     public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
-        boolean isNewAccount = response.getUser().getSetupRequired();
+        boolean isNewAccount = response.getUser().isSetupRequired();
         return ResponseEntity.status(isNewAccount ? HttpStatus.CREATED : HttpStatus.OK).body(response);
     }
 

@@ -25,7 +25,13 @@ public class RegistrationService {
         String email = registrationTokenService.requireEmail(registrationToken);
         
         String passwordHash = passwordService.hashPassword(request.getPassword());
-        userService.createNewUser(email, request.getFullName(), passwordHash);
+        userService.createNewUser(
+                email,
+                request.getFirstName(),
+                request.getLastName(),
+                request.getFullName(),
+                passwordHash
+        );
         registrationTokenService.consume(registrationToken);
         
         return loginAfterRegistration(email, request.getPassword());

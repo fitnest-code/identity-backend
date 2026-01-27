@@ -2,6 +2,7 @@ package az.fitnest.iam.user.adapter.service;
 
 import az.fitnest.iam.shared.exception.ConflictException;
 import az.fitnest.iam.shared.exception.ResourceNotFoundException;
+import az.fitnest.iam.user.application.command.UpdateUserProfileCommand;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
 import az.fitnest.iam.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
@@ -14,20 +15,27 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public User getUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return getUserOrThrow(userId);
     }
 
     @Transactional
     public User createNewUser(String email, String fullName, String passwordHash) {
+        return createNewUser(email, null, null, fullName, passwordHash);
+    }
+
+    @Transactional
+    public User createNewUser(String email, String firstName, String lastName, String fullName, String passwordHash) {
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Email already registered");
         }
 
+        NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
         User user = User.builder()
                 .email(email)
-                .fullName(fullName)
+                .firstName(nameParts.firstName())
+                .lastName(nameParts.lastName())
                 .passwordHash(passwordHash)
                 .hasAccount(true)
                 .setupRequired(true)
@@ -40,12 +48,18 @@ public class UserService {
     }
 
     @Transactional
-    public User updateUserProfile(Long userId, String fullName, String email) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+	public User updateUserProfile(Long userId, UpdateUserProfileCommand command) {
+        User user = getUserOrThrow(userId);
 
-        if (fullName != null && !fullName.isBlank()) {
-            user.setFullName(fullName);
+		String firstName = command.firstName();
+		String lastName = command.lastName();
+		String email = command.email();
+
+		boolean namePartsProvided = firstName != null || lastName != null;
+        if (namePartsProvided) {
+			NameParts parts = resolveNameParts(firstName, lastName, null);
+			user.setFirstName(parts.firstName());
+			user.setLastName(parts.lastName());
         }
 
         if (email != null) {
@@ -64,8 +78,7 @@ public class UserService {
 
     @Transactional
     public User updateProfileImageUrl(Long userId, String profileImageUrl) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getUserOrThrow(userId);
 
         user.setProfileImageUrl(profileImageUrl);
         return userRepository.save(user);
@@ -73,10 +86,51 @@ public class UserService {
 
     @Transactional
     public User updateSetupRequired(Long userId, Boolean setupRequired) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getUserOrThrow(userId);
 
         user.setSetupRequired(setupRequired);
         return userRepository.save(user);
+    }
+
+    private User getUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private NameParts resolveNameParts(String firstName, String lastName, String fullName) {
+        String fn = normalizeNamePart(firstName);
+        String ln = normalizeNamePart(lastName);
+        if (fn != null || ln != null) {
+            return new NameParts(fn, ln);
+        }
+        return splitFullName(fullName);
+    }
+
+    private NameParts splitFullName(String fullName) {
+        if (fullName == null) {
+            return new NameParts(null, null);
+        }
+        String v = fullName.trim();
+        if (v.isEmpty()) {
+            return new NameParts(null, null);
+        }
+        String[] parts = v.split("\\s+");
+        if (parts.length == 1) {
+            return new NameParts(parts[0], null);
+        }
+        String first = parts[0];
+        String last = String.join(" ", java.util.Arrays.asList(parts).subList(1, parts.length));
+        return new NameParts(first, last);
+    }
+
+    private String normalizeNamePart(String value) {
+        if (value == null) {
+            return null;
+        }
+        String v = value.trim();
+        return v.isEmpty() ? null : v;
+    }
+
+    private record NameParts(String firstName, String lastName) {
     }
 }

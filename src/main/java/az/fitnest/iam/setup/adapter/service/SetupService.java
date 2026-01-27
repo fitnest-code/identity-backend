@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 
 import java.net.ConnectException;
 import java.util.List;
@@ -36,7 +37,7 @@ public class SetupService {
         az.fitnest.iam.setup.adapter.client.dto.SetupStatusResponse clientResponse = 
                 userServiceClient.getSetupStatus(String.valueOf(userId));
         
-        return mapper.toSetupStatusResponse(user.getSetupRequired(), clientResponse);
+        return mapper.toSetupStatusResponse(user.isSetupRequired(), clientResponse);
     }
 
     public ProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
@@ -103,7 +104,7 @@ public class SetupService {
     public CompleteSetupResponse completeSetup(Long userId) {
         User user = getUserOrThrow(userId);
 
-        if (Boolean.FALSE.equals(user.getSetupRequired())) {
+        if (Boolean.FALSE.equals(user.isSetupRequired())) {
             return alreadyCompletedResponse();
         }
 

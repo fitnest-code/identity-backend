@@ -2,23 +2,28 @@ package az.fitnest.iam.user.domain.model;
 
 import az.fitnest.iam.shared.persistence.BaseAuditableEntity;
 import az.fitnest.iam.user.domain.enums.Language;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Entity
+@SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE user_id = ?")
+@Where(clause = "is_deleted = false")
 @Table(
         name = "users",
-        indexes = {
-                @Index(name = "idx_users_mobile", columnList = "mobile"),
-                @Index(name = "idx_users_email", columnList = "email")
-        },
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_users_mobile", columnNames = "mobile"),
                 @UniqueConstraint(name = "uk_users_email", columnNames = "email")
         }
 )
+@AttributeOverride(name = "id", column = @Column(name = "user_id"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,14 +31,15 @@ import java.time.LocalDateTime;
 @Builder
 public class User extends BaseAuditableEntity {
 
-    @Override
-    @AttributeOverride(name = "id", column = @Column(name = "user_id"))
-    public Long getId() {
-        return super.getId();
-    }
+    @Setter(AccessLevel.NONE)
+    @Column(name = "full_name", insertable = false, updatable = false)
+    private String legacyFullName;
 
-    @Column(name = "full_name")
-    private String fullName;
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
 
     @Column(name = "mobile", nullable = false, length = 20)
     private String mobile;
@@ -41,6 +47,8 @@ public class User extends BaseAuditableEntity {
     @Column(name = "email")
     private String email;
 
+    @JsonIgnore
+    @ToString.Exclude
     @Column(name = "password_hash")
     private String passwordHash;
 
@@ -48,21 +56,21 @@ public class User extends BaseAuditableEntity {
     @Column(name = "language")
     private Language language;
 
+    @Builder.Default
     @Column(name = "has_account", nullable = false)
-    @Builder.Default
-    private Boolean hasAccount = Boolean.FALSE;
+    private boolean hasAccount = false;
 
+    @Builder.Default
     @Column(name = "setup_required", nullable = false)
-    @Builder.Default
-    private Boolean setupRequired = Boolean.TRUE;
+    private boolean setupRequired = true;
 
+    @Builder.Default
     @Column(name = "failed_login_attempts", nullable = false)
-    @Builder.Default
-    private Integer failedLoginAttempts = 0;
+    private int failedLoginAttempts = 0;
 
-    @Column(name = "account_locked", nullable = false)
     @Builder.Default
-    private Boolean accountLocked = Boolean.FALSE;
+    @Column(name = "account_locked", nullable = false)
+    private boolean accountLocked = false;
 
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
@@ -70,7 +78,22 @@ public class User extends BaseAuditableEntity {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    @Column(name = "is_deleted", nullable = false)
     @Builder.Default
-    private Boolean isDeleted = Boolean.FALSE;
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    public boolean hasAccount() { return hasAccount; }
+    public boolean isSetupRequired() { return setupRequired; }
+    public boolean isAccountLocked() { return accountLocked || (lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now())); }
+    public boolean isDeleted() { return isDeleted; }
+
+    @Transient
+    public String getFullName() {
+        String fullName = Stream.of(firstName, lastName, legacyFullName)
+                                .filter(Objects::nonNull)
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .collect(Collectors.joining(" "));
+        return fullName.isEmpty() ? null : fullName;
+    }
 }

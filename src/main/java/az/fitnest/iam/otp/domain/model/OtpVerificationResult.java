@@ -1,5 +1,6 @@
 package az.fitnest.iam.otp.domain.model;
 
+import az.fitnest.iam.otp.domain.enums.OtpPurpose;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -112,22 +112,19 @@ public class AuthService {
     }
 
     private boolean isAccountLocked(User user) {
-        if (!user.getAccountLocked()) {
-            return false;
+        if (user.isAccountLocked()) {
+            return true;
         }
 
-        LocalDateTime lockedUntil = user.getLockedUntil();
-        if (lockedUntil == null) {
-            unlockAccount(user);
-            return false;
+        // Auto-cleanup stale lock state (e.g., expired lock or missing lockedUntil).
+        if (user.isAccountLocked()) {
+            LocalDateTime lockedUntil = user.getLockedUntil();
+            if (lockedUntil == null || !lockedUntil.isAfter(LocalDateTime.now())) {
+                unlockAccount(user);
+            }
         }
 
-        if (lockedUntil.isBefore(LocalDateTime.now())) {
-            unlockAccount(user);
-            return false;
-        }
-
-        return true;
+        return false;
     }
 
     private void unlockAccount(User user) {

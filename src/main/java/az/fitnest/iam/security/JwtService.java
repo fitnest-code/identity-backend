@@ -3,6 +3,7 @@ package az.fitnest.iam.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -72,22 +73,22 @@ public class JwtService {
         Instant exp = now.plusSeconds(ttlSeconds);
 
         return Jwts.builder()
-                .issuer(issuer)
-                .subject(String.valueOf(userId))
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(exp))
-                .claims(extraClaims)
-                .signWith(key, Jwts.SIG.HS256)
+                .setIssuer(issuer)
+                .setSubject(String.valueOf(userId))
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(exp))
+                .addClaims(extraClaims)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     private Claims parseClaims(String token) {
-        Jws<Claims> jws = Jwts.parser()
-                .verifyWith(key)
+        Jws<Claims> jws = Jwts.parserBuilder()
+                .setSigningKey(key)
                 .requireIssuer(issuer)
                 .build()
-                .parseSignedClaims(token);
+                .parseClaimsJws(token);
 
-        return jws.getPayload();
+        return jws.getBody();
     }
 }
