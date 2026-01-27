@@ -56,9 +56,36 @@ security:
   redis:
     access-token-prefix: ${SECURITY_REDIS_ACCESS_TOKEN_PREFIX:auth:token:access:}
 
+auth:
+  registration-token:
+    prefix: ${AUTH_REGISTRATION_TOKEN_PREFIX:auth:registration:}
+    ttl-hours: ${AUTH_REGISTRATION_TOKEN_TTL_HOURS:24}
+  reset-password-token:
+    prefix: ${AUTH_RESET_PASSWORD_TOKEN_PREFIX:auth:reset-password:}
+    ttl-hours: ${AUTH_RESET_PASSWORD_TOKEN_TTL_HOURS:1}
+  google:
+    client-id: ${AUTH_GOOGLE_CLIENT_ID:}
+  apple:
+    client-id: ${AUTH_APPLE_CLIENT_ID:}
+    team-id: ${AUTH_APPLE_TEAM_ID:}
+  account-lock:
+    max-failed-attempts: ${AUTH_ACCOUNT_LOCK_MAX_FAILED_ATTEMPTS:5}
+    lock-duration-minutes: ${AUTH_ACCOUNT_LOCK_DURATION_MINUTES:30}
+
 otp:
   ttl-seconds: ${OTP_TTL_SECONDS:300}
   resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
+  max-verify-attempts: ${OTP_MAX_VERIFY_ATTEMPTS:5}
+  rate-limit:
+    max-attempts: ${OTP_RATE_LIMIT_MAX_ATTEMPTS:3}
+    window-minutes: ${OTP_RATE_LIMIT_WINDOW_MINUTES:5}
+    cooldown-seconds: ${OTP_RATE_LIMIT_COOLDOWN_SECONDS:30}
+    min-cooldown-seconds: ${OTP_RATE_LIMIT_MIN_COOLDOWN_SECONDS:30}
+    error-message-threshold-seconds: ${OTP_RATE_LIMIT_ERROR_THRESHOLD_SECONDS:60}
+
+user:
+  service:
+    url: ${USER_SERVICE_URL:http://localhost:9897}
 
 management:
   endpoints:

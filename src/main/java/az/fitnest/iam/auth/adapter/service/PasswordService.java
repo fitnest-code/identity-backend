@@ -15,6 +15,9 @@ public class PasswordService {
     }
 
     public boolean verifyPassword(String rawPassword, String passwordHash) {
+        if (passwordHash == null) {
+            return false;
+        }
         return passwordEncoder.matches(rawPassword, passwordHash);
     }
 }

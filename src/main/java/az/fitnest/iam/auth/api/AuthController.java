@@ -1,13 +1,22 @@
 package az.fitnest.iam.auth.api;
 
 import az.fitnest.iam.auth.adapter.service.AuthService;
+import az.fitnest.iam.auth.adapter.service.SocialAuthService;
+import az.fitnest.iam.auth.adapter.service.PasswordResetService;
+import az.fitnest.iam.auth.adapter.service.RegistrationService;
 import az.fitnest.iam.auth.api.dto.request.AppleSocialRequest;
 import az.fitnest.iam.auth.api.dto.request.GoogleSocialRequest;
 import az.fitnest.iam.auth.api.dto.request.LoginRequest;
+import az.fitnest.iam.auth.api.dto.request.ForgotPasswordRequest;
 import az.fitnest.iam.auth.api.dto.request.RefreshRequest;
 import az.fitnest.iam.auth.api.dto.request.RegisterCompleteRequest;
+import az.fitnest.iam.auth.api.dto.request.ResetPasswordRequest;
+import az.fitnest.iam.auth.api.dto.response.ForgotPasswordResponse;
 import az.fitnest.iam.auth.api.dto.response.LoginResponse;
 import az.fitnest.iam.auth.api.dto.response.RefreshResponse;
+import az.fitnest.iam.auth.api.dto.response.ResetPasswordResponse;
+import az.fitnest.iam.auth.api.dto.response.VerifyOtpForPasswordResetResponse;
+import az.fitnest.iam.otp.api.dto.request.OtpVerifyRequest;
 import az.fitnest.iam.shared.exception.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,6 +37,9 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final SocialAuthService socialAuthService;
+    private final PasswordResetService passwordResetService;
+    private final RegistrationService registrationService;
 
     @Operation(
             summary = "User login",
@@ -47,7 +59,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Invalid credentials, user not found, or account locked",
+                    description = "Invalid credentials",
                     content = @Content
             )
     })
@@ -75,7 +87,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Invalid or expired refresh token, user not found, or account locked",
+                    description = "Invalid credentials",
                     content = @Content
             )
     })
@@ -119,7 +131,7 @@ public class AuthController {
             @Valid @RequestBody RegisterCompleteRequest request
     ) {
         String token = extractBearerToken(authorization);
-        LoginResponse response = authService.completeRegistration(token, request);
+        LoginResponse response = registrationService.completeRegistration(token, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -157,7 +169,7 @@ public class AuthController {
     })
     @PostMapping("/social/apple")
     public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
-        LoginResponse response = authService.socialLoginApple(request);
+        LoginResponse response = socialAuthService.socialLoginApple(request);
         boolean isNewAccount = response.getUser().getSetupRequired();
         return ResponseEntity.status(isNewAccount ? HttpStatus.CREATED : HttpStatus.OK).body(response);
     }
@@ -196,9 +208,99 @@ public class AuthController {
     })
     @PostMapping("/social/google")
     public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
-        LoginResponse response = authService.socialLoginGoogle(request);
+        LoginResponse response = socialAuthService.socialLoginGoogle(request);
         boolean isNewAccount = response.getUser().getSetupRequired();
         return ResponseEntity.status(isNewAccount ? HttpStatus.CREATED : HttpStatus.OK).body(response);
+    }
+
+    @Operation(
+            summary = "Request password reset",
+            description = "Sends an OTP code to the user's email for password reset. " +
+                    "Returns a generic success message to prevent email enumeration."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "OTP sent successfully (if email exists)",
+                    content = @Content(schema = @Schema(implementation = ForgotPasswordResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "429",
+                    description = "Too many requests - rate limited",
+                    content = @Content
+            )
+    })
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        ForgotPasswordResponse response = passwordResetService.forgotPassword(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Verify OTP for password reset",
+            description = "Verifies the OTP code sent for password reset and returns a reset token. " +
+                    "The reset token is required to reset the password."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "OTP verified successfully",
+                    content = @Content(schema = @Schema(implementation = VerifyOtpForPasswordResetResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid or expired OTP code",
+                    content = @Content
+            )
+    })
+    @PostMapping("/forgot-password/verify-otp")
+    public ResponseEntity<VerifyOtpForPasswordResetResponse> verifyOtpForPasswordReset(
+            @Valid @RequestBody OtpVerifyRequest request) {
+        VerifyOtpForPasswordResetResponse response = passwordResetService.verifyOtpForPasswordReset(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Reset password",
+            description = "Resets the user's password using a valid reset token obtained from OTP verification. " +
+                    "The reset token is consumed after successful password reset."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Password reset successfully",
+                    content = @Content(schema = @Schema(implementation = ResetPasswordResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data or validation failed",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid or expired reset token",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid credentials",
+                    content = @Content
+            )
+    })
+    @PostMapping("/reset-password")
+    public ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        ResetPasswordResponse response = passwordResetService.resetPassword(request);
+        return ResponseEntity.ok(response);
     }
 
     private String extractBearerToken(String authorization) {

@@ -29,4 +29,6 @@ public class OtpSessionPayload {
     private Boolean verified;
 
     private Instant createdAt;
+
+    private Boolean emailExistsAtCreation;
 }

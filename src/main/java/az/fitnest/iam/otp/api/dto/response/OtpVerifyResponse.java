@@ -16,4 +16,7 @@ public class OtpVerifyResponse {
 
     @JsonProperty("registration_token")
     private String registrationToken;
+
+    @JsonProperty("message")
+    private String message;
 }

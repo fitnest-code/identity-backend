@@ -41,7 +41,7 @@ public class User extends BaseAuditableEntity {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash")
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)

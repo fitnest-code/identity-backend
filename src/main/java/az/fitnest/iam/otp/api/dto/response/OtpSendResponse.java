@@ -20,4 +20,7 @@ public class OtpSendResponse {
 
     @JsonProperty("resend_available_in_seconds")
     private Integer resendAvailableInSeconds;
+
+    @JsonProperty("message")
+    private String message;
 }
