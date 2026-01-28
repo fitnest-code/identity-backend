@@ -9,7 +9,7 @@ import az.fitnest.iam.otp.api.dto.response.OtpVerifyResponse;
 import az.fitnest.iam.otp.domain.enums.OtpPurpose;
 import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.shared.exception.OtpRateLimitedException;
-import az.fitnest.iam.messaging.EmailSender;
+import az.fitnest.iam.messaging.SmtpEmailSender;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
 import az.fitnest.iam.user.adapter.service.EmailNormalizationService;
 import az.fitnest.iam.otp.adapter.store.redis.OtpStore;
@@ -41,7 +41,7 @@ public class OtpService {
     private final OtpGenerator otpGenerator;
     private final PasswordService passwordService;
     private final OtpSessionIdGenerator otpSessionIdGenerator;
-    private final EmailSender emailSender;
+    private final SmtpEmailSender emailSender;
     private final RegistrationTokenService registrationTokenService;
     private final ResetPasswordTokenService resetPasswordTokenService;
     private final Clock clock;

@@ -4,6 +4,7 @@ import az.fitnest.iam.auth.api.dto.request.LoginRequest;
 import az.fitnest.iam.auth.api.dto.response.LoginResponse;
 import az.fitnest.iam.auth.api.dto.response.RefreshResponse;
 import az.fitnest.iam.auth.adapter.persistence.AuthTokenRepository;
+import az.fitnest.iam.messaging.SmtpEmailSender;
 import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.shared.exception.UnauthorizedException;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
@@ -27,6 +28,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthTokenRepository authTokenRepository;
     private final TokenIssuanceService tokenIssuanceService;
+    private final SmtpEmailSender emailSender;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
     private int maxFailedLoginAttempts;
@@ -36,8 +38,18 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByMobile(request.getMobile())
+        User user = userRepository.findByMobileIncludingDeleted(request.getMobile())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+
+        if (user.isDeleted()) {
+            // Auto-recover account on successful login attempt
+            user.setDeleted(false);
+            userRepository.save(user);
+
+            if (user.getEmail() != null && !user.getEmail().isBlank()) {
+                emailSender.sendAccountRecoveryNotice(user.getEmail());
+            }
+        }
 
         if (isAccountLocked(user)) {
             throw new InvalidCredentialsException("Invalid credentials");
@@ -75,6 +87,10 @@ public class AuthService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+
+        if (user.isDeleted()) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
 
         if (isAccountLocked(user)) {
             throw new UnauthorizedException("Invalid credentials");
@@ -116,7 +132,6 @@ public class AuthService {
             return true;
         }
 
-        // Auto-cleanup stale lock state (e.g., expired lock or missing lockedUntil).
         if (user.isAccountLocked()) {
             LocalDateTime lockedUntil = user.getLockedUntil();
             if (lockedUntil == null || !lockedUntil.isAfter(LocalDateTime.now())) {

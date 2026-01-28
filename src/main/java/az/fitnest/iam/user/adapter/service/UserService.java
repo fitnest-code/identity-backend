@@ -1,5 +1,9 @@
 package az.fitnest.iam.user.adapter.service;
 
+import az.fitnest.iam.auth.adapter.persistence.AuthTokenRepository;
+import az.fitnest.iam.auth.domain.model.AuthToken;
+import az.fitnest.iam.messaging.SmtpEmailSender;
+import az.fitnest.iam.security.RedisTokenService;
 import az.fitnest.iam.shared.exception.ConflictException;
 import az.fitnest.iam.shared.exception.ResourceNotFoundException;
 import az.fitnest.iam.user.application.command.UpdateUserProfileCommand;
@@ -14,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final AuthTokenRepository authTokenRepository;
+    private final RedisTokenService redisTokenService;
+    private final SmtpEmailSender emailSender;
 
     @Transactional(readOnly = true)
     public User getUserById(Long userId) {
@@ -90,6 +97,26 @@ public class UserService {
 
         user.setSetupRequired(setupRequired);
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteUser(Long userId, String reason) {
+        User user = getUserOrThrow(userId);
+
+        String originalEmail = user.getEmail();
+
+        if (originalEmail != null && !originalEmail.isBlank()) {
+            emailSender.sendAccountDeletionNotice(originalEmail, 30);
+        }
+
+        userRepository.delete(user);
+
+        java.util.List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
+        for (AuthToken token : tokens) {
+            redisTokenService.revokeAccessToken(token.getAccessToken());
+        }
+        authTokenRepository.deleteByUserId(userId);
+
     }
 
     private User getUserOrThrow(Long userId) {

@@ -47,7 +47,6 @@ public class JwtService {
 
     public Long parseUserId(String token) {
         Claims claims = parseClaims(token);
-        // We store userId in "sub" (subject)
         String sub = claims.getSubject();
         if (sub == null || sub.isBlank()) {
             throw new IllegalArgumentException("JWT subject (sub) is missing.");

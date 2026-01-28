@@ -65,6 +65,10 @@ public class PasswordResetService {
         
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+
+        if (user.isDeleted()) {
+            throw new InvalidCredentialsException("Invalid credentials");
+        }
         
         String passwordHash = passwordService.hashPassword(request.getNewPassword());
         user.setPasswordHash(passwordHash);

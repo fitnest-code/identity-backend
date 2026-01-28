@@ -36,8 +36,23 @@ public class SocialAuthService {
                 SocialProvider.APPLE, providerId);
         
         if (existingSocialAuth.isPresent()) {
-            User user = userRepository.findById(existingSocialAuth.get().getUserId())
+            SocialAuth socialAuth = existingSocialAuth.get();
+            User user = userRepository.findById(socialAuth.getUserId())
                     .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+
+            if (user.isDeleted()) {
+                User newUser = createUserForSocialLogin(
+                        email,
+                        request.getFirstName(),
+                        request.getLastName(),
+                        request.getFullName() != null ? request.getFullName() : "User",
+                        null
+                );
+                socialAuth.setUserId(newUser.getId());
+                socialAuthRepository.save(socialAuth);
+                return tokenIssuanceService.issueTokens(newUser);
+            }
+
             return tokenIssuanceService.issueTokens(user);
         }
         
@@ -82,8 +97,23 @@ public class SocialAuthService {
                 SocialProvider.GOOGLE, providerId);
         
         if (existingSocialAuth.isPresent()) {
-            User user = userRepository.findById(existingSocialAuth.get().getUserId())
+            SocialAuth socialAuth = existingSocialAuth.get();
+            User user = userRepository.findById(socialAuth.getUserId())
                     .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+
+            if (user.isDeleted()) {
+                User newUser = createUserForSocialLogin(
+                        email,
+                        request.getFirstName(),
+                        request.getLastName(),
+                        request.getFullName() != null ? request.getFullName() : "User",
+                        null
+                );
+                socialAuth.setUserId(newUser.getId());
+                socialAuthRepository.save(socialAuth);
+                return tokenIssuanceService.issueTokens(newUser);
+            }
+
             return tokenIssuanceService.issueTokens(user);
         }
         

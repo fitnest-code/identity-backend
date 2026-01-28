@@ -42,7 +42,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = auth.substring(7).trim();
 
-        // Quick structural check: JWT should have 3 parts
         if (token.chars().filter(ch -> ch == '.').count() != 2) {
             filterChain.doFilter(request, response);
             return;
