@@ -16,14 +16,21 @@ COPY src ./src
 RUN gradle clean build -x test --no-daemon
 
 ## -----------------------------
-## Stage 2: Package minimal image
+## Stage 2: Package minimal Alpine image
 ## -----------------------------
-FROM gcr.io/distroless/java17-debian12@sha256:fd925ba431f3a6c1f1c8114ce1999ca38803220baf0fdf25a4c71b38db8af67f
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
 # Copy the JAR from builder
-COPY --from=builder /app/build/libs/iam-service.jar app.jar
+COPY --from=builder /app/build/libs/api-gateway.jar app.jar
+
+# Add curl for health checks (optional but helpful)
+RUN apk add --no-cache curl
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
 EXPOSE 8080
 
@@ -32,6 +39,9 @@ ENTRYPOINT [ \
   "-XX:MaxRAMPercentage=70.0", \
   "-XX:+ExitOnOutOfMemoryError", \
   "-Djava.security.egd=file:/dev/urandom", \
+  "-Djava.net.preferIPv4Stack=true", \
+  "-Djava.net.preferIPv4Addresses=true", \
+  "-Dspring.profiles.active=dev", \
   "-jar", \
   "app.jar" \
 ]
