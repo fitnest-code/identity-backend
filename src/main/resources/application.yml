@@ -1,217 +1,241 @@
-server:
+# values.yaml for IAM Service Helm chart
+
+replicaCount: 1
+
+# Docker image configuration
+image:
+  repository: ghcr.io/fitnest-backend/iam-service
+  tag: "fec39c6" # CI/CD will update this
+  pullPolicy: IfNotPresent
+
+# Image pull secrets for private registry
+imagePullSecrets:
+  - name: ghcr-secret
+
+# Kubernetes service
+service:
+  type: ClusterIP
   port: 8080
+  targetPort: 8080
+  name: http
 
-spring:
-  application:
-    name: iam-service
+# Resource requests and limits
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
 
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://iam-db:5432/iamdb}
-    username: ${SPRING_DATASOURCE_USERNAME:iam_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:iam_password}
-    driver-class-name: org.postgresql.Driver
+# ============ DATABASE CONFIGURATION ============
+# DISABLE PostgreSQL subchart since you already have iam-db service
+postgresql:
+  enabled: false
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: false
-
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      timeout: 2000ms
-
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
-
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
-# ============ EUREKA CONFIGURATION ============
-# Enable Eureka client for service registration and discovery
-# Default: false - set to true if using Eureka server
-eureka:
-  client:
-    enabled: ${EUREKA_CLIENT_ENABLED:false}
-    service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
-    fetch-registry: true
-    register-with-eureka: true
-    healthcheck:
-      enabled: true
+# ============ ENVIRONMENT VARIABLES ============
+env:
+  # ============ SERVER & APPLICATION ============
+  - name: SERVER_PORT
+    value: "8080"
+  - name: SPRING_APPLICATION_NAME
+    value: "iam-service"
+  - name: SPRING_PROFILES_ACTIVE
+    value: "dev"
   
-  instance:
-    hostname: ${HOSTNAME:localhost}
-    instance-id: ${spring.application.name}:${server.port}
-    prefer-ip-address: true
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
-# ==============================================
-
-jwt:
-  secret: ${JWT_SECRET:fitnest_jwt_secret_key_at_least_32_characters_long_for_hs256}
-  issuer: ${JWT_ISSUER:fitnest}
-  access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:3600}
-  refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:604800}
-
-security:
-  redis:
-    access-token-prefix: ${SECURITY_REDIS_ACCESS_TOKEN_PREFIX:auth:token:access:}
-
-auth:
-  registration-token:
-    prefix: ${AUTH_REGISTRATION_TOKEN_PREFIX:auth:registration:}
-    ttl-hours: ${AUTH_REGISTRATION_TOKEN_TTL_HOURS:24}
-  reset-password-token:
-    prefix: ${AUTH_RESET_PASSWORD_TOKEN_PREFIX:auth:reset-password:}
-    ttl-hours: ${AUTH_RESET_PASSWORD_TOKEN_TTL_HOURS:1}
-  google:
-    client-id: ${AUTH_GOOGLE_CLIENT_ID:}
-  apple:
-    client-id: ${AUTH_APPLE_CLIENT_ID:}
-    team-id: ${AUTH_APPLE_TEAM_ID:}
-  account-lock:
-    max-failed-attempts: ${AUTH_ACCOUNT_LOCK_MAX_FAILED_ATTEMPTS:5}
-    lock-duration-minutes: ${AUTH_ACCOUNT_LOCK_DURATION_MINUTES:30}
-
-otp:
-  ttl-seconds: ${OTP_TTL_SECONDS:300}
-  resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
-  max-verify-attempts: ${OTP_MAX_VERIFY_ATTEMPTS:5}
-  rate-limit:
-    max-attempts: ${OTP_RATE_LIMIT_MAX_ATTEMPTS:3}
-    window-minutes: ${OTP_RATE_LIMIT_WINDOW_MINUTES:5}
-    cooldown-seconds: ${OTP_RATE_LIMIT_COOLDOWN_SECONDS:30}
-    min-cooldown-seconds: ${OTP_RATE_LIMIT_MIN_COOLDOWN_SECONDS:30}
-    error-message-threshold-seconds: ${OTP_RATE_LIMIT_ERROR_THRESHOLD_SECONDS:60}
-
-user:
-  service:
-    url: ${USER_SERVICE_URL:http://user-service:9897}
-
-# ============ SPRING BOOT ACTUATOR & MONITORING ============
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus,metrics
-      base-path: /actuator
+  # ============ DATABASE CONFIGURATION ============
+  # Use existing iam-db service (ClusterIP with None means headless service)
+  # The pod name will be iam-db-0, so use the pod DNS: iam-db-0.iam-db.fitnest-dev.svc.cluster.local
+  - name: SPRING_DATASOURCE_URL
+    value: "jdbc:postgresql://iam-db-0.iam-db.fitnest-dev.svc.cluster.local:5432/iamdb"
+  - name: SPRING_DATASOURCE_USERNAME
+    value: "iam_user"
+  - name: SPRING_DATASOURCE_PASSWORD
+    value: "iam_password"
+  - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+    value: "update"
   
-  endpoint:
-    health:
-      show-details: when-authorized
-      # Enable health groups for Kubernetes
-      group:
-        liveness:
-          include: livenessState
-        readiness:
-          include: readinessState
-    
-  # Health indicators configuration
-  health:
-    # Enable/disable specific health indicators
-    db:
-      enabled: true
-    redis:
-      enabled: true
-    diskspace:
-      enabled: true
-    ping:
-      enabled: true
-    
-    # Configure health groups
-    liveness-state:
-      enabled: true
-    readiness-state:
-      enabled: true
+  # ============ TEMPORARY HEALTH CHECK FIX ============
+  - name: MANAGEMENT_HEALTH_DB_ENABLED
+    value: "false"
+  - name: MANAGEMENT_HEALTH_REDIS_ENABLED
+    value: "false"
+  - name: MANAGEMENT_HEALTH_LIVENESS_STATE_ENABLED
+    value: "false"
+  - name: MANAGEMENT_HEALTH_READINESS_STATE_ENABLED
+    value: "false"
   
-  # Micrometer metrics configuration for Prometheus
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-        step: 1m
-        descriptions: true
-    enable:
-      jvm: true
-      system: true
-      tomcat: true
-      logback: true
-      hibernate: true
-      jpa: true
-      http: true
-      redis: true
-      postgres: true
+  # ============ REDIS CONFIGURATION ============
+  - name: REDIS_HOST
+    value: "redis-simple.fitnest-dev.svc.cluster.local"
+  - name: REDIS_PORT
+    value: "6379"
   
-  # Application info exposure
-  info:
-    env:
-      enabled: true
-    java:
-      enabled: true
-    os:
-      enabled: true
-    git:
-      mode: simple
-
-# ============ LOGGING CONFIGURATION ============
-# Structured logging for better integration with monitoring tools
-logging:
-  level:
-    org.springframework.security: INFO
-    com.fitnest: DEBUG
-    org.hibernate.SQL: WARN
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/iam-service.log
-    max-size: 10MB
-    max-history: 30
+  # ============ JWT CONFIGURATION ============
+  - name: JWT_SECRET
+    value: "fitnest_jwt_secret_key_at_least_32_characters_long_for_hs256"
+  - name: JWT_ISSUER
+    value: "fitnest"
+  - name: JWT_ACCESS_TTL_SECONDS
+    value: "3600"
+  - name: JWT_REFRESH_TTL_SECONDS
+    value: "604800"
   
-  # Logback configuration for JSON logging (optional - for ELK/Grafana)
-  logback:
-    rollingpolicy:
-      max-file-size: 10MB
-      max-history: 30
-      total-size-cap: 1GB
+  # ============ SECURITY CONFIGURATION ============
+  - name: SECURITY_REDIS_ACCESS_TOKEN_PREFIX
+    value: "auth:token:access:"
   
-  # Micrometer metrics for logging
-  metrics:
-    enabled: true
-# ==============================================
+  # ============ AUTH CONFIGURATION ============
+  - name: AUTH_REGISTRATION_TOKEN_PREFIX
+    value: "auth:registration:"
+  - name: AUTH_REGISTRATION_TOKEN_TTL_HOURS
+    value: "24"
+  - name: AUTH_RESET_PASSWORD_TOKEN_PREFIX
+    value: "auth:reset-password:"
+  - name: AUTH_RESET_PASSWORD_TOKEN_TTL_HOURS
+    value: "1"
+  
+  # ============ OAUTH CONFIGURATION ============
+  - name: AUTH_GOOGLE_CLIENT_ID
+    value: ""
+  - name: AUTH_APPLE_CLIENT_ID
+    value: ""
+  - name: AUTH_APPLE_TEAM_ID
+    value: ""
+  
+  # ============ ACCOUNT LOCK CONFIGURATION ============
+  - name: AUTH_ACCOUNT_LOCK_MAX_FAILED_ATTEMPTS
+    value: "5"
+  - name: AUTH_ACCOUNT_LOCK_DURATION_MINUTES
+    value: "30"
+  
+  # ============ OTP CONFIGURATION ============
+  - name: OTP_TTL_SECONDS
+    value: "300"
+  - name: OTP_RESEND_COOLDOWN_SECONDS
+    value: "60"
+  - name: OTP_MAX_VERIFY_ATTEMPTS
+    value: "5"
+  - name: OTP_RATE_LIMIT_MAX_ATTEMPTS
+    value: "3"
+  - name: OTP_RATE_LIMIT_WINDOW_MINUTES
+    value: "5"
+  - name: OTP_RATE_LIMIT_COOLDOWN_SECONDS
+    value: "30"
+  - name: OTP_RATE_LIMIT_MIN_COOLDOWN_SECONDS
+    value: "30"
+  - name: OTP_RATE_LIMIT_ERROR_THRESHOLD_SECONDS
+    value: "60"
+  
+  # ============ SERVICE DISCOVERY ============
+  - name: USER_SERVICE_URL
+    value: "http://user-service.fitnest-dev.svc.cluster.local:9897"
+  
+  # ============ EUREKA CONFIGURATION ============
+  - name: EUREKA_CLIENT_ENABLED
+    value: "false"
+  
+  # ============ ACTUATOR CONFIGURATION ============
+  - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+    value: "health,info,prometheus,metrics"
+  - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
+    value: "when-authorized"
+  - name: MANAGEMENT_HEALTH_PING_ENABLED
+    value: "true"
+  
+  # ============ MAIL CONFIGURATION ============
+  - name: MAIL_HOST
+    value: "smtp.gmail.com"
+  - name: MAIL_PORT
+    value: "587"
+  - name: MAIL_USERNAME
+    value: ""
+  - name: MAIL_PASSWORD
+    value: ""
 
-# ============ ADDITIONAL METRICS CONFIGURATION ============
-# Prometheus scrape endpoint will be available at: http://localhost:8080/actuator/prometheus
-# Grafana dashboard can be configured to scrape metrics from this endpoint
+# ============ INIT CONTAINERS ============
+# Wait for database to be ready
+initContainers:
+  - name: wait-for-db
+    image: busybox:1.35
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Waiting for PostgreSQL database to be ready..."
+        until nc -z iam-db-0.iam-db.fitnest-dev.svc.cluster.local 5432; do
+          echo "Database not ready yet. Waiting..."
+          sleep 5
+        done
+        echo "PostgreSQL database is ready!"
 
-# To enable distributed tracing (optional):
-# spring.sleuth.enabled: true
-# spring.zipkin.base-url: http://zipkin:9411
+# ============ HEALTH PROBES ============
+probes:
+  enabled: true
+  livenessProbe:
+    tcpSocket:
+      port: 8080
+    initialDelaySeconds: 180  # Increased for database initialization
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    tcpSocket:
+      port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  startupProbe:
+    tcpSocket:
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 15  # Longer period for startup
+    failureThreshold: 20  # Allow more time for database
 
-# To enable advanced metrics collection:
-# micrometer:
-#   metrics:
-#     export:
-#       prometheus:
-#         pushgateway:
-#           enabled: false
-#           base-url: http://localhost:9091
-#           job: iam-service
-#           push-rate: 1m
+# ============ ISTIO INTEGRATION ============
+istio:
+  enabled: true
+  sidecarInject: true
+
+# ============ VOLUMES FOR LOGS ============
+volumes:
+  - name: logs
+    emptyDir: {}
+
+volumeMounts:
+  - name: logs
+    mountPath: /app/logs
+
+# ============ POD SECURITY ============
+securityContext:
+  pod:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+  container:
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: false
+      capabilities:
+        drop:
+          - ALL
+
+# ============ NODE SCHEDULING ============
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ============ AUTOSCALING ============
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+# ============ ADDITIONAL ANNOTATIONS ============
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
