@@ -89,6 +89,28 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+  # ============ CACHE CONFIGURATION ============
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000 # 10 minutes
+      cache-null-values: false
+      key-prefix: "iam:cache:"
+      use-key-prefix: true
+
+  # ============ ASYNC CONFIGURATION ============
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 10
+        queue-capacity: 100
+      thread-name-prefix: "iam-async-"
+    scheduling:
+      pool:
+        size: 5
+      thread-name-prefix: "iam-scheduler-"
+
 # ============ EUREKA CONFIGURATION ============
 eureka:
   client:
@@ -276,27 +298,3 @@ resilience4j:
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 3
         automatic-transition-from-open-to-half-open-enabled: true
-
-# ============ CACHE CONFIGURATION ============
-spring:
-  cache:
-    type: redis
-    redis:
-      time-to-live: 600000 # 10 minutes
-      cache-null-values: false
-      key-prefix: "iam:cache:"
-      use-key-prefix: true
-
-# ============ ASYNC CONFIGURATION ============
-spring:
-  task:
-    execution:
-      pool:
-        core-size: 5
-        max-size: 10
-        queue-capacity: 100
-      thread-name-prefix: "iam-async-"
-    scheduling:
-      pool:
-        size: 5
-      thread-name-prefix: "iam-scheduler-"
