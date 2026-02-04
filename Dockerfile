@@ -23,7 +23,7 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Copy the JAR from builder
-COPY --from=builder /app/build/libs/api-gateway.jar app.jar
+COPY --from=builder /app/build/libs/iam-service.jar app.jar
 
 # Add curl for health checks (optional but helpful)
 RUN apk add --no-cache curl
