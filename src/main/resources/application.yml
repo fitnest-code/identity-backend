@@ -1,9 +1,36 @@
 server:
   port: 8080
+  address: 0.0.0.0  # Add this for container deployment
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
 
 spring:
   application:
     name: iam-service
+
+  # ============ CORS CONFIGURATION (CRITICAL FOR SWAGGER) ============
+  web:
+    cors:
+      allowed-origins: "*"
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD
+      allowed-headers: "*"
+      allow-credentials: true
+      exposed-headers: Authorization,Content-Disposition
+      max-age: 3600
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 365d
+
+  # ============ SERVLET CONFIGURATION ============
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
   # ============ DATABASE CONFIGURATION ============
   datasource:
@@ -56,9 +83,12 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+      indent-output: true
     deserialization:
       fail-on-unknown-properties: false
     default-property-inclusion: NON_NULL
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+    time-zone: UTC
 
   # ============ MAIL CONFIGURATION ============
   mail:
@@ -75,19 +105,6 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
-
-  # ============ WEB CONFIGURATION ============
-  web:
-    resources:
-      cache:
-        cachecontrol:
-          max-age: 365d
-
-  # ============ SERVLET CONFIGURATION ============
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
 
   # ============ CACHE CONFIGURATION ============
   cache:
@@ -110,6 +127,32 @@ spring:
       pool:
         size: 5
       thread-name-prefix: "iam-scheduler-"
+
+# ============ SPRINGDOC OPENAPI CONFIGURATION ============
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    config-url: /v3/api-docs/swagger-config
+    operationsSorter: method
+    tagsSorter: alpha
+    display-request-duration: true
+    try-it-out-enabled: true
+    filter: true
+    persist-authorization: true
+    doc-expansion: none
+    default-model-expand-depth: 2
+    default-model-rendering: example
+    display-operation-id: true
+    with-credentials: true
+  show-actuator: false
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  packages-to-scan: az.fitnest.iamservice.controller
+  paths-to-match: /api/v1/**,/public/**
 
 # ============ EUREKA CONFIGURATION ============
 eureka:
@@ -182,10 +225,11 @@ management:
       exposure:
         include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,prometheus,metrics}
       base-path: /actuator
+      cors:
+        allowed-origins: "*"
+        allowed-methods: GET,OPTIONS
+        allowed-headers: "*"
     enabled-by-default: true
-    jmx:
-      exposure:
-        include: "*"
   
   endpoint:
     health:
@@ -202,9 +246,7 @@ management:
     metrics:
       enabled: true
   
-  # Health indicators configuration
   health:
-    # Enable/disable specific health indicators (can be overridden by env vars)
     db:
       enabled: ${MANAGEMENT_HEALTH_DB_ENABLED:true}
     redis:
@@ -218,7 +260,6 @@ management:
     readiness-state:
       enabled: ${MANAGEMENT_HEALTH_READINESS_STATE_ENABLED:true}
   
-  # Micrometer metrics configuration for Prometheus
   metrics:
     export:
       prometheus:
@@ -236,7 +277,6 @@ management:
       redis: true
       postgres: true
   
-  # Application info exposure
   info:
     env:
       enabled: true
@@ -257,6 +297,7 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.springframework.data.redis: WARN
     org.springframework.transaction: WARN
+    org.springdoc: DEBUG  # Add this for Swagger debugging
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -264,38 +305,8 @@ logging:
     name: logs/iam-service.log
     max-size: 10MB
     max-history: 30
-  
-  # Logback configuration for JSON logging (optional - for ELK/Grafana)
-  logback:
-    rollingpolicy:
-      max-file-size: 10MB
-      max-history: 30
-      total-size-cap: 1GB
-  
-  # Micrometer metrics for logging
-  metrics:
-    enabled: true
 
-
-# ============ SPRINGDOC OPENAPI CONFIGURATION ============
-springdoc:
-  api-docs:
-    enabled: true
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
-    operationsSorter: alpha
-    tagsSorter: alpha
-    display-request-duration: true
-    try-it-out-enabled: true
-    filter: true
-    persist-authorization: true
-  show-actuator: false  # Don't show actuator endpoints in Swagger
-  default-consumes-media-type: application/json
-  default-produces-media-type: application/json
-  
-# ============ RESILIENCE CONFIGURATION ============
+# ============ RESILIENCE CONFIGURATION (FIXED) ============
 resilience4j:
   retry:
     instances:
@@ -315,3 +326,7 @@ resilience4j:
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 3
         automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - org.springframework.dao.DataAccessException
+          - java.sql.SQLException
+          - org.springframework.dao.TransientDataAccessException
