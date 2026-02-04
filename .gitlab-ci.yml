@@ -4,8 +4,8 @@ stages:
   - update-helm-chart
 
 variables:
-  IMAGE_NAME: registry.gitlab.com/fitnest-organization/backend/iam-service
-  HELM_REPO_URL: git@gitlab.com:fitnest-organization/chart/iam-service.git
+  IMAGE_NAME: registry.gitlab.com/fitnest-organization/iam-service
+  HELM_REPO_URL: git@gitlab.com:fitnest-organization/iam-service.git
   HELM_REPO_BRANCH: development
   HELM_VALUES_FILE: values.yaml
 
