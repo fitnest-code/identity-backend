@@ -192,6 +192,11 @@ management:
       show-details: ${MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS:when-authorized}
       probes:
         enabled: true
+      group:
+        readiness:
+          include: db,redis,diskspace
+        liveness:
+          include: ping
     prometheus:
       enabled: true
     metrics:
@@ -212,13 +217,6 @@ management:
       enabled: ${MANAGEMENT_HEALTH_LIVENESS_STATE_ENABLED:true}
     readiness-state:
       enabled: ${MANAGEMENT_HEALTH_READINESS_STATE_ENABLED:true}
-    
-    # Configure health groups
-    group:
-      readiness:
-        include: db,redis,diskspace
-      liveness:
-        include: ping
   
   # Micrometer metrics configuration for Prometheus
   metrics:
