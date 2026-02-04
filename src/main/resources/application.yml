@@ -105,26 +105,39 @@ user:
     url: ${USER_SERVICE_URL:http://user-service:9897}
 
 # ============ SPRING BOOT ACTUATOR & MONITORING ============
-# Management endpoints for monitoring, metrics, and health checks
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus,metrics,env,beans
+        include: health,info,prometheus,metrics
       base-path: /actuator
-    enabled-by-default: true
-    jmx:
-      exposure:
-        include: "*"
   
   endpoint:
     health:
       show-details: when-authorized
-      probes:
-        enabled: true
-    prometheus:
+      # Enable health groups for Kubernetes
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+    
+  # Health indicators configuration
+  health:
+    # Enable/disable specific health indicators
+    db:
       enabled: true
-    metrics:
+    redis:
+      enabled: true
+    diskspace:
+      enabled: true
+    ping:
+      enabled: true
+    
+    # Configure health groups
+    liveness-state:
+      enabled: true
+    readiness-state:
       enabled: true
   
   # Micrometer metrics configuration for Prometheus
