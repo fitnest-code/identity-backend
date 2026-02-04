@@ -42,9 +42,26 @@ spring:
           starttls:
             enable: true
 
+# ============ EUREKA CONFIGURATION ============
+# Enable Eureka client for service registration and discovery
+# Default: false - set to true if using Eureka server
 eureka:
   client:
-    enabled: false
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+    healthcheck:
+      enabled: true
+  
+  instance:
+    hostname: ${HOSTNAME:localhost}
+    instance-id: ${spring.application.name}:${server.port}
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+# ==============================================
 
 jwt:
   secret: ${JWT_SECRET:fitnest_jwt_secret_key_at_least_32_characters_long_for_hs256}
@@ -87,11 +104,101 @@ user:
   service:
     url: ${USER_SERVICE_URL:http://user-service:9897}
 
+# ============ SPRING BOOT ACTUATOR & MONITORING ============
+# Management endpoints for monitoring, metrics, and health checks
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,metrics,env,beans
+      base-path: /actuator
+    enabled-by-default: true
+    jmx:
+      exposure:
+        include: "*"
+  
   endpoint:
     health:
       show-details: when-authorized
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+  
+  # Micrometer metrics configuration for Prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        step: 1m
+        descriptions: true
+    enable:
+      jvm: true
+      system: true
+      tomcat: true
+      logback: true
+      hibernate: true
+      jpa: true
+      http: true
+      redis: true
+      postgres: true
+  
+  # Application info exposure
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+    git:
+      mode: simple
+
+# ============ LOGGING CONFIGURATION ============
+# Structured logging for better integration with monitoring tools
+logging:
+  level:
+    org.springframework.security: INFO
+    com.fitnest: DEBUG
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/iam-service.log
+    max-size: 10MB
+    max-history: 30
+  
+  # Logback configuration for JSON logging (optional - for ELK/Grafana)
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
+  
+  # Micrometer metrics for logging
+  metrics:
+    enabled: true
+# ==============================================
+
+# ============ ADDITIONAL METRICS CONFIGURATION ============
+# Prometheus scrape endpoint will be available at: http://localhost:8080/actuator/prometheus
+# Grafana dashboard can be configured to scrape metrics from this endpoint
+
+# To enable distributed tracing (optional):
+# spring.sleuth.enabled: true
+# spring.zipkin.base-url: http://zipkin:9411
+
+# To enable advanced metrics collection:
+# micrometer:
+#   metrics:
+#     export:
+#       prometheus:
+#         pushgateway:
+#           enabled: false
+#           base-url: http://localhost:9091
+#           job: iam-service
+#           push-rate: 1m
