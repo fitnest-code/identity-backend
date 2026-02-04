@@ -1,8 +1,6 @@
 server:
   port: 8080
-  address: 0.0.0.0  # Add this for container deployment
-  servlet:
-    context-path: /
+  address: 0.0.0.0
   compression:
     enabled: true
     mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
@@ -12,317 +10,78 @@ spring:
   application:
     name: iam-service
 
-  # ============ CORS CONFIGURATION (CRITICAL FOR SWAGGER) ============
-  web:
-    cors:
-      allowed-origin-patterns: "*"
-      allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD
-      allowed-headers: "*"
-      allow-credentials: true
-      exposed-headers: Authorization,Content-Disposition
-      max-age: 3600
-    resources:
-      cache:
-        cachecontrol:
-          max-age: 365d
-
-  # ============ SERVLET CONFIGURATION ============
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
-
-  # ============ DATABASE CONFIGURATION ============
+  # Database
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/iamdb}
-    username: ${SPRING_DATASOURCE_USERNAME:iam_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:iam_password}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/fitnest_iam}
+    username: ${SPRING_DATASOURCE_USERNAME:fitnest_iam}
+    password: ${SPRING_DATASOURCE_PASSWORD:iam_password_123}
     driver-class-name: org.postgresql.Driver
     hikari:
-      connection-timeout: 30000
       maximum-pool-size: 10
-      minimum-idle: 5
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      connection-test-query: SELECT 1
 
-  # ============ JPA CONFIGURATION ============
+  # JPA
   jpa:
     hibernate:
       ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     show-sql: false
-    open-in-view: false
     properties:
       hibernate:
-        format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        jdbc:
-          batch_size: 20
-        order_inserts: true
-        order_updates: true
-        query:
-          fail_on_pagination_over_collection_fetch: true
-          in_clause_parameter_padding: true
 
-  # ============ REDIS CONFIGURATION ============
+  # Redis
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      host: ${SPRING_REDIS_HOST:redis.fitnest-dev.svc.cluster.local}
+      port: ${SPRING_REDIS_PORT:6379}
+      password: ${SPRING_REDIS_PASSWORD:}
       timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
-        shutdown-timeout: 100ms
 
-  # ============ JACKSON CONFIGURATION ============
+  # Jackson
   jackson:
     serialization:
       write-dates-as-timestamps: false
-      indent-output: true
-    deserialization:
-      fail-on-unknown-properties: false
     default-property-inclusion: NON_NULL
-    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSZ
     time-zone: UTC
 
-  # ============ MAIL CONFIGURATION ============
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-
-  # ============ CACHE CONFIGURATION ============
-  cache:
-    type: redis
-    redis:
-      time-to-live: 600000 # 10 minutes
-      cache-null-values: false
-      key-prefix: "iam:cache:"
-      use-key-prefix: true
-
-  # ============ ASYNC CONFIGURATION ============
-  task:
-    execution:
-      pool:
-        core-size: 5
-        max-size: 10
-        queue-capacity: 100
-      thread-name-prefix: "iam-async-"
-    scheduling:
-      pool:
-        size: 5
-      thread-name-prefix: "iam-scheduler-"
-
-# ============ SPRINGDOC OPENAPI CONFIGURATION ============
+# SpringDoc OpenAPI (Swagger)
 springdoc:
   api-docs:
     enabled: true
     path: /v3/api-docs
   swagger-ui:
-    enabled: false
+    enabled: true
     path: /swagger-ui.html
     config-url: /v3/api-docs/swagger-config
     operationsSorter: method
     tagsSorter: alpha
-    display-request-duration: true
-    try-it-out-enabled: true
-    filter: true
-    persist-authorization: true
-    doc-expansion: none
-    default-model-expand-depth: 2
-    default-model-rendering: example
-    display-operation-id: true
-    with-credentials: true
-  show-actuator: false
-  default-consumes-media-type: application/json
-  default-produces-media-type: application/json
-  # Scan all IAM service controllers so every API appears in Swagger
-  packages-to-scan: az.fitnest.iam
-  # Match all versioned APIs (including /api/v1/auth, /api/v1/public, etc.)
-  paths-to-match: /api/v1/**
 
-# ============ EUREKA CONFIGURATION ============
-eureka:
-  client:
-    enabled: ${EUREKA_CLIENT_ENABLED:false}
-    service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
-    fetch-registry: true
-    register-with-eureka: true
-    healthcheck:
-      enabled: true
-
-  instance:
-    hostname: ${HOSTNAME:localhost}
-    instance-id: ${spring.application.name}:${server.port}
-    prefer-ip-address: true
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
-
-# ============ JWT CONFIGURATION ============
+# JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:fitnest_jwt_secret_key_at_least_32_characters_long_for_hs256}
-  issuer: ${JWT_ISSUER:fitnest}
-  access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:3600}
-  refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:604800}
+  secret: ${JWT_SECRET:your-jwt-secret-change-in-production}
+  expiration: ${JWT_EXPIRATION:86400000}
 
-# ============ SECURITY CONFIGURATION ============
-security:
-  redis:
-    access-token-prefix: ${SECURITY_REDIS_ACCESS_TOKEN_PREFIX:auth:token:access:}
-
-# ============ AUTH CONFIGURATION ============
-auth:
-  registration-token:
-    prefix: ${AUTH_REGISTRATION_TOKEN_PREFIX:auth:registration:}
-    ttl-hours: ${AUTH_REGISTRATION_TOKEN_TTL_HOURS:24}
-  reset-password-token:
-    prefix: ${AUTH_RESET_PASSWORD_TOKEN_PREFIX:auth:reset-password:}
-    ttl-hours: ${AUTH_RESET_PASSWORD_TOKEN_TTL_HOURS:1}
-  google:
-    client-id: ${AUTH_GOOGLE_CLIENT_ID:}
-  apple:
-    client-id: ${AUTH_APPLE_CLIENT_ID:}
-    team-id: ${AUTH_APPLE_TEAM_ID:}
-  account-lock:
-    max-failed-attempts: ${AUTH_ACCOUNT_LOCK_MAX_FAILED_ATTEMPTS:5}
-    lock-duration-minutes: ${AUTH_ACCOUNT_LOCK_DURATION_MINUTES:30}
-
-# ============ OTP CONFIGURATION ============
+# OTP Configuration
 otp:
-  ttl-seconds: ${OTP_TTL_SECONDS:300}
-  resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
-  max-verify-attempts: ${OTP_MAX_VERIFY_ATTEMPTS:5}
-  rate-limit:
-    max-attempts: ${OTP_RATE_LIMIT_MAX_ATTEMPTS:3}
-    window-minutes: ${OTP_RATE_LIMIT_WINDOW_MINUTES:5}
-    cooldown-seconds: ${OTP_RATE_LIMIT_COOLDOWN_SECONDS:30}
-    min-cooldown-seconds: ${OTP_RATE_LIMIT_MIN_COOLDOWN_SECONDS:30}
-    error-message-threshold-seconds: ${OTP_RATE_LIMIT_ERROR_THRESHOLD_SECONDS:60}
+  expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}
+  length: ${OTP_LENGTH:6}
+  max-attempts: ${OTP_MAX_ATTEMPTS:3}
 
-# ============ SERVICE DISCOVERY ============
-user:
-  service:
-    url: ${USER_SERVICE_URL:http://localhost:9897}
-
-# ============ SPRING BOOT ACTUATOR & MONITORING ============
+# Actuator
 management:
   endpoints:
     web:
       exposure:
-        # Expose only basic endpoints; remove Prometheus-specific ones
-        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,metrics}
+        include: health,info,metrics
       base-path: /actuator
-      cors:
-        allowed-origins: "*"
-        allowed-methods: GET,OPTIONS
-        allowed-headers: "*"
-    enabled-by-default: true
-
   endpoint:
     health:
-      show-details: ${MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS:when-authorized}
+      show-details: when-authorized
       probes:
         enabled: true
-      # Disable strict validation of custom health groups to avoid startup failures
-      validate-group-membership: false
-    prometheus:
-      enabled: true
-    metrics:
-      enabled: true
 
-  health:
-    # Keep default contributors; no custom group configuration is required
-    db:
-      enabled: ${MANAGEMENT_HEALTH_DB_ENABLED:true}
-    redis:
-      enabled: ${MANAGEMENT_HEALTH_REDIS_ENABLED:true}
-    diskspace:
-      enabled: true
-    ping:
-      enabled: ${MANAGEMENT_HEALTH_PING_ENABLED:true}
-    liveness-state:
-      enabled: ${MANAGEMENT_HEALTH_LIVENESS_STATE_ENABLED:true}
-    readiness-state:
-      enabled: ${MANAGEMENT_HEALTH_READINESS_STATE_ENABLED:true}
-
-  metrics:
-    enable:
-      jvm: true
-      system: true
-      tomcat: true
-      logback: true
-      hibernate: true
-      jpa: true
-      http: true
-      redis: true
-      postgres: true
-
-  info:
-    env:
-      enabled: true
-    java:
-      enabled: true
-    os:
-      enabled: true
-    git:
-      mode: simple
-
-# ============ LOGGING CONFIGURATION ============
+# Logging
 logging:
   level:
     root: ${LOGGING_LEVEL_ROOT:INFO}
-    org.springframework.security: INFO
-    com.fitnest: ${LOGGING_LEVEL_COM_FITNEST:DEBUG}
-    org.hibernate.SQL: WARN
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.data.redis: WARN
-    org.springframework.transaction: WARN
-    org.springdoc: DEBUG  # Add this for Swagger debugging
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %-5level [%thread] %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/iam-service.log
-    max-size: 10MB
-    max-history: 30
-
-# ============ RESILIENCE CONFIGURATION (FIXED) ============
-resilience4j:
-  retry:
-    instances:
-      database:
-        max-attempts: 3
-        wait-duration: 1s
-        retry-exceptions:
-          - org.springframework.dao.DataAccessException
-      redis:
-        max-attempts: 3
-        wait-duration: 500ms
-  circuitbreaker:
-    instances:
-      database:
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 3
-        automatic-transition-from-open-to-half-open-enabled: true
-        record-exceptions:
-          - org.springframework.dao.DataAccessException
-          - java.sql.SQLException
-          - org.springframework.dao.TransientDataAccessException
+    az.fitnest.iam: ${LOGGING_LEVEL_AZ_FITNEST_IAM:DEBUG}
+    org.springframework.security: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY:DEBUG}
