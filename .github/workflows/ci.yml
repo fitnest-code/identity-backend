@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: ghcr.io/fitnest-backend/api-gateway
-  HELM_REPO_URL: git@github.com:fitnest-chart/api-gateway.git
+  IMAGE_NAME: ghcr.io/fitnest-backend/iam-service
+  HELM_REPO_URL: git@github.com:fitnest-chart/iam-service.git
   HELM_VALUES_FILE: values.yaml
 
 jobs:
