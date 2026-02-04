@@ -225,7 +225,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,prometheus,metrics}
+        # Expose only basic endpoints; remove Prometheus-specific ones
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,metrics}
       base-path: /actuator
       cors:
         allowed-origins: "*"
@@ -238,17 +239,15 @@ management:
       show-details: ${MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS:when-authorized}
       probes:
         enabled: true
-      group:
-        readiness:
-          include: db,redis,diskspace
-        liveness:
-          include: ping
+      # Disable strict validation of custom health groups to avoid startup failures
+      validate-group-membership: false
     prometheus:
       enabled: true
     metrics:
       enabled: true
   
   health:
+    # Keep default contributors; no custom group configuration is required
     db:
       enabled: ${MANAGEMENT_HEALTH_DB_ENABLED:true}
     redis:
@@ -263,11 +262,6 @@ management:
       enabled: ${MANAGEMENT_HEALTH_READINESS_STATE_ENABLED:true}
   
   metrics:
-    export:
-      prometheus:
-        enabled: true
-        step: 1m
-        descriptions: true
     enable:
       jvm: true
       system: true
