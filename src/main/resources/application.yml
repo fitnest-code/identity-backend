@@ -15,7 +15,7 @@ spring:
   # ============ CORS CONFIGURATION (CRITICAL FOR SWAGGER) ============
   web:
     cors:
-      allowed-origins: "*"
+      allowed-origin-patterns: "${ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,http://161.97.183.7}"
       allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD
       allowed-headers: "*"
       allow-credentials: true
