@@ -278,6 +278,25 @@ logging:
   metrics:
     enabled: true
 
+
+# ============ SPRINGDOC OPENAPI CONFIGURATION ============
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: alpha
+    tagsSorter: alpha
+    display-request-duration: true
+    try-it-out-enabled: true
+    filter: true
+    persist-authorization: true
+  show-actuator: false  # Don't show actuator endpoints in Swagger
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  
 # ============ RESILIENCE CONFIGURATION ============
 resilience4j:
   retry:
