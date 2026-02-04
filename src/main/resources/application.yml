@@ -151,8 +151,10 @@ springdoc:
   show-actuator: false
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
-  packages-to-scan: az.fitnest.iamservice.controller
-  paths-to-match: /api/v1/**,/public/**
+  # Scan all IAM service controllers so every API appears in Swagger
+  packages-to-scan: az.fitnest.iam
+  # Match all versioned APIs (including /api/v1/auth, /api/v1/public, etc.)
+  paths-to-match: /api/v1/**
 
 # ============ EUREKA CONFIGURATION ============
 eureka:
