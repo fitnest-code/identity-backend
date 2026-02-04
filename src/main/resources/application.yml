@@ -15,7 +15,7 @@ spring:
   # ============ CORS CONFIGURATION (CRITICAL FOR SWAGGER) ============
   web:
     cors:
-      allowed-origin-patterns: "${ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,http://161.97.183.7}"
+      allowed-origin-patterns: "*"
       allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD
       allowed-headers: "*"
       allow-credentials: true
@@ -134,7 +134,7 @@ springdoc:
     enabled: true
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: false
     path: /swagger-ui.html
     config-url: /v3/api-docs/swagger-config
     operationsSorter: method
@@ -166,7 +166,7 @@ eureka:
     register-with-eureka: true
     healthcheck:
       enabled: true
-  
+
   instance:
     hostname: ${HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${server.port}
@@ -233,7 +233,7 @@ management:
         allowed-methods: GET,OPTIONS
         allowed-headers: "*"
     enabled-by-default: true
-  
+
   endpoint:
     health:
       show-details: ${MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS:when-authorized}
@@ -245,7 +245,7 @@ management:
       enabled: true
     metrics:
       enabled: true
-  
+
   health:
     # Keep default contributors; no custom group configuration is required
     db:
@@ -260,7 +260,7 @@ management:
       enabled: ${MANAGEMENT_HEALTH_LIVENESS_STATE_ENABLED:true}
     readiness-state:
       enabled: ${MANAGEMENT_HEALTH_READINESS_STATE_ENABLED:true}
-  
+
   metrics:
     enable:
       jvm: true
@@ -272,7 +272,7 @@ management:
       http: true
       redis: true
       postgres: true
-  
+
   info:
     env:
       enabled: true
