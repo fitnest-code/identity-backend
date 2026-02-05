@@ -1,13 +1,12 @@
 package az.fitnest.iam.config;
 
-import az.fitnest.iam.config.NormalizeSlashFilter;
-import az.fitnest.iam.security.JwtAuthenticationFilter;
-import az.fitnest.iam.security.JwtService;
-import az.fitnest.iam.security.RedisTokenService;
+import az.fitnest.iam.security.gateway.GatewayHeaderAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,46 +36,23 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtService jwtService;
-    private final RedisTokenService redisTokenService;
     private final ObjectMapper objectMapper;
 
-    private static final String[] SWAGGER_WHITELIST = {
-        "/v3/api-docs/**",
-        "/v3/api-docs.yaml",
-        "/v3/api-docs.yml",
-        "/swagger-ui/**",
-        "/swagger-ui.html",
-        "/webjars/**"
-    };
-
-    private static final String[] ACTUATOR_WHITELIST = {
-            "/actuator",
-            "/actuator/**",
-            "/actuator/health",
-            "/actuator/health/**",
-            "/actuator/info",
-            "/actuator/metrics"
-    };
-
-    private static final String[] AUTH_WHITELIST = {
+    // Public endpoints that don't need authentication even at the Gateway level
+    // We keep them here just in case, but Gateway handles the primary protection
+    private static final String[] PUBLIC_WHITELIST = {
             "/api/v1/auth/login",
             "/api/v1/auth/refresh",
             "/api/v1/auth/otp/**",
             "/api/v1/auth/register",
             "/api/v1/auth/register/complete",
-            "/api/v1/auth/verify/**",
-            "/api/v1/auth/password/**",
             "/api/v1/internal/**",
-            "/health",
+            "/v3/api-docs/**",
+            "/actuator/**",
             "/health/**",
-            "/favicon.ico",
             "/error"
     };
 
-    // ====================
-    // Security Filter Chain
-    // ====================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -84,82 +60,45 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
-                        // Actuator endpoints - public
-                        .requestMatchers(ACTUATOR_WHITELIST).permitAll()
-                        // Auth endpoints (login, register, OTP, password reset) - public
-                        .requestMatchers(AUTH_WHITELIST).permitAll()
-                        // All other endpoints require authentication
+                        .requestMatchers(PUBLIC_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint())
                         .accessDeniedHandler(accessDeniedHandler())
                 )
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new az.fitnest.iam.security.gateway.GatewayHeaderAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
-    // ====================
-    // JWT Authentication Filter
-    // ====================
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtService, redisTokenService, objectMapper);
-    }
-
-    // ====================
-    // Normalize Slash Filter
-    // ====================
-    @Bean
-    public NormalizeSlashFilter normalizeSlashFilter() {
-        return new NormalizeSlashFilter();
-    }
-
-    // ====================
-    // CORS Configuration
-    // ====================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*")); // Use patterns for wildcard with credentials
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
 
-    // ====================
-    // Authentication Manager
-    // ====================
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ====================
-    // Unauthorized / Access Denied Handlers
-    // ====================
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
         return (request, response, authException) -> {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.setCharacterEncoding("UTF-8");
-
-            Map<String, Object> errorDetails = new HashMap<>();
-            errorDetails.put("timestamp", System.currentTimeMillis());
-            errorDetails.put("status", HttpStatus.UNAUTHORIZED.value());
-            errorDetails.put("error", "Unauthorized");
-            errorDetails.put("message", authException.getMessage());
-            errorDetails.put("path", request.getRequestURI());
-
-            objectMapper.writeValue(response.getWriter(), errorDetails);
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", 401);
+            error.put("error", "Unauthorized");
+            error.put("message", "Trust denied or missing Gateway headers");
+            error.put("path", request.getRequestURI());
+            objectMapper.writeValue(response.getWriter(), error);
         };
     }
 
@@ -168,28 +107,17 @@ public class SecurityConfig {
         return (request, response, accessDeniedException) -> {
             response.setStatus(HttpStatus.FORBIDDEN.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.setCharacterEncoding("UTF-8");
-
-            Map<String, Object> errorDetails = new HashMap<>();
-            errorDetails.put("timestamp", System.currentTimeMillis());
-            errorDetails.put("status", HttpStatus.FORBIDDEN.value());
-            errorDetails.put("error", "Forbidden");
-            errorDetails.put("message", accessDeniedException.getMessage());
-            errorDetails.put("path", request.getRequestURI());
-
-            objectMapper.writeValue(response.getWriter(), errorDetails);
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", 403);
+            error.put("error", "Forbidden");
+            error.put("message", accessDeniedException.getMessage());
+            objectMapper.writeValue(response.getWriter(), error);
         };
     }
 
-    // ====================
-    // HTTP Firewall
-    // ====================
-    // Relax the default StrictHttpFirewall to avoid rejecting URLs that contain
-    // double slashes ("//") when running behind proxies / gateways like Istio.
-    // Istio already normalizes and secures incoming paths, so DefaultHttpFirewall
-    // is sufficient and prevents false positives for Swagger and other endpoints.
     @Bean
     public HttpFirewall httpFirewall() {
         return new DefaultHttpFirewall();
     }
+}
 }
