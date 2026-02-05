@@ -19,6 +19,13 @@ repositories {
 	mavenCentral()
 }
 
+configurations {
+	all {
+		// Remove legacy Apache Commons Logging to avoid conflicts with spring-jcl
+		exclude group: 'commons-logging', module: 'commons-logging'
+	}
+}
+
 dependencyManagement {
 	imports {
 		mavenBom "org.springframework.cloud:spring-cloud-dependencies:2024.0.0"

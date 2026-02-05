@@ -104,7 +104,10 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new NormalizeSlashFilter(), JwtAuthenticationFilter.class)
+                // NormalizeSlashFilter is a plain Servlet Filter (@Component) and is
+                // registered by Spring Boot before the Spring Security filter chain.
+                // We only need to position JwtAuthenticationFilter within the
+                // Spring Security chain, before UsernamePasswordAuthenticationFilter.
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
