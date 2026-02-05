@@ -50,11 +50,12 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+    # Optional: Customize Swagger UI
     operations-sorter: method
     tags-sorter: alpha
-  show-actuator: false
-  default-consumes-media-type: application/json
-  default-produces-media-type: application/json
+    # This sets the base URL for API calls
+    config-url: /v3/api-docs/swagger-config
+    url: /v3/api-docs
 
 # JWT Configuration
 jwt:
