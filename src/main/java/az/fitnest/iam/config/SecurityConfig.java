@@ -42,21 +42,13 @@ public class SecurityConfig {
     private final ObjectMapper objectMapper;
 
     private static final String[] SWAGGER_WHITELIST = {
-            "/iam-service/v3/api-docs/**",
-            "/iam-service/v3/api-docs.yaml",
-            "/iam-service/v3/api-docs.yml",
-            "/iam-service/swagger-ui/**",
-            "/iam-service/swagger-ui.html",
-            "/iam-service/swagger-ui/index.html",
-            "/iam-service/swagger-ui/swagger-initializer.js",
-            "/iam-service/swagger-ui/swagger-ui.css",
-            "/iam-service/swagger-ui/swagger-ui-bundle.js",
-            "/iam-service/swagger-ui/swagger-ui-standalone-preset.js",
-            "/iam-service/webjars/**",
-            "/swagger-resources/**",
-            "/configuration/ui",
-            "/configuration/security"
-    };
+        "/iam-service/v3/api-docs/**",
+        "/iam-service/v3/api-docs.yaml",
+        "/iam-service/v3/api-docs.yml",
+        "/iam-service/swagger-ui/**",
+        "/iam-service/swagger-ui.html",
+        "/iam-service/webjars/**"
+};
 
     private static final String[] ACTUATOR_WHITELIST = {
             "/actuator",
