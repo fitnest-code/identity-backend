@@ -59,10 +59,18 @@ springdoc:
 jwt:
   secret: ${JWT_SECRET:your-jwt-secret-change-in-production}
   expiration: ${JWT_EXPIRATION:86400000}
+  issuer: fitnest-auth
+  access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:3600}
+  refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:604800}
 
 # OTP Configuration - UPDATED WITH RATE LIMIT PROPERTIES
 otp:
   max-verify-attempts: ${OTP_MAX_VERIFY_ATTEMPTS:3}
+  window-minutes: ${OTP_RATE_LIMIT_WINDOW_MINUTES:15}
+  cooldown-seconds: ${OTP_RATE_LIMIT_COOLDOWN_SECONDS:60}
+  min-cooldown-seconds: ${OTP_RATE_LIMIT_MIN_COOLDOWN_SECONDS:5}
+  error-message-threshold-seconds: ${OTP_RATE_LIMIT_ERROR_MESSAGE_THRESHOLD_SECONDS:30}
+
   ttl-seconds: ${OTP_TTL_SECONDS:300}
   expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}
   length: ${OTP_LENGTH:6}
