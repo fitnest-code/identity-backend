@@ -20,6 +20,8 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -177,5 +179,17 @@ public class SecurityConfig {
 
             objectMapper.writeValue(response.getWriter(), errorDetails);
         };
+    }
+
+    // ====================
+    // HTTP Firewall
+    // ====================
+    // Relax the default StrictHttpFirewall to avoid rejecting URLs that contain
+    // double slashes ("//") when running behind proxies / gateways like Istio.
+    // Istio already normalizes and secures incoming paths, so DefaultHttpFirewall
+    // is sufficient and prevents false positives for Swagger and other endpoints.
+    @Bean
+    public HttpFirewall httpFirewall() {
+        return new DefaultHttpFirewall();
     }
 }
