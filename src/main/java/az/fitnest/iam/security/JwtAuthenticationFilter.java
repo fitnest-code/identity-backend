@@ -17,11 +17,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.core.annotation.Order;  // <-- ADD THIS
+
 
 // REMOVE @Component annotation - we're creating it as a bean in SecurityConfig
 @RequiredArgsConstructor
 @Order(1) // <--- add this
-
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
