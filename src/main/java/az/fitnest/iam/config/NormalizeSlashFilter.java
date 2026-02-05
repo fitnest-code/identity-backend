@@ -8,7 +8,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -18,7 +17,6 @@ import java.io.IOException;
  * accidentally introduce duplicate slashes, so that Spring MVC, Swagger,
  * and security mappings keep working as expected.
  */
-@Component
 public class NormalizeSlashFilter implements Filter {
 
     @Override
@@ -40,6 +38,15 @@ public class NormalizeSlashFilter implements Filter {
         HttpServletRequestWrapper wrappedRequest = new HttpServletRequestWrapper(request) {
             @Override
             public String getRequestURI() {
+                return normalizedPath;
+            }
+
+            @Override
+            public String getServletPath() {
+                String contextPath = request.getContextPath();
+                if (normalizedPath.startsWith(contextPath)) {
+                    return normalizedPath.substring(contextPath.length());
+                }
                 return normalizedPath;
             }
 
