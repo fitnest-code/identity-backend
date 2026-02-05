@@ -12,6 +12,7 @@ import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
 import az.fitnest.iam.user.adapter.service.UserService;
 import az.fitnest.iam.user.domain.model.User;
+import az.fitnest.iam.shared.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RegistrationService {
 
-    private final RegistrationTokenService registrationTokenService;
     private final UserService userService;
     private final PasswordService passwordService;
     private final UserRepository userRepository;
@@ -29,6 +29,10 @@ public class RegistrationService {
 
     @Transactional
     public OtpSendResponse startRegistration(RegisterRequest request) {
+        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
+            throw new ConflictException("Email already registered");
+        }
+        
         String passwordHash = passwordService.hashPassword(request.getPassword());
         
         OtpSendRequest otpRequest = OtpSendRequest.builder()
