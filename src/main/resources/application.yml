@@ -62,11 +62,17 @@ jwt:
 
 # OTP Configuration - UPDATED WITH RATE LIMIT PROPERTIES
 otp:
+  ttl-seconds: ${OTP_TTL_SECONDS:300}
   expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}
   length: ${OTP_LENGTH:6}
   max-attempts: ${OTP_MAX_ATTEMPTS:3}
-  # Add these properties that your code actually uses:
-  ttl-seconds: ${OTP_TTL_SECONDS:300}  # 5 minutes in seconds
+  allowed-characters: ${OTP_ALLOWED_CHARACTERS:0123456789}
+  type: ${OTP_TYPE:numeric}
+  resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:30}
+  resend-delay-seconds: ${OTP_RESEND_DELAY_SECONDS:30}
+  enabled: ${OTP_ENABLED:true}
+  delivery:
+    method: ${OTP_DELIVERY_METHOD:console}
   rate-limit:
     max-attempts: ${OTP_RATE_LIMIT_MAX_ATTEMPTS:5}
     window-minutes: ${OTP_RATE_LIMIT_WINDOW_MINUTES:15}
