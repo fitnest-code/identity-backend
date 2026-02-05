@@ -31,7 +31,7 @@ public class SmtpEmailSender {
                     </head>
                     <body style="margin:0; padding:0; background:#f6f7fb; font-family: Arial, Helvetica, sans-serif;">
                     
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
+                      <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
                         <tr>
                           <td align="center">
                     
@@ -110,7 +110,7 @@ public class SmtpEmailSender {
                 </head>
                 <body style="margin:0; padding:0; background:#f6f7fb; font-family: Arial, Helvetica, sans-serif;">
                 
-                  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
+                  <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
                     <tr>
                       <td align="center">
                 
@@ -206,7 +206,7 @@ public class SmtpEmailSender {
                     </head>
                     <body style="margin:0; padding:0; background:#f6f7fb; font-family: Arial, Helvetica, sans-serif;">
                     
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
+                      <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
                         <tr>
                           <td align="center">
                     
