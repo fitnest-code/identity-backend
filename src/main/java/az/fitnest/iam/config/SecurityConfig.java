@@ -1,5 +1,6 @@
 package az.fitnest.iam.config;
 
+import az.fitnest.iam.config.NormalizeSlashFilter;
 import az.fitnest.iam.security.JwtAuthenticationFilter;
 import az.fitnest.iam.security.JwtService;
 import az.fitnest.iam.security.RedisTokenService;
@@ -103,8 +104,8 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(new NormalizeSlashFilter(), JwtAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 
