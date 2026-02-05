@@ -1,6 +1,8 @@
 package az.fitnest.iam.config;
 
 import az.fitnest.iam.security.JwtAuthenticationFilter;
+import az.fitnest.iam.security.JwtService;
+import az.fitnest.iam.security.RedisTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
@@ -71,6 +73,9 @@ public class SecurityConfig {
             "/health/**"
     };
 
+    // ====================
+    // Security Filter Chain
+    // ====================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, OncePerRequestFilter jwtFilter) throws Exception {
         http
@@ -92,9 +97,16 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // ====================
+    // JWT Authentication Filter
+    // ====================
     @Bean
-    public OncePerRequestFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter() {
+    public OncePerRequestFilter jwtAuthenticationFilter(
+            JwtService jwtService,
+            RedisTokenService redisTokenService,
+            ObjectMapper objectMapper
+    ) {
+        return new JwtAuthenticationFilter(jwtService, redisTokenService, objectMapper) {
             @Override
             protected boolean shouldNotFilter(HttpServletRequest request) {
                 String path = request.getServletPath();
@@ -109,10 +121,13 @@ public class SecurityConfig {
         };
     }
 
+    // ====================
+    // CORS Configuration
+    // ====================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*")); // Replace with your allowed origins
+        config.setAllowedOrigins(List.of("*")); // Replace with your allowed domains
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
@@ -122,11 +137,17 @@ public class SecurityConfig {
         return source;
     }
 
+    // ====================
+    // Authentication Manager
+    // ====================
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    // ====================
+    // Unauthorized / Access Denied Handlers
+    // ====================
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
         return (request, response, authException) -> {
@@ -140,8 +161,7 @@ public class SecurityConfig {
             errorDetails.put("message", "Authentication is required to access this resource");
             errorDetails.put("path", request.getRequestURI());
 
-            ObjectMapper mapper = new ObjectMapper();
-            response.getWriter().write(mapper.writeValueAsString(errorDetails));
+            new ObjectMapper().writeValue(response.getWriter(), errorDetails);
         };
     }
 
@@ -158,8 +178,7 @@ public class SecurityConfig {
             errorDetails.put("message", "You don't have permission to access this resource");
             errorDetails.put("path", request.getRequestURI());
 
-            ObjectMapper mapper = new ObjectMapper();
-            response.getWriter().write(mapper.writeValueAsString(errorDetails));
+            new ObjectMapper().writeValue(response.getWriter(), errorDetails);
         };
     }
 }
