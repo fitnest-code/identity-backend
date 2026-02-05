@@ -62,6 +62,7 @@ jwt:
 
 # OTP Configuration - UPDATED WITH RATE LIMIT PROPERTIES
 otp:
+  max-verify-attempts: ${OTP_MAX_VERIFY_ATTEMPTS:3}
   ttl-seconds: ${OTP_TTL_SECONDS:300}
   expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}
   length: ${OTP_LENGTH:6}
