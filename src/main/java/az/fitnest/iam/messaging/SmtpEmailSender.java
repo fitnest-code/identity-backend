@@ -31,7 +31,7 @@ public class SmtpEmailSender {
                     </head>
                     <body style="margin:0; padding:0; background:#f6f7fb; font-family: Arial, Helvetica, sans-serif;">
                     
-                      <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
                         <tr>
                           <td align="center">
                     
@@ -83,7 +83,7 @@ public class SmtpEmailSender {
                     
                     </body>
                     </html>
-                    """.formatted(otp);
+                    """.replace("%s", otp);
 
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
@@ -110,7 +110,7 @@ public class SmtpEmailSender {
                 </head>
                 <body style="margin:0; padding:0; background:#f6f7fb; font-family: Arial, Helvetica, sans-serif;">
                 
-                  <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
                     <tr>
                       <td align="center">
                 
@@ -179,7 +179,8 @@ public class SmtpEmailSender {
                 
                 </body>
                 </html>
-                """.formatted(gracePeriodDays, recoverUrl, recoverUrl);
+                """.replace("%d", String.valueOf(gracePeriodDays))
+                   .replace("%s", recoverUrl);
 
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -206,7 +207,7 @@ public class SmtpEmailSender {
                     </head>
                     <body style="margin:0; padding:0; background:#f6f7fb; font-family: Arial, Helvetica, sans-serif;">
                     
-                      <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f7fb; padding:20px;">
                         <tr>
                           <td align="center">
                     
