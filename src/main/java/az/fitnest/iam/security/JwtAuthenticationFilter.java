@@ -11,7 +11,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -19,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Component
+// REMOVE @Component annotation - we're creating it as a bean in SecurityConfig
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -72,11 +71,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return path.startsWith("/api/v1/auth/otp/")
-                || path.startsWith("/api/v1/auth/register/")
-                || path.equals("/api/v1/auth/login")
-                || path.equals("/api/v1/auth/refresh");
+        String path = request.getServletPath();
+        return path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/webjars") ||
+                path.startsWith("/actuator") ||
+                path.startsWith("/api/v1/auth/") ||
+                path.startsWith("/swagger-resources") ||
+                path.startsWith("/health") ||
+                path.equals("/favicon.ico") ||
+                path.equals("/error");
     }
 
     private void writeUnauthorized(HttpServletResponse response, String path) throws IOException {

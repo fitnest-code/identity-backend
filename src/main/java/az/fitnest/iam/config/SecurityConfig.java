@@ -4,13 +4,15 @@ import az.fitnest.iam.security.JwtAuthenticationFilter;
 import az.fitnest.iam.security.JwtService;
 import az.fitnest.iam.security.RedisTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -21,7 +23,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,13 @@ import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtService jwtService;
+    private final RedisTokenService redisTokenService;
+    private final ObjectMapper objectMapper;
 
     private static final String[] SWAGGER_WHITELIST = {
             "/v3/api-docs/**",
@@ -70,14 +77,16 @@ public class SecurityConfig {
             "/api/v1/auth/password/**",
             "/api/v1/internal/**",
             "/health",
-            "/health/**"
+            "/health/**",
+            "/favicon.ico",
+            "/error"
     };
 
     // ====================
     // Security Filter Chain
     // ====================
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, OncePerRequestFilter jwtFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -92,7 +101,7 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -101,24 +110,8 @@ public class SecurityConfig {
     // JWT Authentication Filter
     // ====================
     @Bean
-    public OncePerRequestFilter jwtAuthenticationFilter(
-            JwtService jwtService,
-            RedisTokenService redisTokenService,
-            ObjectMapper objectMapper
-    ) {
-        return new JwtAuthenticationFilter(jwtService, redisTokenService, objectMapper) {
-            @Override
-            protected boolean shouldNotFilter(HttpServletRequest request) {
-                String path = request.getServletPath();
-                return path.startsWith("/v3/api-docs") ||
-                        path.startsWith("/swagger-ui") ||
-                        path.startsWith("/webjars") ||
-                        path.startsWith("/actuator") ||
-                        path.startsWith("/api/v1/auth/") ||
-                        path.startsWith("/swagger-resources") ||
-                        path.equals("/favicon.ico");
-            }
-        };
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtService, redisTokenService, objectMapper);
     }
 
     // ====================
@@ -127,10 +120,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*")); // Replace with your allowed domains
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedOrigins(List.of("*")); // In production, replace with specific origins
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -153,15 +148,16 @@ public class SecurityConfig {
         return (request, response, authException) -> {
             response.setStatus(HttpStatus.UNAUTHORIZED.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding("UTF-8");
 
             Map<String, Object> errorDetails = new HashMap<>();
             errorDetails.put("timestamp", System.currentTimeMillis());
             errorDetails.put("status", HttpStatus.UNAUTHORIZED.value());
             errorDetails.put("error", "Unauthorized");
-            errorDetails.put("message", "Authentication is required to access this resource");
+            errorDetails.put("message", authException.getMessage());
             errorDetails.put("path", request.getRequestURI());
 
-            new ObjectMapper().writeValue(response.getWriter(), errorDetails);
+            objectMapper.writeValue(response.getWriter(), errorDetails);
         };
     }
 
@@ -170,15 +166,16 @@ public class SecurityConfig {
         return (request, response, accessDeniedException) -> {
             response.setStatus(HttpStatus.FORBIDDEN.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding("UTF-8");
 
             Map<String, Object> errorDetails = new HashMap<>();
             errorDetails.put("timestamp", System.currentTimeMillis());
             errorDetails.put("status", HttpStatus.FORBIDDEN.value());
             errorDetails.put("error", "Forbidden");
-            errorDetails.put("message", "You don't have permission to access this resource");
+            errorDetails.put("message", accessDeniedException.getMessage());
             errorDetails.put("path", request.getRequestURI());
 
-            new ObjectMapper().writeValue(response.getWriter(), errorDetails);
+            objectMapper.writeValue(response.getWriter(), errorDetails);
         };
     }
 }
