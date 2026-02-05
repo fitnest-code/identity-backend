@@ -3,6 +3,8 @@
 ## -----------------------------
 FROM gradle:8.5-jdk17-alpine AS builder
 
+LABEL org.opencontainers.image.source=https://github.com/fitnest-backend/iam-service
+
 WORKDIR /app
 
 # Copy Gradle project files
