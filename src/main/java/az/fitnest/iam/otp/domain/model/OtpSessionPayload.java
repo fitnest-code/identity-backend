@@ -31,4 +31,9 @@ public class OtpSessionPayload {
     private Instant createdAt;
 
     private Boolean emailExistsAtCreation;
+
+    // Temporary registration data
+    private String firstName;
+    private String lastName;
+    private String userPasswordHash;
 }

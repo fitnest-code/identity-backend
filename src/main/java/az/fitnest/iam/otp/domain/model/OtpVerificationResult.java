@@ -13,4 +13,7 @@ import lombok.NoArgsConstructor;
 public class OtpVerificationResult {
     private String email;
     private OtpPurpose purpose;
+    private String firstName;
+    private String lastName;
+    private String passwordHash;
 }

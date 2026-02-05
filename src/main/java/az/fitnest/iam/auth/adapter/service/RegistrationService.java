@@ -1,7 +1,13 @@
 package az.fitnest.iam.auth.adapter.service;
 
 import az.fitnest.iam.auth.api.dto.request.RegisterCompleteRequest;
+import az.fitnest.iam.auth.api.dto.request.RegisterRequest;
 import az.fitnest.iam.auth.api.dto.response.LoginResponse;
+import az.fitnest.iam.otp.adapter.service.OtpService;
+import az.fitnest.iam.otp.api.dto.request.OtpSendRequest;
+import az.fitnest.iam.otp.api.dto.response.OtpSendResponse;
+import az.fitnest.iam.otp.domain.enums.OtpPurpose;
+import az.fitnest.iam.otp.domain.model.OtpVerificationResult;
 import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
 import az.fitnest.iam.user.adapter.service.UserService;
@@ -19,22 +25,41 @@ public class RegistrationService {
     private final PasswordService passwordService;
     private final UserRepository userRepository;
     private final TokenIssuanceService tokenIssuanceService;
+    private final OtpService otpService;
 
     @Transactional
-    public LoginResponse completeRegistration(String registrationToken, RegisterCompleteRequest request) {
-        String email = registrationTokenService.requireEmail(registrationToken);
-        
+    public OtpSendResponse startRegistration(RegisterRequest request) {
         String passwordHash = passwordService.hashPassword(request.getPassword());
-        userService.createNewUser(
-                email,
-                request.getFirstName(),
-                request.getLastName(),
-                request.getFullName(),
+        
+        OtpSendRequest otpRequest = OtpSendRequest.builder()
+                .email(request.getEmail())
+                .purpose(OtpPurpose.REGISTRATION)
+                .build();
+        
+        return otpService.sendOtp(
+                otpRequest, 
+                request.getFirstName(), 
+                request.getLastName(), 
                 passwordHash
         );
-        registrationTokenService.consume(registrationToken);
+    }
+
+    @Transactional
+    public LoginResponse completeRegistration(RegisterCompleteRequest request) {
+        OtpVerificationResult result = otpService.verifyOtp(request.getEmail(), request.getOtpCode());
         
-        return loginAfterRegistration(email, request.getPassword());
+        if (result.getPurpose() != OtpPurpose.REGISTRATION) {
+            throw new InvalidCredentialsException("Invalid OTP purpose");
+        }
+
+        User user = userService.createNewUser(
+                result.getEmail(),
+                result.getFirstName(),
+                result.getLastName(),
+                result.getPasswordHash()
+        );
+
+        return tokenIssuanceService.issueTokens(user);
     }
 
     private LoginResponse loginAfterRegistration(String email, String password) {

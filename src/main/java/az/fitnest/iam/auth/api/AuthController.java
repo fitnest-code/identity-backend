@@ -10,12 +10,14 @@ import az.fitnest.iam.auth.api.dto.request.LoginRequest;
 import az.fitnest.iam.auth.api.dto.request.ForgotPasswordRequest;
 import az.fitnest.iam.auth.api.dto.request.RefreshRequest;
 import az.fitnest.iam.auth.api.dto.request.RegisterCompleteRequest;
+import az.fitnest.iam.auth.api.dto.request.RegisterRequest;
 import az.fitnest.iam.auth.api.dto.request.ResetPasswordRequest;
 import az.fitnest.iam.auth.api.dto.response.ForgotPasswordResponse;
 import az.fitnest.iam.auth.api.dto.response.LoginResponse;
 import az.fitnest.iam.auth.api.dto.response.RefreshResponse;
 import az.fitnest.iam.auth.api.dto.response.ResetPasswordResponse;
 import az.fitnest.iam.auth.api.dto.response.VerifyOtpForPasswordResetResponse;
+import az.fitnest.iam.otp.api.dto.response.OtpSendResponse;
 import az.fitnest.iam.otp.api.dto.request.OtpVerifyRequest;
 import az.fitnest.iam.shared.exception.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +25,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -98,10 +102,37 @@ public class AuthController {
     }
 
     @Operation(
+            summary = "Initiate registration",
+            description = "Starts the registration process by collecting user details and sending a 4-digit OTP code to the provided email. " +
+                    "Registration is only completed after the OTP is verified in the next step."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "OTP sent and registration initiated",
+                    content = @Content(schema = @Schema(implementation = OtpSendResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data or email already in use",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "429",
+                    description = "Too many OTP requests",
+                    content = @Content
+            )
+    })
+    @PostMapping("/register")
+    public ResponseEntity<OtpSendResponse> register(@Valid @RequestBody RegisterRequest request) {
+        OtpSendResponse response = registrationService.startRegistration(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
             summary = "Complete registration",
-            description = "Completes user registration by creating an account with the provided details. " +
-                    "Requires a valid registration token obtained from OTP verification. " +
-                    "The registration token is consumed after successful registration."
+            description = "Verifies the OTP code sent in the previous step and creates the user account. " +
+                    "Returns JWT access and refresh tokens upon successful verification."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -111,12 +142,12 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Invalid request data or validation failed",
+                    description = "Invalid request data, wrong OTP, or expired session",
                     content = @Content
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Invalid or expired registration token, missing Authorization header, or login failed",
+                    description = "Invalid OTP code",
                     content = @Content
             ),
             @ApiResponse(
@@ -126,12 +157,8 @@ public class AuthController {
             )
     })
     @PostMapping("/register/complete")
-    public ResponseEntity<LoginResponse> registerComplete(
-            @RequestHeader(name = "Authorization", required = false) String authorization,
-            @Valid @RequestBody RegisterCompleteRequest request
-    ) {
-        String token = extractBearerToken(authorization);
-        LoginResponse response = registrationService.completeRegistration(token, request);
+    public ResponseEntity<LoginResponse> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
+        LoginResponse response = registrationService.completeRegistration(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

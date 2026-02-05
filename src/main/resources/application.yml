@@ -103,6 +103,8 @@ springdoc:
     # Dynamic URLs for Istio routing
     config-url: ${SPRINGDOC_SWAGGER_UI_CONFIG_URL:/v3/api-docs/swagger-config}
     url: ${SPRINGDOC_SWAGGER_UI_URL:/v3/api-docs}
+  # Server URL for Istio routing (set via environment variable)
+  server-url: ${SPRINGDOC_SERVER_URL:}
   show-actuator: false
   default-consumes-media-type: application/json
   default-produces-media-type: application/json

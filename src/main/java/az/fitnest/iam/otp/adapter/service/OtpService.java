@@ -91,6 +91,10 @@ public class OtpService {
     }
 
     public OtpSendResponse sendOtp(OtpSendRequest request) {
+        return sendOtp(request, null, null, null);
+    }
+
+    public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash) {
         String email = emailNormalizationService.normalize(request.getEmail());
         OtpPurpose purpose = request.getPurpose();
 
@@ -106,7 +110,7 @@ public class OtpService {
         invalidateActiveSession(purpose, email);
 
         String otp = otpGenerator.generateOtp();
-        String sessionId = createOtpSession(email, purpose, otp, emailExists);
+        String sessionId = createOtpSession(email, purpose, otp, emailExists, firstName, lastName, userPasswordHash);
 
         emailSender.sendOtp(email, otp, purpose.name());
 
@@ -141,7 +145,7 @@ public class OtpService {
                 .build();
     }
 
-    private String createOtpSession(String email, OtpPurpose purpose, String otp, boolean emailExists) {
+    private String createOtpSession(String email, OtpPurpose purpose, String otp, boolean emailExists, String firstName, String lastName, String userPasswordHash) {
         String otpHash = passwordService.hashPassword(otp);
         String sessionId = otpSessionIdGenerator.generateSessionId();
 
@@ -154,6 +158,9 @@ public class OtpService {
                 .verified(false)
                 .createdAt(Instant.now(clock))
                 .emailExistsAtCreation(emailExists)
+                .firstName(firstName)
+                .lastName(lastName)
+                .userPasswordHash(userPasswordHash)
                 .build();
 
         otpStore.saveOtpSessionAtomically(purpose, email, sessionId, payload, otpTtlSeconds);
@@ -228,6 +235,9 @@ public class OtpService {
         return OtpVerificationResult.builder()
                 .email(verifiedSession.getEmail())
                 .purpose(verifiedSession.getPurpose())
+                .firstName(verifiedSession.getFirstName())
+                .lastName(verifiedSession.getLastName())
+                .passwordHash(verifiedSession.getUserPasswordHash())
                 .build();
     }
 

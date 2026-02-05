@@ -63,7 +63,8 @@ public class SecurityConfig {
             "/api/v1/auth/login",
             "/api/v1/auth/refresh",
             "/api/v1/auth/otp/**",
-            "/api/v1/auth/register/**",
+            "/api/v1/auth/register",
+            "/api/v1/auth/register/complete",
             "/api/v1/auth/verify/**",
             "/api/v1/auth/password/**",
             "/api/v1/internal/**",
@@ -81,9 +82,23 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // For now, allow everything without authentication so that
-                // Swagger and all APIs are publicly reachable.
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Swagger/OpenAPI endpoints - public
+                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
+                        // Actuator endpoints - public
+                        .requestMatchers(ACTUATOR_WHITELIST).permitAll()
+                        // Auth endpoints (login, register, OTP, password reset) - public
+                        .requestMatchers(AUTH_WHITELIST).permitAll()
+                        // All other endpoints require authentication
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint())
+                        .accessDeniedHandler(accessDeniedHandler())
+                )
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

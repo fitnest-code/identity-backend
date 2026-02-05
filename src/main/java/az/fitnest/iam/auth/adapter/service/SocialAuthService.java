@@ -195,7 +195,7 @@ public class SocialAuthService {
             return new NameParts(parts[0], null);
         }
         String first = parts[0];
-        String last = String.join(" ", java.util.Arrays.copyOfRange(parts, 1, parts.length));
+        String last = String.join(" ", java.util.Arrays.asList(parts).subList(1, parts.length));
         return new NameParts(first, last);
     }
 

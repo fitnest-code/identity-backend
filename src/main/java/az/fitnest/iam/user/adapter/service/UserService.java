@@ -28,17 +28,33 @@ public class UserService {
     }
 
     @Transactional
-    public User createNewUser(String email, String fullName, String passwordHash) {
-        return createNewUser(email, null, null, fullName, passwordHash);
-    }
-
-    @Transactional
-    public User createNewUser(String email, String firstName, String lastName, String fullName, String passwordHash) {
+    public User createNewUser(String email, String firstName, String lastName, String passwordHash) {
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Email already registered");
         }
 
-        NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
+        User user = User.builder()
+                .email(email)
+                .firstName(normalizeNamePart(firstName))
+                .lastName(normalizeNamePart(lastName))
+                .passwordHash(passwordHash)
+                .hasAccount(true)
+                .setupRequired(true)
+                .accountLocked(false)
+                .failedLoginAttempts(0)
+                .isDeleted(false)
+                .build();
+
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User createNewUserWithFullName(String email, String fullName, String passwordHash) {
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new ConflictException("Email already registered");
+        }
+
+        NameParts nameParts = splitFullName(fullName);
         User user = User.builder()
                 .email(email)
                 .firstName(nameParts.firstName())
