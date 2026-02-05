@@ -89,21 +89,9 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(authenticationEntryPoint())
-                        .accessDeniedHandler(accessDeniedHandler())
-                )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
-                        .requestMatchers(ACTUATOR_WHITELIST).permitAll()
-                        .requestMatchers(AUTH_WHITELIST).permitAll()
-                        .anyRequest().authenticated()
-                )
-                // Normalize paths (collapse multiple slashes) before Spring Security
-                // evaluates matchers and before JwtAuthenticationFilter runs.
-                .addFilterBefore(normalizeSlashFilter(), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                // For now, allow everything without authentication so that
+                // Swagger and all APIs are publicly reachable.
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();
     }
 
