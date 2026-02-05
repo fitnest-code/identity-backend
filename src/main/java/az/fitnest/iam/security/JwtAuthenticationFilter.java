@@ -20,6 +20,8 @@ import java.util.List;
 
 // REMOVE @Component annotation - we're creating it as a bean in SecurityConfig
 @RequiredArgsConstructor
+@Order(1) // <--- add this
+
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
