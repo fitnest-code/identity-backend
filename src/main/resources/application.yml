@@ -105,11 +105,6 @@ springdoc:
   show-actuator: false
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
-  # Grouping APIs (optional)
-  group-configs:
-    - group: v1
-      paths-to-match: /api/v1/**
-      packages-to-scan: az.fitnest.iam.controller.v1
 
 # JWT Configuration
 jwt:
