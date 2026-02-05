@@ -80,6 +80,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.startsWith("/swagger-resources") ||
                 path.startsWith("/health") ||
                 path.equals("/favicon.ico") ||
+                path.startsWith("/iam-service/swagger-ui") ||    // <-- added
+                path.startsWith("/iam-service/v3/api-docs") ||
                 path.equals("/error");
     }
 
