@@ -42,13 +42,13 @@ public class SecurityConfig {
     private final ObjectMapper objectMapper;
 
     private static final String[] SWAGGER_WHITELIST = {
-        "/iam-service/v3/api-docs/**",
-        "/iam-service/v3/api-docs.yaml",
-        "/iam-service/v3/api-docs.yml",
-        "/iam-service/swagger-ui/**",
-        "/iam-service/swagger-ui.html",
-        "/iam-service/webjars/**"
-};
+        "/v3/api-docs/**",
+        "/v3/api-docs.yaml",
+        "/v3/api-docs.yml",
+        "/swagger-ui/**",
+        "/swagger-ui.html",
+        "/webjars/**"
+    };
 
     private static final String[] ACTUATOR_WHITELIST = {
             "/actuator",
@@ -84,9 +84,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Swagger/OpenAPI endpoints - public
                         .requestMatchers(SWAGGER_WHITELIST).permitAll()
-                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                         // Actuator endpoints - public
                         .requestMatchers(ACTUATOR_WHITELIST).permitAll()
                         // Auth endpoints (login, register, OTP, password reset) - public
