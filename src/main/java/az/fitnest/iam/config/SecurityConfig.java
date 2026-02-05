@@ -120,4 +120,3 @@ public class SecurityConfig {
         return new DefaultHttpFirewall();
     }
 }
-}
