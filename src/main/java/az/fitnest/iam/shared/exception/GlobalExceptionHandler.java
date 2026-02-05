@@ -13,11 +13,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -109,6 +111,7 @@ public class GlobalExceptionHandler {
 			Exception exception,
 			HttpServletRequest request
 	) {
+		log.error("Unhandled exception at {}: {}", request.getRequestURI(), exception.getMessage(), exception);
 		ErrorWrapper errorWrapper = ErrorWrapper.builder()
 				.error(ErrorWrapper.ErrorDetail.builder()
 						.code("INTERNAL_SERVER_ERROR")
