@@ -4,7 +4,7 @@ import az.fitnest.iam.auth.api.dto.request.LoginRequest;
 import az.fitnest.iam.auth.api.dto.response.LoginResponse;
 import az.fitnest.iam.auth.api.dto.response.RefreshResponse;
 import az.fitnest.iam.auth.adapter.persistence.AuthTokenRepository;
-import az.fitnest.iam.messaging.SmtpEmailSender;
+import az.fitnest.iam.messaging.EmailService;
 import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.shared.exception.UnauthorizedException;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
@@ -28,7 +28,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthTokenRepository authTokenRepository;
     private final TokenIssuanceService tokenIssuanceService;
-    private final SmtpEmailSender emailSender;
+    private final EmailService emailService;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
     private int maxFailedLoginAttempts;
@@ -47,7 +47,7 @@ public class AuthService {
             userRepository.save(user);
 
             if (user.getEmail() != null && !user.getEmail().isBlank()) {
-                emailSender.sendAccountRecoveryNotice(user.getEmail());
+                emailService.sendHtmlEmail(user.getEmail(), "Your Fitnest account has been reactivated", "account-recovery", java.util.Map.of());
             }
         }
 

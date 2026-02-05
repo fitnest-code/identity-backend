@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{email/layout :: layout(title='Account Deletion Request', content=~{::section})}">
+
+<body>
+    <section>
+        <h2 style="margin-top: 0; font-size: 20px; font-weight: 700;">Account Deletion Request</h2>
+
+        <p>We received a request to permanently delete your <span class="highlight">Fitnest</span> account.</p>
+
+        <p>Your account and associated data are now scheduled for deletion. You have <strong class="highlight"
+                th:text="${gracePeriodDays}">30</strong> days to cancel this request if you change your mind.</p>
+
+        <div style="text-align: center;">
+            <a th:href="${recoverUrl}" class="button">Recover My Account</a>
+        </div>
+
+        <p style="font-size: 14px; color: #64748b; margin-top: 24px;">
+            If the button above doesn't work, copy and paste this link into your browser:<br />
+            <span th:text="${recoverUrl}"
+                style="word-break: break-all; color: #4f46e5;">https://app.fitnest.az/recover</span>
+        </p>
+
+        <p style="margin-top: 32px;">
+            Best regards,<br />
+            <strong>The Fitnest Team</strong>
+        </p>
+    </section>
+</body>
+
+</html>

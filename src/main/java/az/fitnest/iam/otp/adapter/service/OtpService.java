@@ -9,7 +9,7 @@ import az.fitnest.iam.otp.api.dto.response.OtpVerifyResponse;
 import az.fitnest.iam.otp.domain.enums.OtpPurpose;
 import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.shared.exception.OtpRateLimitedException;
-import az.fitnest.iam.messaging.SmtpEmailSender;
+import az.fitnest.iam.messaging.EmailService;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
 import az.fitnest.iam.user.adapter.service.EmailNormalizationService;
 import az.fitnest.iam.otp.adapter.store.redis.OtpStore;
@@ -41,7 +41,7 @@ public class OtpService {
     private final OtpGenerator otpGenerator;
     private final PasswordService passwordService;
     private final OtpSessionIdGenerator otpSessionIdGenerator;
-    private final SmtpEmailSender emailSender;
+    private final EmailService emailService;
     private final RegistrationTokenService registrationTokenService;
     private final ResetPasswordTokenService resetPasswordTokenService;
     private final Clock clock;
@@ -112,7 +112,7 @@ public class OtpService {
         String otp = otpGenerator.generateOtp();
         String sessionId = createOtpSession(email, purpose, otp, emailExists, firstName, lastName, userPasswordHash);
 
-        emailSender.sendOtp(email, otp, purpose.name());
+        emailService.sendHtmlEmail(email, "Your Fitnest verification code", "otp", java.util.Map.of("otp", otp));
 
         return createSuccessResponse(sessionId);
     }

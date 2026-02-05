@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @EnableMethodSecurity
 @EnableCaching
 @EnableJpaAuditing
+@org.springframework.scheduling.annotation.EnableAsync
 public class IamServiceApplication {
 
 	public static void main(String[] args) {

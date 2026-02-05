@@ -2,7 +2,7 @@ package az.fitnest.iam.user.adapter.service;
 
 import az.fitnest.iam.auth.adapter.persistence.AuthTokenRepository;
 import az.fitnest.iam.auth.domain.model.AuthToken;
-import az.fitnest.iam.messaging.SmtpEmailSender;
+import az.fitnest.iam.messaging.EmailService;
 import az.fitnest.iam.security.RedisTokenService;
 import az.fitnest.iam.shared.exception.ConflictException;
 import az.fitnest.iam.shared.exception.ResourceNotFoundException;
@@ -20,7 +20,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final AuthTokenRepository authTokenRepository;
     private final RedisTokenService redisTokenService;
-    private final SmtpEmailSender emailSender;
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public User getUserById(Long userId) {
@@ -122,7 +122,13 @@ public class UserService {
         String originalEmail = user.getEmail();
 
         if (originalEmail != null && !originalEmail.isBlank()) {
-            emailSender.sendAccountDeletionNotice(originalEmail, 30);
+            String recoverUrl = "https://app.fitnest.az/account/recover";
+            emailService.sendHtmlEmail(
+                originalEmail, 
+                "Your Fitnest account is scheduled for deletion", 
+                "account-deletion", 
+                java.util.Map.of("gracePeriodDays", 30, "recoverUrl", recoverUrl)
+            );
         }
 
         userRepository.delete(user);

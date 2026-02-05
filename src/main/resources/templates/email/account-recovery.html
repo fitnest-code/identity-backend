@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{email/layout :: layout(title='Account Reactivated', content=~{::section})}">
+
+<body>
+    <section>
+        <h2 style="margin-top: 0; font-size: 20px; font-weight: 700;">Welcome Back!</h2>
+
+        <p>Your <span class="highlight">Fitnest</span> account has been successfully reactivated, and the deletion
+            request has been cancelled.</p>
+
+        <p>You can now continue your fitness journey and access all your data as before.</p>
+
+        <p>If you did not perform this action, please secure your account immediately by changing your password or
+            contacting our support team.</p>
+
+        <div style="text-align: center;">
+            <a href="https://app.fitnest.az/login" class="button">Log In to Fitnest</a>
+        </div>
+
+        <p style="margin-top: 32px;">
+            Let's get moving,<br />
+            <strong>The Fitnest Team</strong>
+        </p>
+    </section>
+</body>
+
+</html>
