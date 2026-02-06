@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
 
 		return ResponseEntity
 				.status(exception.getHttpStatus())
-				.body(ErrorWrapper.fromErrorResponse(builder.build()));
+				.body(ErrorWrapper.fromErrorResponse(builder.build(), exception.getHttpStatus().value()));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
@@ -65,6 +65,9 @@ public class GlobalExceptionHandler {
 				.error(ErrorWrapper.ErrorDetail.builder()
 						.code("VALIDATION_ERROR")
 						.message("Validation failed")
+						.status(HttpStatus.BAD_REQUEST.value())
+						.path(request.getRequestURI())
+						.timestamp(LocalDateTime.now())
 						.details(details)
 						.build())
 				.build();
@@ -81,6 +84,9 @@ public class GlobalExceptionHandler {
 				.error(ErrorWrapper.ErrorDetail.builder()
 						.code("VALIDATION_ERROR")
 						.message(exception.getMessage())
+						.status(HttpStatus.BAD_REQUEST.value())
+						.path(request.getRequestURI())
+						.timestamp(LocalDateTime.now())
 						.build())
 				.build();
 
@@ -100,6 +106,9 @@ public class GlobalExceptionHandler {
 				.error(ErrorWrapper.ErrorDetail.builder()
 						.code("HTTP_MESSAGE_NOT_READABLE")
 						.message("Invalid request format")
+						.status(HttpStatus.BAD_REQUEST.value())
+						.path(request.getRequestURI())
+						.timestamp(LocalDateTime.now())
 						.build())
 				.build();
 
@@ -116,6 +125,9 @@ public class GlobalExceptionHandler {
 				.error(ErrorWrapper.ErrorDetail.builder()
 						.code("INTERNAL_SERVER_ERROR")
 						.message("Internal server error")
+						.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+						.path(request.getRequestURI())
+						.timestamp(LocalDateTime.now())
 						.build())
 				.build();
 

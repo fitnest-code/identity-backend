@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -25,6 +27,9 @@ public class ErrorWrapper {
     public static class ErrorDetail {
         private String code;
         private String message;
+        private int status;
+        private String path;
+        private LocalDateTime timestamp;
         private List<FieldIssue> details;
     }
 
@@ -37,7 +42,7 @@ public class ErrorWrapper {
         private String issue;
     }
 
-    public static ErrorWrapper fromErrorResponse(ErrorResponse errorResponse) {
+    public static ErrorWrapper fromErrorResponse(ErrorResponse errorResponse, int status) {
         List<FieldIssue> details = null;
         if (errorResponse.getDetails() != null && errorResponse.getDetails().containsKey("validationErrors")) {
             @SuppressWarnings("unchecked")
@@ -56,6 +61,9 @@ public class ErrorWrapper {
                 .error(ErrorDetail.builder()
                         .code(errorResponse.getCode())
                         .message(errorResponse.getMessage())
+                        .status(status)
+                        .path(errorResponse.getPath())
+                        .timestamp(errorResponse.getTimestamp())
                         .details(details)
                         .build())
                 .build();
