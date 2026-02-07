@@ -32,6 +32,11 @@ public class InternalEndpointFilter extends OncePerRequestFilter {
         if (path.startsWith(INTERNAL_PATH_PREFIX)) {
             String internalHeader = request.getHeader(INTERNAL_SERVICE_HEADER);
             
+            log.info("Internal request to {}. Headers: ", path);
+            java.util.Collections.list(request.getHeaderNames()).forEach(headerName -> 
+                log.info("  {}: {}", headerName, request.getHeader(headerName))
+            );
+
             if (internalHeader == null || internalHeader.isBlank()) {
                 log.warn("Blocked external access to internal endpoint: {} from {}", 
                          path, request.getRemoteAddr());
@@ -41,7 +46,7 @@ public class InternalEndpointFilter extends OncePerRequestFilter {
                 return;
             }
             
-            log.debug("Internal request from service: {} to {}", internalHeader, path);
+            log.info("Internal request verified from service: {} to {}", internalHeader, path);
         }
         
         filterChain.doFilter(request, response);
