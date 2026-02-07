@@ -10,8 +10,7 @@ import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 
 @Entity
 @SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE user_id = ?")
@@ -31,9 +30,7 @@ import java.util.stream.Stream;
 @Builder
 public class User extends BaseAuditableEntity {
 
-    @Setter(AccessLevel.NONE)
-    @Column(name = "full_name", insertable = false, updatable = false)
-    private String legacyFullName;
+
 
     @Column(name = "first_name")
     private String firstName;
@@ -87,13 +84,5 @@ public class User extends BaseAuditableEntity {
     public boolean isAccountLocked() { return accountLocked || (lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now())); }
     public boolean isDeleted() { return isDeleted; }
 
-    @Transient
-    public String getFullName() {
-        String fullName = Stream.of(firstName, lastName, legacyFullName)
-                                .filter(Objects::nonNull)
-                                .map(String::trim)
-                                .filter(s -> !s.isEmpty())
-                                .collect(Collectors.joining(" "));
-        return fullName.isEmpty() ? null : fullName;
-    }
+
 }
