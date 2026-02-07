@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, content)">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title th:text="${title}">Fitnest</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
+
         body {
             margin: 0;
             padding: 0;
@@ -97,12 +98,14 @@
                 margin-top: 20px;
                 border-radius: 0;
             }
+
             .content {
                 padding: 30px 20px;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="wrapper">
         <table class="main">
@@ -132,4 +135,5 @@
         </table>
     </div>
 </body>
+
 </html>
