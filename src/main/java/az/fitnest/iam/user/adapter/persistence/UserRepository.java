@@ -34,4 +34,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = "SELECT COUNT(*) > 0 FROM users WHERE email = :email", nativeQuery = true)
     boolean existsByEmailIncludingDeleted(@Param("email") String email);
+
+    @Query(value = "SELECT COUNT(*) > 0 FROM users WHERE mobile = :mobile", nativeQuery = true)
+    boolean existsByMobileIncludingDeleted(@Param("mobile") String mobile);
 }
