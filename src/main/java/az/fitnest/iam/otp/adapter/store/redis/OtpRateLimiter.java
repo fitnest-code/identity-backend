@@ -105,7 +105,14 @@ public class OtpRateLimiter {
                 String.valueOf(windowSeconds)
         );
 
-        List<?> result = redisTemplate.execute(RATE_LIMIT_SCRIPT, keys, args.toArray());
+        List<?> result;
+        try {
+            result = redisTemplate.execute(RATE_LIMIT_SCRIPT, keys, args.toArray());
+        } catch (Exception e) {
+            throw new az.fitnest.iam.shared.exception.InternalServerException(
+                "Failed to execute Redis script for checking OTP rate limit: " + e.getMessage()
+            );
+        }
 
         if (result != null && result.size() >= 2) {
             long allowed = convertToLong(result.get(0));

@@ -1,11 +1,9 @@
 package az.fitnest.iam.shared.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
-public class OtpRateLimitedException extends RuntimeException {
+public class OtpRateLimitedException extends BaseException {
     public OtpRateLimitedException(String message) {
-        super(message);
+        super(message, HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMIT_EXCEEDED");
     }
 }
