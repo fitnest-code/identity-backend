@@ -5,6 +5,7 @@ import az.fitnest.iam.shared.exception.BadRequestException;
 import az.fitnest.iam.shared.exception.ConflictException;
 import az.fitnest.iam.shared.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.RequestInterceptor;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,18 @@ import java.io.InputStream;
 @Slf4j
 @Configuration
 public class UserServiceClientConfig {
+
+    /**
+     * Request interceptor that adds X-Internal-Service header for service-to-service calls.
+     * This header is required by user-service to allow access to internal endpoints.
+     */
+    @Bean
+    public RequestInterceptor internalServiceRequestInterceptor() {
+        return template -> {
+            template.header("X-Internal-Service", "iam-service");
+            log.debug("Added X-Internal-Service header to user-service request: {}", template.url());
+        };
+    }
 
     @Bean
     public ErrorDecoder errorDecoder(ObjectMapper objectMapper) {
