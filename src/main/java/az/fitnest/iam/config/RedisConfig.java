@@ -61,6 +61,7 @@ public class RedisConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance, 
                 ObjectMapper.DefaultTyping.NON_FINAL, 
