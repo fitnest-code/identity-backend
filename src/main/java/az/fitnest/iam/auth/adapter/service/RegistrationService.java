@@ -27,7 +27,6 @@ public class RegistrationService {
     private final TokenIssuanceService tokenIssuanceService;
     private final OtpService otpService;
 
-    @Transactional
     public OtpSendResponse startRegistration(RegisterRequest request) {
         if (userRepository.existsByEmailIncludingDeleted(request.getEmail())) {
             throw new ConflictException("Email already registered");

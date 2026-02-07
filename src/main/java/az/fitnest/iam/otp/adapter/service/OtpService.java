@@ -29,6 +29,10 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -146,7 +150,7 @@ public class OtpService {
     }
 
     private String createOtpSession(String email, OtpPurpose purpose, String otp, boolean emailExists, String firstName, String lastName, String userPasswordHash, String mobile) {
-        String otpHash = passwordService.hashPassword(otp);
+        String otpHash = hashOtp(otp);
         String sessionId = otpSessionIdGenerator.generateSessionId();
 
         OtpSessionPayload payload = OtpSessionPayload.builder()
@@ -208,7 +212,7 @@ public class OtpService {
             throw new InvalidCredentialsException(OtpMessages.INVALID_OTP);
         }
 
-        boolean isValid = passwordService.verifyPassword(otpCode, session.getOtpHash());
+        boolean isValid = hashOtp(otpCode).equals(session.getOtpHash());
 
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
 
@@ -275,5 +279,15 @@ public class OtpService {
         }
         
         return resetPasswordTokenService.issueForEmail(verificationResult.getEmail());
+    }
+
+    private String hashOtp(String otp) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(otp.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
     }
 }

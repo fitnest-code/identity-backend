@@ -31,7 +31,7 @@ public class EmailServiceImpl implements EmailService {
     private String fromAddress;
 
     @Override
-    @Async
+    @Async("taskExecutor")
     public void sendHtmlEmail(String to, String subject, String templateName, Map<String, Object> variables) {
         log.debug("Sending HTML email to {} with template {}", to, templateName);
         try {
@@ -59,7 +59,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    @Async
+    @Async("taskExecutor")
     public void sendSimpleEmail(String to, String subject, String content) {
         log.debug("Sending simple email to {}", to);
         try {
