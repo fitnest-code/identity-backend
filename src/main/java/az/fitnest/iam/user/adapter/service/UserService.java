@@ -29,7 +29,7 @@ public class UserService {
 
     @Transactional
     public User createNewUser(String email, String firstName, String lastName, String passwordHash) {
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        if (userRepository.existsByEmailIncludingDeleted(email)) {
             throw new ConflictException("Email already registered");
         }
 
@@ -50,7 +50,7 @@ public class UserService {
 
     @Transactional
     public User createNewUserWithFullName(String email, String fullName, String passwordHash) {
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        if (userRepository.existsByEmailIncludingDeleted(email)) {
             throw new ConflictException("Email already registered");
         }
 
@@ -89,7 +89,7 @@ public class UserService {
             if (email.isBlank()) {
                 user.setEmail(null);
             } else {
-                if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmailIgnoreCase(email)) {
+                if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmailIncludingDeleted(email)) {
                     throw new ConflictException("Email already in use");
                 }
                 user.setEmail(email);

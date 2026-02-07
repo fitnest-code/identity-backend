@@ -25,4 +25,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query(value = "SELECT * FROM users WHERE mobile = :mobile LIMIT 1", nativeQuery = true)
     Optional<User> findByMobileIncludingDeleted(@Param("mobile") String mobile);
+
+    @Query(value = "SELECT * FROM users WHERE user_id = :userId LIMIT 1", nativeQuery = true)
+    Optional<User> findByIdIncludingDeleted(@Param("userId") Long userId);
+
+    @Query(value = "SELECT * FROM users WHERE email = :email LIMIT 1", nativeQuery = true)
+    Optional<User> findByEmailIncludingDeleted(@Param("email") String email);
+
+    @Query(value = "SELECT COUNT(*) > 0 FROM users WHERE email = :email", nativeQuery = true)
+    boolean existsByEmailIncludingDeleted(@Param("email") String email);
 }

@@ -29,7 +29,7 @@ public class RegistrationService {
 
     @Transactional
     public OtpSendResponse startRegistration(RegisterRequest request) {
-        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
+        if (userRepository.existsByEmailIncludingDeleted(request.getEmail())) {
             throw new ConflictException("Email already registered");
         }
         

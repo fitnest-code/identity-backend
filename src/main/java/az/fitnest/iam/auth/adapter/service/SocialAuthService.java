@@ -37,7 +37,7 @@ public class SocialAuthService {
         
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
-            User user = userRepository.findById(socialAuth.getUserId())
+            User user = userRepository.findByIdIncludingDeleted(socialAuth.getUserId())
                     .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
             if (user.isDeleted()) {
@@ -63,7 +63,7 @@ public class SocialAuthService {
                 throw new ConflictException("Unable to complete social login with this account");
             }
             
-            Optional<User> existingUser = userRepository.findByEmailIgnoreCase(email);
+            Optional<User> existingUser = userRepository.findByEmailIncludingDeleted(email);
             if (existingUser.isPresent()) {
                 throw new ConflictException("Unable to complete social login with this account");
             }
@@ -98,7 +98,7 @@ public class SocialAuthService {
         
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
-            User user = userRepository.findById(socialAuth.getUserId())
+            User user = userRepository.findByIdIncludingDeleted(socialAuth.getUserId())
                     .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
             if (user.isDeleted()) {
@@ -124,7 +124,7 @@ public class SocialAuthService {
                 throw new ConflictException("Unable to complete social login with this account");
             }
             
-            Optional<User> existingUser = userRepository.findByEmailIgnoreCase(email);
+            Optional<User> existingUser = userRepository.findByEmailIncludingDeleted(email);
             if (existingUser.isPresent()) {
                 throw new ConflictException("Unable to complete social login with this account");
             }
@@ -154,7 +154,7 @@ public class SocialAuthService {
                 .email(email)
                 .firstName(nameParts.firstName())
                 .lastName(nameParts.lastName())
-                .mobile(mobile != null ? mobile : "")
+                .mobile(mobile)
                 .passwordHash(null)
                 .hasAccount(true)
                 .setupRequired(true)
