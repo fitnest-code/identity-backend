@@ -50,7 +50,11 @@ public class RegistrationService {
 
     @Transactional
     public LoginResponse completeRegistration(RegisterCompleteRequest request) {
-        OtpVerificationResult result = otpService.verifyOtp(request.getEmail(), request.getOtpCode());
+        OtpVerificationResult result = otpService.verifyOtpByEmail(
+                request.getEmail(), 
+                OtpPurpose.REGISTRATION, 
+                request.getOtpCode()
+        );
         
         if (result.getPurpose() != OtpPurpose.REGISTRATION) {
             throw new InvalidCredentialsException("Invalid OTP purpose");

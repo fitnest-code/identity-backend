@@ -241,6 +241,14 @@ public class OtpService {
                 .build();
     }
 
+    public OtpVerificationResult verifyOtpByEmail(String email, OtpPurpose purpose, String otpCode) {
+        String normalizedEmail = emailNormalizationService.normalize(email);
+        String sessionId = otpStore.getActiveSessionPointer(purpose, normalizedEmail)
+                .orElseThrow(() -> new InvalidCredentialsException(OtpMessages.INVALID_OTP));
+        
+        return verifyOtp(sessionId, otpCode);
+    }
+
     public OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request) {
         OtpVerificationResult verificationResult = verifyOtp(request.getOtpSessionId(), request.getOtpCode());
         
