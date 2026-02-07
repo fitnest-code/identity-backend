@@ -6,12 +6,14 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @EnableFeignClients
 @EnableMethodSecurity
 @EnableCaching
 @EnableJpaAuditing
+@EnableAsync
 public class IamServiceApplication {
 
 	public static void main(String[] args) {
