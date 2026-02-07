@@ -59,8 +59,8 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                // 1. INTERNAL SERVICE-TO-SERVICE - Permitted (filter validates X-Internal-Service header)
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/internal/**")).permitAll()
+                // 1. INTERNAL SERVICE-TO-SERVICE - Requires ROLE_INTERNAL
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/internal/**")).hasRole("INTERNAL")
                 
                 // 2. PUBLIC ENDPOINTS - Auth, Swagger, Actuator
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/login")).permitAll()
@@ -79,22 +79,17 @@ public class SecurityConfig {
                 .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/**", HttpMethod.OPTIONS.name())).permitAll()
                 
-                // 3. ALL OTHER ENDPOINTS - Require authentication
+                // 3. ALL OTHER ENDPOINTS - Authenticated (ROLE_USER set by filter)
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(authenticationEntryPoint())
                 .accessDeniedHandler(accessDeniedHandler())
             )
-            // Add internal endpoint filter
+            // Single unified security filter
             .addFilterBefore(
-                new InternalEndpointFilter(),
+                new az.fitnest.iam.security.FitnestSecurityFilter(),
                 UsernamePasswordAuthenticationFilter.class
-            )
-            // Add custom authentication filter for gateway headers
-            .addFilterAfter(
-                new GatewayHeaderAuthenticationFilter(), 
-                InternalEndpointFilter.class
             );
         
         log.info("IAM-service security configured: internal=X-Internal-Service required, external=authenticated");
