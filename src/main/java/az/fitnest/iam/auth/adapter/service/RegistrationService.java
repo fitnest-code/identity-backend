@@ -33,6 +33,10 @@ public class RegistrationService {
             throw new ConflictException("Email already registered");
         }
         
+        if (userRepository.findByMobileIncludingDeleted(request.getMobile()).isPresent()) {
+            throw new ConflictException("Mobile number already registered");
+        }
+        
         String passwordHash = passwordService.hashPassword(request.getPassword());
         
         OtpSendRequest otpRequest = OtpSendRequest.builder()
@@ -44,7 +48,8 @@ public class RegistrationService {
                 otpRequest, 
                 request.getFirstName(), 
                 request.getLastName(), 
-                passwordHash
+                passwordHash,
+                request.getMobile()
         );
     }
 
@@ -64,7 +69,8 @@ public class RegistrationService {
                 result.getEmail(),
                 result.getFirstName(),
                 result.getLastName(),
-                result.getPasswordHash()
+                result.getPasswordHash(),
+                result.getMobile()
         );
 
         return tokenIssuanceService.issueTokens(user);

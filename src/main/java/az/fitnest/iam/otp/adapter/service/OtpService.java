@@ -91,10 +91,10 @@ public class OtpService {
     }
 
     public OtpSendResponse sendOtp(OtpSendRequest request) {
-        return sendOtp(request, null, null, null);
+        return sendOtp(request, null, null, null, null);
     }
 
-    public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash) {
+    public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile) {
         String email = emailNormalizationService.normalize(request.getEmail());
         OtpPurpose purpose = request.getPurpose();
 
@@ -110,7 +110,7 @@ public class OtpService {
         invalidateActiveSession(purpose, email);
 
         String otp = otpGenerator.generateOtp();
-        String sessionId = createOtpSession(email, purpose, otp, emailExists, firstName, lastName, userPasswordHash);
+        String sessionId = createOtpSession(email, purpose, otp, emailExists, firstName, lastName, userPasswordHash, mobile);
 
         emailService.sendHtmlEmail(email, "Your Fitnest verification code", "otp", java.util.Map.of("otp", otp));
 
@@ -145,7 +145,7 @@ public class OtpService {
                 .build();
     }
 
-    private String createOtpSession(String email, OtpPurpose purpose, String otp, boolean emailExists, String firstName, String lastName, String userPasswordHash) {
+    private String createOtpSession(String email, OtpPurpose purpose, String otp, boolean emailExists, String firstName, String lastName, String userPasswordHash, String mobile) {
         String otpHash = passwordService.hashPassword(otp);
         String sessionId = otpSessionIdGenerator.generateSessionId();
 
@@ -161,6 +161,7 @@ public class OtpService {
                 .firstName(firstName)
                 .lastName(lastName)
                 .userPasswordHash(userPasswordHash)
+                .mobile(mobile)
                 .build();
 
         otpStore.saveOtpSessionAtomically(purpose, email, sessionId, payload, otpTtlSeconds);
@@ -238,6 +239,7 @@ public class OtpService {
                 .firstName(verifiedSession.getFirstName())
                 .lastName(verifiedSession.getLastName())
                 .passwordHash(verifiedSession.getUserPasswordHash())
+                .mobile(verifiedSession.getMobile())
                 .build();
     }
 

@@ -16,4 +16,5 @@ public class OtpVerificationResult {
     private String firstName;
     private String lastName;
     private String passwordHash;
+    private String mobile;
 }

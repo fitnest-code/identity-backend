@@ -11,6 +11,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.TransactionSystemException;
+import jakarta.validation.ConstraintViolationException;
 
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
@@ -109,6 +112,92 @@ public class GlobalExceptionHandler {
 						.status(HttpStatus.BAD_REQUEST.value())
 						.path(request.getRequestURI())
 						.timestamp(LocalDateTime.now())
+						.build())
+				.build();
+
+		return ResponseEntity.badRequest().body(errorWrapper);
+	}
+
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<ErrorWrapper> handleDataIntegrityViolation(
+			DataIntegrityViolationException exception,
+			HttpServletRequest request
+	) {
+		log.warn("Data integrity violation at {}: {}", request.getRequestURI(), exception.getMessage());
+		
+		String message = "Məlumat bazası xətası. Daxil edilən məlumatların unikallığını və ya tamlığını yoxlayın.";
+		String code = "DATA_INTEGRITY_VIOLATION";
+		
+		if (exception.getMessage() != null && exception.getMessage().contains("uk_users_mobile")) {
+			message = "Bu mobil nömrə artıq qeydiyyatdan keçib.";
+			code = "DUPLICATE_MOBILE";
+		} else if (exception.getMessage() != null && exception.getMessage().contains("uk_users_email")) {
+			message = "Bu email artıq qeydiyyatdan keçib.";
+			code = "DUPLICATE_EMAIL";
+		} else if (exception.getMessage() != null && exception.getMessage().contains("violates not-null constraint")) {
+			message = "Zəruri məlumatlar çatışmır.";
+			code = "NULL_CONSTRAINT_VIOLATION";
+		}
+
+		ErrorWrapper errorWrapper = ErrorWrapper.builder()
+				.error(ErrorWrapper.ErrorDetail.builder()
+						.code(code)
+						.message(message)
+						.status(HttpStatus.CONFLICT.value())
+						.path(request.getRequestURI())
+						.timestamp(LocalDateTime.now())
+						.build())
+				.build();
+
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(errorWrapper);
+	}
+
+	@ExceptionHandler(TransactionSystemException.class)
+	public ResponseEntity<ErrorWrapper> handleTransactionSystemException(
+			TransactionSystemException exception,
+			HttpServletRequest request
+	) {
+		log.error("Transaction system exception at {}: {}", request.getRequestURI(), exception.getMessage());
+		
+		Throwable cause = exception.getRootCause();
+		if (cause instanceof ConstraintViolationException) {
+			return handleConstraintViolationException((ConstraintViolationException) cause, request);
+		}
+
+		ErrorWrapper errorWrapper = ErrorWrapper.builder()
+				.error(ErrorWrapper.ErrorDetail.builder()
+						.code("TRANSACTION_ERROR")
+						.message("Əməliyyat zamanı xəta baş verdi.")
+						.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+						.path(request.getRequestURI())
+						.timestamp(LocalDateTime.now())
+						.build())
+				.build();
+
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorWrapper);
+	}
+
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<ErrorWrapper> handleConstraintViolationException(
+			ConstraintViolationException exception,
+			HttpServletRequest request
+	) {
+		List<ErrorWrapper.FieldIssue> details = new ArrayList<>();
+		exception.getConstraintViolations().forEach(violation -> {
+			details.add(ErrorWrapper.FieldIssue.builder()
+					.field(violation.getPropertyPath().toString())
+					.issue(violation.getMessage())
+					.build());
+		});
+
+		ErrorWrapper errorWrapper = ErrorWrapper.builder()
+				.error(ErrorWrapper.ErrorDetail.builder()
+						.code("CONSTRAINT_VIOLATION")
+						.message("Məlumat doğruluğu xətası")
+						.status(HttpStatus.BAD_REQUEST.value())
+						.path(request.getRequestURI())
+						.timestamp(LocalDateTime.now())
+						.details(details)
 						.build())
 				.build();
 

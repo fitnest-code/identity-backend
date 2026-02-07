@@ -36,4 +36,5 @@ public class OtpSessionPayload {
     private String firstName;
     private String lastName;
     private String userPasswordHash;
+    private String mobile;
 }

@@ -28,9 +28,13 @@ public class UserService {
     }
 
     @Transactional
-    public User createNewUser(String email, String firstName, String lastName, String passwordHash) {
+    public User createNewUser(String email, String firstName, String lastName, String passwordHash, String mobile) {
         if (userRepository.existsByEmailIncludingDeleted(email)) {
             throw new ConflictException("Email already registered");
+        }
+
+        if (mobile != null && userRepository.findByMobileIncludingDeleted(mobile).isPresent()) {
+            throw new ConflictException("Mobile number already registered");
         }
 
         User user = User.builder()
@@ -38,6 +42,7 @@ public class UserService {
                 .firstName(normalizeNamePart(firstName))
                 .lastName(normalizeNamePart(lastName))
                 .passwordHash(passwordHash)
+                .mobile(mobile)
                 .hasAccount(true)
                 .setupRequired(true)
                 .accountLocked(false)
@@ -49,17 +54,18 @@ public class UserService {
     }
 
     @Transactional
-    public User createNewUserWithFullName(String email, String fullName, String passwordHash) {
+    public User createNewUserWithFullName(String email, String fullName, String passwordHash, String mobile) {
         if (userRepository.existsByEmailIncludingDeleted(email)) {
             throw new ConflictException("Email already registered");
         }
-
+ 
         NameParts nameParts = splitFullName(fullName);
         User user = User.builder()
                 .email(email)
                 .firstName(nameParts.firstName())
                 .lastName(nameParts.lastName())
                 .passwordHash(passwordHash)
+                .mobile(mobile)
                 .hasAccount(true)
                 .setupRequired(true)
                 .accountLocked(false)

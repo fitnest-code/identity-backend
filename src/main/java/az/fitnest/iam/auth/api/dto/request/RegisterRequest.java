@@ -36,4 +36,9 @@ public class RegisterRequest {
     @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     @Schema(description = "User's password (min 8 characters)", example = "SecurePass123!", requiredMode = Schema.RequiredMode.REQUIRED)
     private String password;
+
+    @NotBlank(message = "Mobile number is required")
+    @jakarta.validation.constraints.Pattern(regexp = "^\\+\\d{8,15}$", message = "Invalid mobile number format")
+    @Schema(description = "User's mobile number", example = "+994501234567", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String mobile;
 }
