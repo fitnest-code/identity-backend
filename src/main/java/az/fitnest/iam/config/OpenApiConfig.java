@@ -33,7 +33,8 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
-                                .description("Enter your JWT token. Get it from /api/v1/auth/login or /api/v1/auth/register/complete")));
+                                .description("Enter your JWT token. Get it from /api/v1/auth/login or /api/v1/auth/register/complete")))
+                .addSecurityItem(new io.swagger.v3.oas.models.security.SecurityRequirement().addList("bearerAuth"));
 
         // Add server URL for Istio routing if configured
         if (serverUrl != null && !serverUrl.isEmpty()) {
