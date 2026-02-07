@@ -1,5 +1,6 @@
 package az.fitnest.iam.config;
 
+import az.fitnest.iam.security.InternalEndpointFilter;
 import az.fitnest.iam.security.gateway.GatewayHeaderAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,8 +36,8 @@ import java.util.Map;
 /**
  * Security configuration for iam-service.
  * 
- * Uses a single SecurityFilterChain with proper request matchers
- * to handle both public, internal (service-to-service), and authenticated requests.
+ * Uses a single SecurityFilterChain with proper request matchers (AntPathRequestMatcher).
+ * Protects internal endpoints using InternalEndpointFilter.
  */
 @Slf4j
 @Configuration
@@ -46,76 +48,56 @@ public class SecurityConfig {
 
     private final ObjectMapper objectMapper;
 
-    /**
-     * Public endpoints that don't require authentication.
-     * Order matters - more specific patterns should come first.
-     */
-    private static final String[] PUBLIC_ENDPOINTS = {
-            // Internal service-to-service endpoints - NO authentication required
-            "/api/v1/internal/**",
-            
-            // Auth endpoints - public by design
-            "/api/v1/auth/login",
-            "/api/v1/auth/refresh",
-            "/api/v1/auth/otp/**",
-            "/api/v1/auth/register",
-            "/api/v1/auth/register/complete",
-            
-            // Swagger/OpenAPI
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            
-            // Actuator and health
-            "/actuator/**",
-            "/health/**",
-            
-            // Error handling
-            "/error"
-    };
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("Configuring iam-service security filter chain");
+        log.info(">>> IAM-SERVICE SECURITY CONFIG LOADED - VERSION 2026-02-07-v1 <<<");
         
         http
-            // Disable CSRF for stateless REST API
             .csrf(AbstractHttpConfigurer::disable)
-            
-            // Configure CORS
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            
-            // Stateless session management
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            
-            // Authorization rules
             .authorizeHttpRequests(auth -> auth
-                // Allow all public endpoints without authentication
-                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                // 1. INTERNAL SERVICE-TO-SERVICE - Permitted (filter validates X-Internal-Service header)
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/internal/**")).permitAll()
                 
-                // Allow OPTIONS requests for CORS preflight
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // 2. PUBLIC ENDPOINTS - Auth, Swagger, Actuator
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/login")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/refresh")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/otp/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register/complete")).permitAll()
                 
-                // All other requests require authentication
+                .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
+                
+                .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/health/**")).permitAll()
+                
+                .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/**", HttpMethod.OPTIONS.name())).permitAll()
+                
+                // 3. ALL OTHER ENDPOINTS - Require authentication
                 .anyRequest().authenticated()
             )
-            
-            // Exception handling with custom responses
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(authenticationEntryPoint())
                 .accessDeniedHandler(accessDeniedHandler())
             )
-            
-            // Add custom authentication filter for gateway headers
+            // Add internal endpoint filter
             .addFilterBefore(
-                new GatewayHeaderAuthenticationFilter(), 
+                new InternalEndpointFilter(),
                 UsernamePasswordAuthenticationFilter.class
+            )
+            // Add custom authentication filter for gateway headers
+            .addFilterAfter(
+                new GatewayHeaderAuthenticationFilter(), 
+                InternalEndpointFilter.class
             );
         
-        log.info("IAM-service security configured. Public endpoints: {}", 
-                 Arrays.toString(PUBLIC_ENDPOINTS));
+        log.info("IAM-service security configured: internal=X-Internal-Service required, external=authenticated");
         
         return http.build();
     }
