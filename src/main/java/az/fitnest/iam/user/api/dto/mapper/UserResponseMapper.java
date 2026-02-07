@@ -10,7 +10,6 @@ public final class UserResponseMapper {
     public static UserResponse toResponse(User user) {
         return UserResponse.builder()
                 .userId(String.valueOf(user.getId()))
-                .fullName(user.getFullName())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .mobile(user.getMobile())

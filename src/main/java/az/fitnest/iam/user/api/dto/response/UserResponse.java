@@ -18,9 +18,6 @@ public class UserResponse {
     @JsonProperty("user_id")
     private String userId;
 
-    @JsonProperty("full_name")
-    private String fullName;
-
     @JsonProperty("first_name")
     private String firstName;
 
