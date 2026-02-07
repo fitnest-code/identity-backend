@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @FeignClient(
         name = "user-service",
-        url = "${user.service.url:http://localhost:9897}",
+        url = "${USER_SERVICE_URL:http://user-service:8080}",
         path = "/api/v1",
         configuration = UserServiceClientConfig.class
 )
