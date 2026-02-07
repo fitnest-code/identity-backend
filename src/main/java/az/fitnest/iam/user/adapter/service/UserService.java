@@ -22,6 +22,7 @@ public class UserService {
     private final RedisTokenService redisTokenService;
     private final EmailService emailService;
 
+    @org.springframework.cache.annotation.Cacheable(value = "users", key = "#userId")
     @Transactional(readOnly = true)
     public User getUserById(Long userId) {
         return getUserOrThrow(userId);
@@ -76,6 +77,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
     @Transactional
 	public User updateUserProfile(Long userId, UpdateUserProfileCommand command) {
         User user = getUserOrThrow(userId);
@@ -105,6 +107,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
     @Transactional
     public User updateProfileImageUrl(Long userId, String profileImageUrl) {
         User user = getUserOrThrow(userId);
@@ -113,6 +116,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
     @Transactional
     public User updateSetupRequired(Long userId, Boolean setupRequired) {
         User user = getUserOrThrow(userId);
@@ -121,6 +125,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
     @Transactional
     public void deleteUser(Long userId, String reason) {
         User user = getUserOrThrow(userId);

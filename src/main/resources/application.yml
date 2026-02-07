@@ -10,6 +10,8 @@ server:
     min-response-size: 1024
 
 spring:
+  main:
+    lazy-initialization: true
   application:
     name: iam-service
   # Database

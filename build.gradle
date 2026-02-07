@@ -48,6 +48,7 @@ dependencies {
 	runtimeOnly "io.jsonwebtoken:jjwt-jackson:0.11.2"
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+	implementation 'io.github.openfeign:feign-hc5'
     // Using springdoc 2.7.0 compatible with Spring Boot 3.4.x
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 	compileOnly 'org.projectlombok:lombok'
