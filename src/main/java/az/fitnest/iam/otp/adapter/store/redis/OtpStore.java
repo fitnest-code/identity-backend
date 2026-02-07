@@ -49,7 +49,6 @@ public class OtpStore {
             "if not session_json then " +
             "    return {0, '', ''} " +
             "end " +
-            "local cjson = require('cjson') " +
             "local session = cjson.decode(session_json) " +
             "if session.locked == true then " +
             "    return {1, session_json, 'LOCKED'} " +
@@ -178,7 +177,7 @@ public class OtpStore {
             try {
                 redisTemplate.execute(SAVE_OTP_SESSION_SCRIPT, keys, args.toArray());
             } catch (Exception e) {
-                throw new InternalServerException("Failed to execute Redis script for saving OTP session");
+                throw new InternalServerException("Failed to execute Redis script for saving OTP session: " + e.getMessage());
             }
         } catch (JsonProcessingException e) {
             throw new InternalServerException("Failed to serialize OTP session");
@@ -199,7 +198,7 @@ public class OtpStore {
         try {
             result = redisTemplate.execute(VERIFY_OTP_SCRIPT, keys, args.toArray());
         } catch (Exception e) {
-            throw new InternalServerException("Failed to execute Redis script for verifying OTP");
+            throw new InternalServerException("Failed to execute Redis script for verifying OTP: " + e.getMessage());
         }
 
         return parseVerifyOtpResult(result);
