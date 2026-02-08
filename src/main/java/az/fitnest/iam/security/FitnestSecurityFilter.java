@@ -36,10 +36,18 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
         String internalHeader = request.getHeader(INTERNAL_SERVICE_HEADER);
+        
+        if (path.startsWith(INTERNAL_PATH_PREFIX)) {
+            log.warn(">>> [SECURITY-TRACE] Incoming request to: {} from: {} <<<", path, request.getRemoteAddr());
+            log.warn(">>> [SECURITY-TRACE] Header {}: {} <<<", INTERNAL_SERVICE_HEADER, 
+                (internalHeader != null ? internalHeader : "MISSING"));
+            log.warn(">>> [SECURITY-TRACE] Header X-User-Id: {} <<<", request.getHeader(USER_ID_HEADER));
+            log.warn(">>> [SECURITY-TRACE] Header Authorization present: {} <<<", request.getHeader("Authorization") != null);
+        }
 
         // 1. Handle Internal Service-to-Service requests
         if (internalHeader != null && !internalHeader.isBlank()) {
-            log.info(">>> INTERNAL SERVICE AUTH ATTEMPT: {} calling {} <<<", internalHeader, path);
+            log.warn(">>> INTERNAL SERVICE AUTH SUCCESS: {} calling {} <<<", internalHeader, path);
             authenticateInternalService(internalHeader);
             filterChain.doFilter(request, response);
             return;

@@ -48,8 +48,29 @@ public class SecurityConfig {
     private final ObjectMapper objectMapper;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info(">>> IAM-SERVICE SECURITY CONFIG LOADED - VERSION 2026-02-07-v1 <<<");
+    @org.springframework.core.annotation.Order(1)
+    public SecurityFilterChain internalSecurityFilterChain(HttpSecurity http) throws Exception {
+        log.warn(">>> [NUCLEAR] LOADING INTERNAL SECURITY CHAIN - PRIORITY 1 <<<");
+        
+        http
+            .securityMatcher(new AntPathRequestMatcher("/api/v1/internal/**"))
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().hasRole("INTERNAL")
+            )
+            .addFilterBefore(
+                new az.fitnest.iam.security.FitnestSecurityFilter(),
+                UsernamePasswordAuthenticationFilter.class
+            );
+        
+        return http.build();
+    }
+
+    @Bean
+    @org.springframework.core.annotation.Order(2)
+    public SecurityFilterChain externalSecurityFilterChain(HttpSecurity http) throws Exception {
+        log.info(">>> LOADING EXTERNAL SECURITY CHAIN - PRIORITY 2 <<<");
         
         http
             .csrf(AbstractHttpConfigurer::disable)
@@ -58,10 +79,7 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                // 1. INTERNAL SERVICE-TO-SERVICE - Requires ROLE_INTERNAL
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/internal/**")).hasRole("INTERNAL")
-                
-                // 2. PUBLIC ENDPOINTS - Auth, Swagger, Actuator
+                // PUBLIC ENDPOINTS
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/login")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/refresh")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/otp/**")).permitAll()
@@ -78,20 +96,16 @@ public class SecurityConfig {
                 .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/**", HttpMethod.OPTIONS.name())).permitAll()
                 
-                // 3. ALL OTHER ENDPOINTS - Authenticated (ROLE_USER set by filter)
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(authenticationEntryPoint())
                 .accessDeniedHandler(accessDeniedHandler())
             )
-            // Single unified security filter
             .addFilterBefore(
                 new az.fitnest.iam.security.FitnestSecurityFilter(),
                 UsernamePasswordAuthenticationFilter.class
             );
-        
-        log.info("IAM-service security configured: internal=X-Internal-Service required, external=authenticated");
         
         return http.build();
     }
