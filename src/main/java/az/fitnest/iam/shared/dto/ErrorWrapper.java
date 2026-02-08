@@ -30,7 +30,7 @@ public class ErrorWrapper {
         private int status;
         private String path;
         private LocalDateTime timestamp;
-        private List<FieldIssue> details;
+        private Map<String, Object> details;
     }
 
     @Data
@@ -43,17 +43,18 @@ public class ErrorWrapper {
     }
 
     public static ErrorWrapper fromErrorResponse(ErrorResponse errorResponse, int status) {
-        List<FieldIssue> details = null;
+        Map<String, Object> details = null;
         if (errorResponse.getDetails() != null && errorResponse.getDetails().containsKey("validationErrors")) {
             @SuppressWarnings("unchecked")
             Map<String, String> validationErrors = (Map<String, String>) errorResponse.getDetails().get("validationErrors");
             if (validationErrors != null) {
-                details = validationErrors.entrySet().stream()
+                List<FieldIssue> issues = validationErrors.entrySet().stream()
                         .map(entry -> FieldIssue.builder()
                                 .field(entry.getKey())
                                 .issue(entry.getValue())
                                 .build())
                         .toList();
+                details = Map.of("validationErrors", issues);
             }
         }
 
