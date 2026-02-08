@@ -1,7 +1,6 @@
 package az.fitnest.iam.config;
 
-import az.fitnest.iam.security.InternalEndpointFilter;
-import az.fitnest.iam.security.gateway.GatewayHeaderAuthenticationFilter;
+import az.fitnest.iam.security.FitnestSecurityFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
