@@ -46,9 +46,7 @@ public class AuthService {
             user.setDeleted(false);
             userRepository.save(user);
 
-            if (user.getEmail() != null && !user.getEmail().isBlank()) {
-                emailService.sendHtmlEmail(user.getEmail(), "Your Fitnest account has been reactivated", "account-recovery", java.util.Map.of());
-            }
+
         }
 
         if (isAccountLocked(user)) {

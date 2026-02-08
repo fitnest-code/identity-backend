@@ -5,10 +5,10 @@ public final class OtpMessages {
     private OtpMessages() {}
 
     public static final String OTP_SENT =
-            "OTP code has been sent to your email.";
+            "OTP code has been sent to your mobile number.";
 
     public static final String OTP_SENT_IF_EXISTS =
-            "If an account exists with this email, an OTP code has been sent.";
+            "If an account exists with this mobile number, an OTP code has been sent.";
 
     public static final String INVALID_OTP =
             "Invalid OTP code";

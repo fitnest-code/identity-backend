@@ -103,8 +103,9 @@ public class AuthController {
 
     @Operation(
             summary = "Initiate registration",
-            description = "Starts the registration process by collecting user details and sending a 4-digit OTP code to the provided email. " +
-                    "Registration is only completed after the OTP is verified in the next step."
+            description = "Starts the registration process by collecting mobile number. " +
+                    "Sends a 4-digit OTP code to the provided mobile number. " +
+                    "Registration is only completed after the OTP is verified and details are provided in subsequent steps."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -131,8 +132,9 @@ public class AuthController {
 
     @Operation(
             summary = "Complete registration",
-            description = "Verifies the OTP code sent in the previous step and creates the user account. " +
-                    "Returns JWT access and refresh tokens upon successful verification."
+            description = "Completes registration using the registration token obtained from OTP verification. " +
+                    "Collects user's name, surname, and password. " +
+                    "Returns JWT access and refresh tokens upon successful account creation."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -242,8 +244,9 @@ public class AuthController {
 
     @Operation(
             summary = "Request password reset",
-            description = "Sends an OTP code to the user's email for password reset. " +
-                    "Returns a generic success message to prevent email enumeration."
+            description = "Starts password reset process by collecting mobile number. " +
+                    "Sends an OTP code to the provided mobile number. " +
+                    "Returns a generic success message to prevent user enumeration."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -300,6 +303,7 @@ public class AuthController {
     @Operation(
             summary = "Reset password",
             description = "Resets the user's password using a valid reset token obtained from OTP verification. " +
+                    "Requires new password and confirmation password to match. " +
                     "The reset token is consumed after successful password reset."
     )
     @ApiResponses(value = {

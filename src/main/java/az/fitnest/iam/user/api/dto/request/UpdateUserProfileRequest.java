@@ -16,6 +16,5 @@ public class UpdateUserProfileRequest {
     @JsonProperty("last_name")
     private String lastName;
 
-    @Email
-    private String email;
+
 }

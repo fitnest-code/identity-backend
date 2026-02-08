@@ -19,7 +19,6 @@ import java.util.Objects;
         name = "users",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_users_mobile", columnNames = "mobile"),
-                @UniqueConstraint(name = "uk_users_email", columnNames = "email")
         }
 )
 @AttributeOverride(name = "id", column = @Column(name = "user_id"))
@@ -41,8 +40,7 @@ public class User extends BaseAuditableEntity {
     @Column(name = "mobile", nullable = false, length = 20)
     private String mobile;
 
-    @Column(name = "email", nullable = false)
-    private String email;
+
 
     @JsonIgnore
     @ToString.Exclude

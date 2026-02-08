@@ -26,7 +26,7 @@ public class UserResponse {
 
     private String mobile;
 
-    private String email;
+
 
     @JsonProperty("has_account")
     private boolean hasAccount;

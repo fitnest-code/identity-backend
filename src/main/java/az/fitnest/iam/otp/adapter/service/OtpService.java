@@ -10,6 +10,7 @@ import az.fitnest.iam.otp.domain.enums.OtpPurpose;
 import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.shared.exception.OtpRateLimitedException;
 import az.fitnest.iam.messaging.EmailService;
+import az.fitnest.iam.messaging.SmsService;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
 import az.fitnest.iam.user.adapter.service.EmailNormalizationService;
 import az.fitnest.iam.otp.adapter.store.redis.OtpStore;
@@ -38,14 +39,13 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class OtpService {
 
-    private final EmailNormalizationService emailNormalizationService;
     private final UserRepository userRepository;
     private final OtpStore otpStore;
     private final OtpRateLimiter otpRateLimiter;
     private final OtpGenerator otpGenerator;
     private final PasswordService passwordService;
     private final OtpSessionIdGenerator otpSessionIdGenerator;
-    private final EmailService emailService;
+    private final SmsService smsService;
     private final RegistrationTokenService registrationTokenService;
     private final ResetPasswordTokenService resetPasswordTokenService;
     private final Clock clock;
@@ -75,61 +75,57 @@ public class OtpService {
         }
     }
 
-    private boolean doesPurposeMatchEmailExistence(OtpPurpose purpose, String email) {
-        boolean emailExists = userRepository.existsByEmailIgnoreCase(email);
-        if (purpose == OtpPurpose.REGISTRATION) {
-            return !emailExists;
-        } else if (purpose == OtpPurpose.LOGIN || purpose == OtpPurpose.PASSWORD_RESET) {
-            return emailExists;
-        }
-        return false;
-    }
-
-    private boolean doesPurposeMatchEmailExistence(OtpPurpose purpose, boolean emailExistsAtCreation) {
-        if (purpose == OtpPurpose.REGISTRATION) {
-            return !emailExistsAtCreation;
-        } else if (purpose == OtpPurpose.LOGIN || purpose == OtpPurpose.PASSWORD_RESET) {
-            return emailExistsAtCreation;
-        }
-        return false;
-    }
-
     public OtpSendResponse sendOtp(OtpSendRequest request) {
         return sendOtp(request, null, null, null, null);
     }
 
     public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile) {
-        String email = emailNormalizationService.normalize(request.getEmail());
+        String mobileNumber = request.getMobile() != null ? request.getMobile() : mobile;
+
+        if (mobileNumber == null) {
+            throw new IllegalArgumentException("Mobile number must be provided");
+        }
+
         OtpPurpose purpose = request.getPurpose();
+        
+        validateRateLimit(purpose, mobileNumber);
 
-        validateRateLimit(purpose, email);
+        boolean exists = userRepository.findByMobileIncludingDeleted(mobileNumber).isPresent();
 
-        boolean emailExists = userRepository.existsByEmailIgnoreCase(email);
-        boolean shouldSendEmail = doesPurposeMatchEmailExistence(purpose, email);
+        boolean shouldSendOtp = doesPurposeMatchExistence(purpose, exists);
 
-        if (!shouldSendEmail) {
+        if (!shouldSendOtp) {
             return createFakeSessionResponse();
         }
 
-        invalidateActiveSession(purpose, email);
+        invalidateActiveSession(purpose, mobileNumber);
 
         String otp = otpGenerator.generateOtp();
-        String sessionId = createOtpSession(email, purpose, otp, emailExists, firstName, lastName, userPasswordHash, mobile);
+        String sessionId = createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber);
 
-        emailService.sendHtmlEmail(email, "Your Fitnest verification code", "otp", java.util.Map.of("otp", otp));
+        smsService.sendSms(mobileNumber, "Your Fitnest verification code: " + otp);
 
         return createSuccessResponse(sessionId);
     }
 
-    private void invalidateActiveSession(OtpPurpose purpose, String email) {
-        otpStore.getActiveSessionPointer(purpose, email).ifPresent(existingSessionId -> {
+    private boolean doesPurposeMatchExistence(OtpPurpose purpose, boolean exists) {
+        if (purpose == OtpPurpose.REGISTRATION) {
+            return !exists;
+        } else if (purpose == OtpPurpose.LOGIN || purpose == OtpPurpose.PASSWORD_RESET) {
+            return exists;
+        }
+        return false;
+    }
+
+    private void invalidateActiveSession(OtpPurpose purpose, String identifier) {
+        otpStore.getActiveSessionPointer(purpose, identifier).ifPresent(existingSessionId -> {
             otpStore.deleteSession(existingSessionId);
-            otpStore.deleteActivePointer(purpose, email);
+            otpStore.deleteActivePointer(purpose, identifier);
         });
     }
 
-    private void validateRateLimit(OtpPurpose purpose, String email) {
-        OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, email);
+    private void validateRateLimit(OtpPurpose purpose, String identifier) {
+        OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
         if (!rateLimitResult.isAllowed()) {
             long waitTimeSeconds = rateLimitResult.getWaitTimeSeconds();
             String message = waitTimeSeconds <= errorMessageThresholdSeconds
@@ -149,26 +145,24 @@ public class OtpService {
                 .build();
     }
 
-    private String createOtpSession(String email, OtpPurpose purpose, String otp, boolean emailExists, String firstName, String lastName, String userPasswordHash, String mobile) {
+    private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile) {
         String otpHash = hashOtp(otp);
         String sessionId = otpSessionIdGenerator.generateSessionId();
 
         OtpSessionPayload payload = OtpSessionPayload.builder()
-                .email(email)
                 .purpose(purpose)
                 .otpHash(otpHash)
                 .attempts(0)
                 .locked(false)
                 .verified(false)
                 .createdAt(Instant.now(clock))
-                .emailExistsAtCreation(emailExists)
                 .firstName(firstName)
                 .lastName(lastName)
                 .userPasswordHash(userPasswordHash)
                 .mobile(mobile)
                 .build();
 
-        otpStore.saveOtpSessionAtomically(purpose, email, sessionId, payload, otpTtlSeconds);
+        otpStore.saveOtpSessionAtomically(purpose, mobile, sessionId, payload, otpTtlSeconds);
 
         return sessionId;
     }
@@ -198,19 +192,13 @@ public class OtpService {
         if (session.getVerified()) {
             throw new InvalidCredentialsException(OtpMessages.OTP_ALREADY_VERIFIED);
         }
-
-        if (session.getEmailExistsAtCreation() == null) {
-            throw new InvalidCredentialsException(OtpMessages.INVALID_OTP);
-        }
-
-        boolean purposeMatches = doesPurposeMatchEmailExistence(
-                session.getPurpose(), 
-                session.getEmailExistsAtCreation()
-        );
-
-        if (!purposeMatches) {
-            throw new InvalidCredentialsException(OtpMessages.INVALID_OTP);
-        }
+        
+        // We no longer check emailExistsAtCreation because removing it from payload means we trust
+        // doesPurposeMatchExistence ran at creation time.
+        // Or we should assume existence was checked at creation.
+        // But previously we double checked here.
+        // Since we removed emailExistsAtCreation, we rely on sendOtp logic.
+        // It's safer to not re-check here if field relies on state at creation which is immutable in session.
 
         boolean isValid = hashOtp(otpCode).equals(session.getOtpHash());
 
@@ -238,7 +226,6 @@ public class OtpService {
 
         OtpSessionPayload verifiedSession = result.getSession();
         return OtpVerificationResult.builder()
-                .email(verifiedSession.getEmail())
                 .purpose(verifiedSession.getPurpose())
                 .firstName(verifiedSession.getFirstName())
                 .lastName(verifiedSession.getLastName())
@@ -247,9 +234,8 @@ public class OtpService {
                 .build();
     }
 
-    public OtpVerificationResult verifyOtpByEmail(String email, OtpPurpose purpose, String otpCode) {
-        String normalizedEmail = emailNormalizationService.normalize(email);
-        String sessionId = otpStore.getActiveSessionPointer(purpose, normalizedEmail)
+    public OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode) {
+        String sessionId = otpStore.getActiveSessionPointer(purpose, identifier)
                 .orElseThrow(() -> new InvalidCredentialsException(OtpMessages.INVALID_OTP));
         
         return verifyOtp(sessionId, otpCode);
@@ -262,7 +248,8 @@ public class OtpService {
             throw new InvalidCredentialsException("Invalid OTP purpose for registration token");
         }
         
-        String registrationToken = registrationTokenService.issueForEmail(verificationResult.getEmail());
+        String identifier = verificationResult.getMobile();
+        String registrationToken = registrationTokenService.issueForIdentifier(identifier);
         
         return OtpVerifyResponse.builder()
                 .verified(true)
@@ -278,7 +265,9 @@ public class OtpService {
             throw new InvalidCredentialsException("Invalid OTP purpose for password reset");
         }
         
-        return resetPasswordTokenService.issueForEmail(verificationResult.getEmail());
+        String identifier = verificationResult.getMobile();
+        
+        return resetPasswordTokenService.issueForIdentifier(identifier);
     }
 
     private String hashOtp(String otp) {

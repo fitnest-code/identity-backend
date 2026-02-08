@@ -79,7 +79,6 @@ public class InternalUserController {
         User user = userService.updateUserProfile(userId, UpdateUserProfileCommand.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .email(request.getEmail())
                 .build());
         return ResponseEntity.ok(toUserResponse(user));
     }
@@ -113,6 +112,22 @@ public class InternalUserController {
             @PathVariable Long userId,
             @RequestBody UpdateSetupRequiredRequest request) {
         User user = userService.updateSetupRequired(userId, request.getSetupRequired());
+        return ResponseEntity.ok(toUserResponse(user));
+    }
+
+    /**
+     * Update user language preference.
+     * Called by user-service when user changes language.
+     *
+     * @param userId The ID of the user
+     * @param request Request containing the new language
+     * @return Updated user details
+     */
+    @PutMapping("/{userId}/language")
+    public ResponseEntity<UserResponse> updateLanguage(
+            @PathVariable Long userId,
+            @RequestBody @Valid az.fitnest.iam.user.api.dto.request.UpdateLanguageRequest request) {
+        User user = userService.updateLanguage(userId, request.getLanguage());
         return ResponseEntity.ok(toUserResponse(user));
     }
 

@@ -13,7 +13,7 @@ public final class UserResponseMapper {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .mobile(user.getMobile())
-                .email(user.getEmail())
+
                 .hasAccount(user.hasAccount())
                 .setupRequired(user.isSetupRequired())
                 .profileImageUrl(user.getProfileImageUrl())

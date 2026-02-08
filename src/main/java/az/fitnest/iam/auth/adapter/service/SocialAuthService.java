@@ -30,7 +30,6 @@ public class SocialAuthService {
     public LoginResponse socialLoginApple(AppleSocialRequest request) {
         AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.getIdentityToken());
         String providerId = claims.userId();
-        String email = claims.email();
         
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
                 SocialProvider.APPLE, providerId);
@@ -42,7 +41,6 @@ public class SocialAuthService {
 
             if (user.isDeleted()) {
                 User newUser = createUserForSocialLogin(
-                        email,
                         request.getFirstName(),
                         request.getLastName(),
                         request.getFullName() != null ? request.getFullName() : "User",
@@ -56,21 +54,9 @@ public class SocialAuthService {
             return tokenIssuanceService.issueTokens(user);
         }
         
-        if (email != null) {
-            Optional<SocialAuth> existingByEmail = socialAuthRepository.findByProviderAndEmailIgnoreCase(
-                    SocialProvider.APPLE, email);
-            if (existingByEmail.isPresent()) {
-                throw new ConflictException("Unable to complete social login with this account");
-            }
-            
-            Optional<User> existingUser = userRepository.findByEmailIncludingDeleted(email);
-            if (existingUser.isPresent()) {
-                throw new ConflictException("Unable to complete social login with this account");
-            }
-        }
+        // No email linking anymore. Create new user.
         
         User newUser = createUserForSocialLogin(
-                email,
                 request.getFirstName(),
                 request.getLastName(),
                 request.getFullName() != null ? request.getFullName() : "User",
@@ -80,7 +66,6 @@ public class SocialAuthService {
                 .userId(newUser.getId())
                 .provider(SocialProvider.APPLE)
                 .providerId(providerId)
-                .email(email)
                 .build();
         socialAuthRepository.save(socialAuth);
         
@@ -91,7 +76,6 @@ public class SocialAuthService {
     public LoginResponse socialLoginGoogle(GoogleSocialRequest request) {
         GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.getIdToken());
         String providerId = claims.userId();
-        String email = claims.email();
         
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
                 SocialProvider.GOOGLE, providerId);
@@ -103,7 +87,6 @@ public class SocialAuthService {
 
             if (user.isDeleted()) {
                 User newUser = createUserForSocialLogin(
-                        email,
                         request.getFirstName(),
                         request.getLastName(),
                         request.getFullName() != null ? request.getFullName() : "User",
@@ -117,21 +100,9 @@ public class SocialAuthService {
             return tokenIssuanceService.issueTokens(user);
         }
         
-        if (email != null) {
-            Optional<SocialAuth> existingByEmail = socialAuthRepository.findByProviderAndEmailIgnoreCase(
-                    SocialProvider.GOOGLE, email);
-            if (existingByEmail.isPresent()) {
-                throw new ConflictException("Unable to complete social login with this account");
-            }
-            
-            Optional<User> existingUser = userRepository.findByEmailIncludingDeleted(email);
-            if (existingUser.isPresent()) {
-                throw new ConflictException("Unable to complete social login with this account");
-            }
-        }
+        // No email linking anymore. Create new user.
         
         User newUser = createUserForSocialLogin(
-                email,
                 request.getFirstName(),
                 request.getLastName(),
                 request.getFullName() != null ? request.getFullName() : "User",
@@ -141,17 +112,15 @@ public class SocialAuthService {
                 .userId(newUser.getId())
                 .provider(SocialProvider.GOOGLE)
                 .providerId(providerId)
-                .email(email)
                 .build();
         socialAuthRepository.save(socialAuth);
         
         return tokenIssuanceService.issueTokens(newUser);
     }
 
-    private User createUserForSocialLogin(String email, String firstName, String lastName, String fullName, String mobile) {
+    private User createUserForSocialLogin(String firstName, String lastName, String fullName, String mobile) {
         NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
         User user = User.builder()
-                .email(email)
                 .firstName(nameParts.firstName())
                 .lastName(nameParts.lastName())
                 .mobile(mobile)

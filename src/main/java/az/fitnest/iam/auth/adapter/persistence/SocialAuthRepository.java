@@ -15,10 +15,7 @@ public interface SocialAuthRepository extends JpaRepository<SocialAuth, Long> {
             String providerId
     );
 
-    Optional<SocialAuth> findByProviderAndEmailIgnoreCase(
-            SocialProvider provider,
-            String email
-    );
+
 
     boolean existsByProviderAndProviderId(
             SocialProvider provider,

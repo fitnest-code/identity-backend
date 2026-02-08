@@ -29,17 +29,12 @@ public class UserService {
     }
 
     @Transactional
-    public User createNewUser(String email, String firstName, String lastName, String passwordHash, String mobile) {
-        if (userRepository.existsByEmailIncludingDeleted(email)) {
-            throw new ConflictException("Email already registered");
-        }
-
+    public User createNewUser(String firstName, String lastName, String passwordHash, String mobile) {
         if (mobile != null && userRepository.findByMobileIncludingDeleted(mobile).isPresent()) {
             throw new ConflictException("Mobile number already registered");
         }
 
         User user = User.builder()
-                .email(email)
                 .firstName(normalizeNamePart(firstName))
                 .lastName(normalizeNamePart(lastName))
                 .passwordHash(passwordHash)
@@ -55,14 +50,9 @@ public class UserService {
     }
 
     @Transactional
-    public User createNewUserWithFullName(String email, String fullName, String passwordHash, String mobile) {
-        if (userRepository.existsByEmailIncludingDeleted(email)) {
-            throw new ConflictException("Email already registered");
-        }
- 
+    public User createNewUserWithFullName(String fullName, String passwordHash, String mobile) {
         NameParts nameParts = splitFullName(fullName);
         User user = User.builder()
-                .email(email)
                 .firstName(nameParts.firstName())
                 .lastName(nameParts.lastName())
                 .passwordHash(passwordHash)
@@ -84,24 +74,12 @@ public class UserService {
 
 		String firstName = command.firstName();
 		String lastName = command.lastName();
-		String email = command.email();
 
 		boolean namePartsProvided = firstName != null || lastName != null;
         if (namePartsProvided) {
 			NameParts parts = resolveNameParts(firstName, lastName, null);
 			user.setFirstName(parts.firstName());
 			user.setLastName(parts.lastName());
-        }
-
-        if (email != null) {
-            if (email.isBlank()) {
-                user.setEmail(null);
-            } else {
-                if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmailIncludingDeleted(email)) {
-                    throw new ConflictException("Email already in use");
-                }
-                user.setEmail(email);
-            }
         }
 
         return userRepository.save(user);
@@ -118,10 +96,17 @@ public class UserService {
 
     @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
     @Transactional
-    public User updateSetupRequired(Long userId, Boolean setupRequired) {
+    public User updateSetupRequired(Long userId, boolean setupRequired) {
         User user = getUserOrThrow(userId);
-
         user.setSetupRequired(setupRequired);
+        return userRepository.save(user);
+    }
+
+    @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
+    @Transactional
+    public User updateLanguage(Long userId, az.fitnest.iam.user.domain.enums.Language language) {
+        User user = getUserOrThrow(userId);
+        user.setLanguage(language);
         return userRepository.save(user);
     }
 
@@ -130,17 +115,7 @@ public class UserService {
     public void deleteUser(Long userId, String reason) {
         User user = getUserOrThrow(userId);
 
-        String originalEmail = user.getEmail();
 
-        if (originalEmail != null && !originalEmail.isBlank()) {
-            String recoverUrl = "https://app.fitnest.az/account/recover";
-            emailService.sendHtmlEmail(
-                originalEmail, 
-                "Your Fitnest account is scheduled for deletion", 
-                "account-deletion", 
-                java.util.Map.of("gracePeriodDays", 30, "recoverUrl", recoverUrl)
-            );
-        }
 
         userRepository.delete(user);
 

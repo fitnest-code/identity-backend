@@ -34,15 +34,24 @@ public class PasswordResetService {
 
     @Transactional
     public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+        String mobile = request.getMobile();
+        
+        if (userRepository.findByMobileIncludingDeleted(mobile).isEmpty()) {
+           // Don't reveal user existence
+           return ForgotPasswordResponse.builder()
+                   .message("If an account exists with this mobile number, an OTP code has been sent.")
+                   .build();
+        }
+
         OtpSendRequest otpRequest = OtpSendRequest.builder()
-                .email(request.getEmail())
+                .mobile(mobile)
                 .purpose(OtpPurpose.PASSWORD_RESET)
                 .build();
         
         otpService.sendOtp(otpRequest);
         
         return ForgotPasswordResponse.builder()
-                .message("If an account exists with this email, an OTP code has been sent.")
+                .message("If an account exists with this mobile number, an OTP code has been sent.")
                 .build();
     }
 
@@ -61,9 +70,13 @@ public class PasswordResetService {
 
     @Transactional
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
-        String email = resetPasswordTokenService.requireEmail(request.getResetToken());
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new InvalidCredentialsException("Passwords do not match");
+        }
+
+        String identifier = resetPasswordTokenService.requireIdentifier(request.getResetToken());
         
-        User user = userRepository.findByEmailIgnoreCase(email)
+        User user = userRepository.findByMobileIncludingDeleted(identifier)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         if (user.isDeleted()) {

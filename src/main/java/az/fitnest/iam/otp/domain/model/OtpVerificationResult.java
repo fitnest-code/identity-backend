@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OtpVerificationResult {
-    private String email;
+
     private OtpPurpose purpose;
     private String firstName;
     private String lastName;

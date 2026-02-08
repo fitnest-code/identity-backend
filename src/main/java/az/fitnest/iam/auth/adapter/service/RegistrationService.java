@@ -26,67 +26,49 @@ public class RegistrationService {
     private final UserRepository userRepository;
     private final TokenIssuanceService tokenIssuanceService;
     private final OtpService otpService;
+    private final RegistrationTokenService registrationTokenService;
 
     public OtpSendResponse startRegistration(RegisterRequest request) {
-        if (userRepository.existsByEmailIncludingDeleted(request.getEmail())) {
-            throw new ConflictException("Email already registered");
-        }
-        
         if (userRepository.findByMobileIncludingDeleted(request.getMobile()).isPresent()) {
             throw new ConflictException("Mobile number already registered");
         }
         
-        String passwordHash = passwordService.hashPassword(request.getPassword());
-        
         OtpSendRequest otpRequest = OtpSendRequest.builder()
-                .email(request.getEmail())
+                .mobile(request.getMobile())
                 .purpose(OtpPurpose.REGISTRATION)
                 .build();
         
         return otpService.sendOtp(
                 otpRequest, 
-                request.getFirstName(), 
-                request.getLastName(), 
-                passwordHash,
+                null, 
+                null, 
+                null, 
                 request.getMobile()
         );
     }
 
     @Transactional
     public LoginResponse completeRegistration(RegisterCompleteRequest request) {
-        OtpVerificationResult result = otpService.verifyOtpByEmail(
-                request.getEmail(), 
-                OtpPurpose.REGISTRATION, 
-                request.getOtpCode()
-        );
+        String registrationToken = request.getRegistrationToken();
+        String identifier = registrationTokenService.requireIdentifier(registrationToken);
         
-        if (result.getPurpose() != OtpPurpose.REGISTRATION) {
-            throw new InvalidCredentialsException("Invalid OTP purpose");
-        }
-
+        // Identifier is always mobile now
+        String mobile = identifier;
+        
+        // Consume the token so it cannot be used again
+        registrationTokenService.consume(registrationToken);
+        
+        String passwordHash = passwordService.hashPassword(request.getPassword());
+        
         User user = userService.createNewUser(
-                result.getEmail(),
-                result.getFirstName(),
-                result.getLastName(),
-                result.getPasswordHash(),
-                result.getMobile()
+                request.getFirstName(),
+                request.getLastName(),
+                passwordHash,
+                mobile
         );
 
         return tokenIssuanceService.issueTokens(user);
     }
 
-    private LoginResponse loginAfterRegistration(String email, String password) {
-        User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
-        if (user.getPasswordHash() == null) {
-            throw new InvalidCredentialsException("Invalid credentials");
-        }
-
-        if (!passwordService.verifyPassword(password, user.getPasswordHash())) {
-            throw new InvalidCredentialsException("Invalid credentials");
-        }
-
-        return tokenIssuanceService.issueTokens(user);
-    }
 }

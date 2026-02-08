@@ -25,11 +25,12 @@ public class RegistrationTokenService {
     @Value("${auth.registration-token.ttl-hours:24}")
     private long ttlHours;
 
-    public String issueForEmail(String email) {
+
+    public String issueForIdentifier(String identifier) {
         String token = UUID.randomUUID().toString();
         String key = registrationKey(token);
         
-        RegistrationTokenPayload payload = new RegistrationTokenPayload(email, OtpPurpose.REGISTRATION);
+        RegistrationTokenPayload payload = new RegistrationTokenPayload(identifier, OtpPurpose.REGISTRATION);
         try {
             String payloadJson = objectMapper.writeValueAsString(payload);
             redisTemplate.opsForValue().set(key, payloadJson, ttlHours, TimeUnit.HOURS);
@@ -59,8 +60,8 @@ public class RegistrationTokenService {
         }
     }
 
-    public String requireEmail(String token) {
-        return requirePayload(token).getEmail();
+    public String requireIdentifier(String token) {
+        return requirePayload(token).getIdentifier();
     }
 
     public void consume(String token) {
@@ -73,22 +74,22 @@ public class RegistrationTokenService {
     }
 
     private static class RegistrationTokenPayload {
-        private String email;
+        private String identifier;
         private OtpPurpose purpose;
 
         public RegistrationTokenPayload() {}
 
-        public RegistrationTokenPayload(String email, OtpPurpose purpose) {
-            this.email = email;
+        public RegistrationTokenPayload(String identifier, OtpPurpose purpose) {
+            this.identifier = identifier;
             this.purpose = purpose;
         }
 
-        public String getEmail() {
-            return email;
+        public String getIdentifier() {
+            return identifier;
         }
 
-        public void setEmail(String email) {
-            this.email = email;
+        public void setIdentifier(String identifier) {
+            this.identifier = identifier;
         }
 
         public OtpPurpose getPurpose() {

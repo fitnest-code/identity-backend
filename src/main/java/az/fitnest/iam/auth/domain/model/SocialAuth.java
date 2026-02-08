@@ -9,8 +9,7 @@ import lombok.*;
 @Table(
         name = "social_auths",
         indexes = {
-                @Index(name = "idx_social_auths_user_id", columnList = "user_id"),
-                @Index(name = "idx_social_auths_provider_email", columnList = "provider,email")
+                @Index(name = "idx_social_auths_user_id", columnList = "user_id")
         },
         uniqueConstraints = {
                 @UniqueConstraint(
@@ -36,7 +35,4 @@ public class SocialAuth extends BaseAuditableEntity {
 
     @Column(name = "provider_id", nullable = false, length = 256)
     private String providerId;
-
-    @Column(name = "email", length = 320)
-    private String email;
 }

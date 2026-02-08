@@ -21,22 +21,22 @@ public class ResetPasswordTokenService {
     @Value("${auth.reset-password-token.ttl-hours:1}")
     private long ttlHours;
 
-    public String issueForEmail(String email) {
+    public String issueForIdentifier(String identifier) {
         String token = UUID.randomUUID().toString();
         String key = resetPasswordKey(token);
-        redisTemplate.opsForValue().set(key, email, ttlHours, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(key, identifier, ttlHours, TimeUnit.HOURS);
         return token;
     }
 
-    public String requireEmail(String token) {
+    public String requireIdentifier(String token) {
         String key = resetPasswordKey(token);
-        String email = redisTemplate.opsForValue().get(key);
+        String identifier = redisTemplate.opsForValue().get(key);
         
-        if (email == null) {
+        if (identifier == null) {
             throw new UnauthorizedException("Reset password token invalid or expired");
         }
         
-        return email;
+        return identifier;
     }
 
     public void consume(String token) {

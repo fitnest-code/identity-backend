@@ -21,4 +21,6 @@ public class OtpSendRequest {
 
     @NotNull
     private OtpPurpose purpose;
+
+    private String mobile;
 }

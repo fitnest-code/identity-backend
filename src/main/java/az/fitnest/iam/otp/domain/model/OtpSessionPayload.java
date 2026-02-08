@@ -16,7 +16,7 @@ import java.time.Instant;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OtpSessionPayload {
 
-    private String email;
+
 
     private OtpPurpose purpose;
 
@@ -30,7 +30,7 @@ public class OtpSessionPayload {
 
     private Instant createdAt;
 
-    private Boolean emailExistsAtCreation;
+
 
     // Temporary registration data
     private String firstName;
