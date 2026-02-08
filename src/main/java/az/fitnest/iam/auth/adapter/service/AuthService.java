@@ -38,7 +38,8 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByMobileIncludingDeleted(request.getMobile())
+        String mobile = az.fitnest.iam.shared.util.MobileNumberUtils.normalize(request.getMobile());
+        User user = userRepository.findByMobileIncludingDeleted(mobile)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         if (user.isDeleted()) {

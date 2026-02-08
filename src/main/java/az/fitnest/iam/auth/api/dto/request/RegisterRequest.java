@@ -18,7 +18,7 @@ public class RegisterRequest {
 
 
     @NotBlank(message = "Mobile number is required")
-    @jakarta.validation.constraints.Pattern(regexp = "^\\+\\d{8,15}$", message = "Invalid mobile number format")
-    @Schema(description = "User's mobile number", example = "+994501234567", requiredMode = Schema.RequiredMode.REQUIRED)
+    @jakarta.validation.constraints.Pattern(regexp = "^(050|051|010|055|099|070|077|060)\\d{7}$", message = "Invalid mobile number format. Must start with 050, 051, 010, 055, 099, 070, 077, or 060 and follow with 7 digits.")
+    @Schema(description = "User's mobile number", example = "0501234567", requiredMode = Schema.RequiredMode.REQUIRED)
     private String mobile;
 }

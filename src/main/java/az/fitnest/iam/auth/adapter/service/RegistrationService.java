@@ -29,12 +29,13 @@ public class RegistrationService {
     private final RegistrationTokenService registrationTokenService;
 
     public OtpSendResponse startRegistration(RegisterRequest request) {
-        if (userRepository.findByMobileIncludingDeleted(request.getMobile()).isPresent()) {
+        String mobile = az.fitnest.iam.shared.util.MobileNumberUtils.normalize(request.getMobile());
+        if (userRepository.findByMobileIncludingDeleted(mobile).isPresent()) {
             throw new ConflictException("Mobile number already registered");
         }
         
         OtpSendRequest otpRequest = OtpSendRequest.builder()
-                .mobile(request.getMobile())
+                .mobile(mobile)
                 .purpose(OtpPurpose.REGISTRATION)
                 .build();
         
@@ -43,7 +44,7 @@ public class RegistrationService {
                 null, 
                 null, 
                 null, 
-                request.getMobile()
+                mobile
         );
     }
 

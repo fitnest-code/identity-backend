@@ -45,9 +45,9 @@ public class RegistrationServiceTest {
     @Test
     void startRegistration_shouldCallOtpService_whenMobileProvided() {
         RegisterRequest request = new RegisterRequest();
-        request.setMobile("+1234567890");
+        request.setMobile("0501234567");
         
-        when(userRepository.findByMobileIncludingDeleted("+1234567890")).thenReturn(Optional.empty());
+        when(userRepository.findByMobileIncludingDeleted("+994501234567")).thenReturn(Optional.empty());
         
         registrationService.startRegistration(request);
         
@@ -56,16 +56,16 @@ public class RegistrationServiceTest {
             eq(null), 
             eq(null), 
             eq(null), 
-            eq("+1234567890")
+            eq("+994501234567")
         );
     }
 
     @Test
     void startRegistration_shouldThrowConflict_whenMobileExists() {
         RegisterRequest request = new RegisterRequest();
-        request.setMobile("+1234567890");
+        request.setMobile("0501234567");
         
-        when(userRepository.findByMobileIncludingDeleted("+1234567890")).thenReturn(Optional.of(new User()));
+        when(userRepository.findByMobileIncludingDeleted("+994501234567")).thenReturn(Optional.of(new User()));
         
         assertThrows(ConflictException.class, () -> registrationService.startRegistration(request));
     }
@@ -78,14 +78,14 @@ public class RegistrationServiceTest {
         request.setLastName("Doe");
         request.setPassword("password");
         
-        when(registrationTokenService.requireIdentifier("valid-token")).thenReturn("+1234567890");
+        when(registrationTokenService.requireIdentifier("valid-token")).thenReturn("+994501234567");
         when(passwordService.hashPassword("password")).thenReturn("hashedPass");
-        when(userService.createNewUser("John", "Doe", "hashedPass", "+1234567890")).thenReturn(new User());
+        when(userService.createNewUser("John", "Doe", "hashedPass", "+994501234567")).thenReturn(new User());
         when(tokenIssuanceService.issueTokens(any())).thenReturn(new LoginResponse());
 
         registrationService.completeRegistration(request);
         
         verify(registrationTokenService).consume("valid-token");
-        verify(userService).createNewUser("John", "Doe", "hashedPass", "+1234567890");
+        verify(userService).createNewUser("John", "Doe", "hashedPass", "+994501234567");
     }
 }

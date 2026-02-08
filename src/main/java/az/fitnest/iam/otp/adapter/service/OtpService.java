@@ -80,7 +80,8 @@ public class OtpService {
     }
 
     public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile) {
-        String mobileNumber = request.getMobile() != null ? request.getMobile() : mobile;
+        String rawMobile = request.getMobile() != null ? request.getMobile() : mobile;
+        String mobileNumber = az.fitnest.iam.shared.util.MobileNumberUtils.normalize(rawMobile);
 
         if (mobileNumber == null) {
             throw new IllegalArgumentException("Mobile number must be provided");

@@ -30,6 +30,7 @@ public class UserService {
 
     @Transactional
     public User createNewUser(String firstName, String lastName, String passwordHash, String mobile) {
+        mobile = az.fitnest.iam.shared.util.MobileNumberUtils.normalize(mobile);
         if (mobile != null && userRepository.findByMobileIncludingDeleted(mobile).isPresent()) {
             throw new ConflictException("Mobile number already registered");
         }
@@ -51,6 +52,7 @@ public class UserService {
 
     @Transactional
     public User createNewUserWithFullName(String fullName, String passwordHash, String mobile) {
+        mobile = az.fitnest.iam.shared.util.MobileNumberUtils.normalize(mobile);
         NameParts nameParts = splitFullName(fullName);
         User user = User.builder()
                 .firstName(nameParts.firstName())

@@ -106,7 +106,7 @@ public class GlobalExceptionHandler {
 		ErrorWrapper errorWrapper = ErrorWrapper.builder()
 				.error(ErrorWrapper.ErrorDetail.builder()
 						.code("VALIDATION_ERROR")
-						.message(exception.getMessage())
+						.message("Invalid request data")
 						.status(HttpStatus.BAD_REQUEST.value())
 						.path(request.getRequestURI())
 						.timestamp(LocalDateTime.now())
