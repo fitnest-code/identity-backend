@@ -25,6 +25,27 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+	@ExceptionHandler(OtpRateLimitedException.class)
+	public ResponseEntity<ErrorWrapper> handleOtpRateLimitedException(
+			OtpRateLimitedException exception,
+			HttpServletRequest request
+	) {
+		ErrorWrapper errorWrapper = ErrorWrapper.builder()
+				.error(ErrorWrapper.ErrorDetail.builder()
+						.code(exception.getErrorCode())
+						.message(exception.getMessage())
+						.status(HttpStatus.TOO_MANY_REQUESTS.value())
+						.path(request.getRequestURI())
+						.timestamp(LocalDateTime.now())
+						.build())
+				.build();
+
+		return ResponseEntity
+				.status(HttpStatus.TOO_MANY_REQUESTS)
+				.header("Retry-After", String.valueOf(exception.getWaitTimeSeconds()))
+				.body(errorWrapper);
+	}
+
 	@ExceptionHandler(BaseException.class)
 	public ResponseEntity<ErrorWrapper> handleBaseException(
 			BaseException exception,

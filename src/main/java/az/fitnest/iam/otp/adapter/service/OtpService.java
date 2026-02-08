@@ -131,7 +131,7 @@ public class OtpService {
             String message = waitTimeSeconds <= errorMessageThresholdSeconds
                     ? OtpMessages.rateLimitSeconds(waitTimeSeconds)
                     : OtpMessages.rateLimitMinutes(waitTimeSeconds / 60);
-            throw new OtpRateLimitedException(message);
+            throw new OtpRateLimitedException(message, waitTimeSeconds);
         }
     }
 
