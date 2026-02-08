@@ -16,13 +16,12 @@ import org.springframework.transaction.TransactionSystemException;
 import jakarta.validation.ConstraintViolationException;
 
 import java.time.LocalDateTime;
-import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -123,8 +122,6 @@ public class GlobalExceptionHandler {
 			DataIntegrityViolationException exception,
 			HttpServletRequest request
 	) {
-		log.warn("Data integrity violation at {}: {}", request.getRequestURI(), exception.getMessage());
-		
 		String message = "Məlumat bazası xətası. Daxil edilən məlumatların unikallığını və ya tamlığını yoxlayın.";
 		String code = "DATA_INTEGRITY_VIOLATION";
 		
@@ -157,8 +154,6 @@ public class GlobalExceptionHandler {
 			TransactionSystemException exception,
 			HttpServletRequest request
 	) {
-		log.error("Transaction system exception at {}: {}", request.getRequestURI(), exception.getMessage());
-		
 		Throwable cause = exception.getRootCause();
 		if (cause instanceof ConstraintViolationException) {
 			return handleConstraintViolationException((ConstraintViolationException) cause, request);
@@ -209,7 +204,6 @@ public class GlobalExceptionHandler {
 			Exception exception,
 			HttpServletRequest request
 	) {
-		log.error("Unhandled exception at {}: {}", request.getRequestURI(), exception.getMessage(), exception);
 		ErrorWrapper errorWrapper = ErrorWrapper.builder()
 				.error(ErrorWrapper.ErrorDetail.builder()
 						.code("INTERNAL_SERVER_ERROR")

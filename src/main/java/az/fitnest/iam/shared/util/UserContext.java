@@ -1,16 +1,12 @@
 package az.fitnest.iam.shared.util;
 
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Optional;
 
-/**
- * Type-safe utility for accessing current user context from Spring Security.
- */
-@Slf4j
 public class UserContext {
 
     public static Long getCurrentUserId() {
@@ -43,13 +39,13 @@ public class UserContext {
         }
 
         Object principal = auth.getPrincipal();
-        if (principal instanceof Long) {
-            return (Optional<Long>) Optional.of((Long) principal);
+        if (principal instanceof Long id) {
+            return Optional.of(id);
         }
         
-        if (principal instanceof String) {
+        if (principal instanceof String str) {
             try {
-                return Optional.of(Long.parseLong((String) principal));
+                return Optional.of(Long.parseLong(str));
             } catch (NumberFormatException e) {
                 return Optional.empty();
             }

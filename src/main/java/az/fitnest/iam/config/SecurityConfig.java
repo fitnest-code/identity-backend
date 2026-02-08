@@ -2,7 +2,6 @@ package az.fitnest.iam.config;
 
 import az.fitnest.iam.security.FitnestSecurityFilter;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -19,19 +18,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Simplified, monolithic security configuration for iam-service.
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Slf4j
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info(">>> LOADING UNIFIED SECURITY CHAIN <<<");
-        
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -39,30 +32,27 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                // 1. Internal APIs - Require ROLE_INTERNAL
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/internal/**")).hasRole("INTERNAL")
-                
-                // 2. Public Endpoints
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/login")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register-request")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/verify-otp")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/resend-otp")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/refresh")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register/complete")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/otp/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/social/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/forgot-password/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/reset-password")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
-                
-                // 3. All other requests - Authenticated (ROLE_USER)
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, authException) -> {
-                    log.debug("Unified Security: Unauthorized to {} from {}", request.getRequestURI(), request.getRemoteAddr());
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.getWriter().write("{\"error\":\"Unauthorized\"}");
                 })
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    log.warn("Unified Security: Access Denied to {} from {}", request.getRequestURI(), request.getRemoteAddr());
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
                     response.getWriter().write("{\"error\":\"Forbidden\"}");

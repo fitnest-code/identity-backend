@@ -4,11 +4,12 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,15 +17,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Standard security filter for Fitnest microservices.
- * Handles Internal Service-to-Service (ROLE_INTERNAL) and Gateway User (ROLE_USER) authentication.
- */
-@Slf4j
+@Component
 public class FitnestSecurityFilter extends OncePerRequestFilter {
 
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
-    private static final String INTERNAL_TOKEN_VALUE = "fitnest-internal-token-2024-secure-v1"; // Placeholder, should be in env
+    private static final String INTERNAL_TOKEN_VALUE = "fitnest-internal-token-2024-secure-v1";
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
     private static final String USER_ROLES_HEADER = "X-User-Roles";
@@ -38,14 +35,10 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
         String internalToken = request.getHeader(INTERNAL_TOKEN_HEADER);
         String userIdStr = request.getHeader(USER_ID_HEADER);
 
-        // 1. Internal Service-to-Service Authentication
         if (internalToken != null && INTERNAL_TOKEN_VALUE.equals(internalToken)) {
-            log.trace("Internal service authentication success for path: {}", path);
             authenticateInternalService();
         }
-        // 2. Gateway User Authentication
         else if (userIdStr != null && !userIdStr.isBlank()) {
-            log.trace("Gateway user authentication: ID {} calling {}", userIdStr, path);
             authenticateGatewayUser(request);
         }
 
@@ -83,7 +76,7 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
             auth.setDetails(email);
             SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (NumberFormatException e) {
-            log.warn("Invalid X-User-Id format: {}", userIdStr);
+            // Ignore invalid user ID format
         }
     }
 }
