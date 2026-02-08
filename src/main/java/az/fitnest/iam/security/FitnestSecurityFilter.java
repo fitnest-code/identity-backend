@@ -39,6 +39,7 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
 
         // 1. Handle Internal Service-to-Service requests
         if (internalHeader != null && !internalHeader.isBlank()) {
+            log.info(">>> INTERNAL SERVICE AUTH ATTEMPT: {} calling {} <<<", internalHeader, path);
             authenticateInternalService(internalHeader);
             filterChain.doFilter(request, response);
             return;
