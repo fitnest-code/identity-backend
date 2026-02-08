@@ -17,14 +17,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Fitnest Standard Security Filter for iam-service.
+ * Standard security filter for Fitnest microservices.
+ * Handles Internal Service-to-Service (ROLE_INTERNAL) and Gateway User (ROLE_USER) authentication.
  */
 @Slf4j
 public class FitnestSecurityFilter extends OncePerRequestFilter {
 
-    private static final String INTERNAL_PATH_PREFIX = "/api/v1/internal";
     private static final String INTERNAL_SERVICE_HEADER = "X-Internal-Service";
-    
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
     private static final String USER_ROLES_HEADER = "X-User-Roles";
@@ -35,33 +34,17 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        
-        // ULTIMATE TRACE: Log EVERY request
-        log.warn(">>> [STRICT-TRACE] {} {} from {} <<<", request.getMethod(), path, request.getRemoteAddr());
-        java.util.Collections.list(request.getHeaderNames()).forEach(header -> 
-            log.warn(">>> [STRICT-TRACE] Header {}: {} <<<", header, request.getHeader(header))
-        );
-
         String internalHeader = request.getHeader(INTERNAL_SERVICE_HEADER);
-        
-        // 1. Handle Internal Service-to-Service requests
-        if (internalHeader != null && !internalHeader.isBlank()) {
-            log.warn(">>> INTERNAL SERVICE AUTH SUCCESS: {} calling {} <<<", internalHeader, path);
-            authenticateInternalService(internalHeader);
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // Block external access to internal endpoints
-        if (path.startsWith(INTERNAL_PATH_PREFIX)) {
-            log.warn("Blocked external access to internal endpoint: {} from {}", path, request.getRemoteAddr());
-            sendForbidden(response, "Internal endpoints are not accessible externally");
-            return;
-        }
-
-        // 2. Handle Gateway-authenticated requests
         String userIdStr = request.getHeader(USER_ID_HEADER);
-        if (userIdStr != null && !userIdStr.isBlank()) {
+
+        // 1. Internal Service-to-Service Authentication
+        if (internalHeader != null && !internalHeader.isBlank()) {
+            log.trace("Internal service authentication: {} calling {}", internalHeader, path);
+            authenticateInternalService(internalHeader);
+        }
+        // 2. Gateway User Authentication
+        else if (userIdStr != null && !userIdStr.isBlank()) {
+            log.trace("Gateway user authentication: ID {} calling {}", userIdStr, path);
             authenticateGatewayUser(request);
         }
 
@@ -69,7 +52,6 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
     }
 
     private void authenticateInternalService(String serviceName) {
-        log.debug("Authenticating internal service in IAM: {}", serviceName);
         List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_INTERNAL"));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                 "INTERNAL_SERVICE:" + serviceName, null, authorities);
@@ -100,13 +82,7 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
             auth.setDetails(email);
             SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (NumberFormatException e) {
-            log.debug("No valid X-User-Id header: {} (This is expected for public endpoints)", userIdStr);
+            log.warn("Invalid X-User-Id format: {}", userIdStr);
         }
-    }
-
-    private void sendForbidden(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType("application/json");
-        response.getWriter().write(String.format("{\"error\":\"%s\"}", message));
     }
 }
