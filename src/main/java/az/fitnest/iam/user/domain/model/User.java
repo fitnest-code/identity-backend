@@ -40,6 +40,9 @@ public class User extends BaseAuditableEntity {
     @Column(name = "mobile", nullable = false, length = 20)
     private String mobile;
 
+    @Column(name = "email")
+    private String email;
+
 
 
     @JsonIgnore

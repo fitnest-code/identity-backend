@@ -84,6 +84,10 @@ public class UserService {
 			user.setLastName(parts.lastName());
         }
 
+        if (command.email() != null && !command.email().isEmpty()) {
+            user.setEmail(command.email());
+        }
+
         return userRepository.save(user);
     }
 

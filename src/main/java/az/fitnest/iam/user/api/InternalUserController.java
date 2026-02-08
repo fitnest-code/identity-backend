@@ -79,6 +79,7 @@ public class InternalUserController {
         User user = userService.updateUserProfile(userId, UpdateUserProfileCommand.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
+                .email(request.getEmail())
                 .build());
         return ResponseEntity.ok(toUserResponse(user));
     }
