@@ -160,6 +160,11 @@ otp:
     min-cooldown-seconds: ${OTP_RATE_LIMIT_MIN_COOLDOWN_SECONDS:5}
     error-message-threshold-seconds: ${OTP_RATE_LIMIT_ERROR_MESSAGE_THRESHOLD_SECONDS:30}
 
+# User Service
+user:
+  service:
+    url: ${USER_SERVICE_URL:http://user-service:8080}
+
 # Application-specific configurations
 app:
   # Security
