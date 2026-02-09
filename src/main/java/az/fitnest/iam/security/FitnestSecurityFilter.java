@@ -37,6 +37,16 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         
+        // DEBUG: Log all headers to debug 403 issue
+        if (request.getRequestURI().startsWith("/api/v1/internal")) {
+            log.info("DEBUG: Incoming request to {}", request.getRequestURI());
+            java.util.Enumeration<String> headerNames = request.getHeaderNames();
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                log.info("DEBUG: Header {}: {}", headerName, request.getHeader(headerName));
+            }
+        }
+
         // Ensure clean context at start
         SecurityContextHolder.clearContext();
 
