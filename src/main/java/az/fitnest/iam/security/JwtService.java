@@ -37,8 +37,8 @@ public class JwtService {
         this.refreshTtlSeconds = refreshTtlSeconds;
     }
 
-    public String generateAccessToken(Long userId) {
-        return buildToken(userId, accessTtlSeconds, Map.of("typ", "access"));
+    public String generateAccessToken(Long userId, java.util.Collection<String> roles) {
+        return buildToken(userId, accessTtlSeconds, Map.of("typ", "access", "roles", roles));
     }
 
     public String generateRefreshToken(Long userId) {
@@ -65,6 +65,16 @@ public class JwtService {
             throw new IllegalArgumentException("JWT expiration (exp) is missing.");
         }
         return exp.toInstant();
+    }
+
+    @SuppressWarnings("unchecked")
+    public java.util.List<String> parseRoles(String token) {
+        Claims claims = parseClaims(token);
+        Object roles = claims.get("roles");
+        if (roles instanceof java.util.List<?>) {
+            return (java.util.List<String>) roles;
+        }
+        return java.util.Collections.emptyList();
     }
 
     private String buildToken(Long userId, long ttlSeconds, Map<String, Object> extraClaims) {

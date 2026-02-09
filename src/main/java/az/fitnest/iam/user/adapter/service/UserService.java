@@ -7,7 +7,10 @@ import az.fitnest.iam.security.RedisTokenService;
 import az.fitnest.iam.shared.exception.ConflictException;
 import az.fitnest.iam.shared.exception.ResourceNotFoundException;
 import az.fitnest.iam.user.application.command.UpdateUserProfileCommand;
+import az.fitnest.iam.user.adapter.persistence.RoleRepository;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
+import az.fitnest.iam.user.domain.enums.RoleName;
+import az.fitnest.iam.user.domain.model.Role;
 import az.fitnest.iam.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+
+    @Transactional
+    public User updateUserRole(Long userId, RoleName roleName) {
+        User user = getUserById(userId);
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleName));
+        
+        user.setRole(role);
+        
+        return userRepository.save(user);
+    }
     private final AuthTokenRepository authTokenRepository;
     private final RedisTokenService redisTokenService;
     private final EmailService emailService;
@@ -45,6 +60,7 @@ public class UserService {
                 .accountLocked(false)
                 .failedLoginAttempts(0)
                 .isDeleted(false)
+                .role(roleRepository.findByName(az.fitnest.iam.user.domain.enums.RoleName.ROLE_USER).orElse(null))
                 .build();
 
         return userRepository.save(user);
@@ -64,6 +80,7 @@ public class UserService {
                 .accountLocked(false)
                 .failedLoginAttempts(0)
                 .isDeleted(false)
+                .role(roleRepository.findByName(az.fitnest.iam.user.domain.enums.RoleName.ROLE_USER).orElse(null))
                 .build();
 
         return userRepository.save(user);

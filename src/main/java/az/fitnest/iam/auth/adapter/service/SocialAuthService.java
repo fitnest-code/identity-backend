@@ -9,6 +9,7 @@ import az.fitnest.iam.auth.domain.model.SocialAuth;
 import az.fitnest.iam.shared.exception.ConflictException;
 import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
+import az.fitnest.iam.user.adapter.persistence.RoleRepository;
 import az.fitnest.iam.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class SocialAuthService {
     private final GoogleTokenVerifier googleTokenVerifier;
     private final AppleTokenVerifier appleTokenVerifier;
     private final TokenIssuanceService tokenIssuanceService;
+    private final az.fitnest.iam.user.adapter.persistence.RoleRepository roleRepository;
 
     @Transactional
     public LoginResponse socialLoginApple(AppleSocialRequest request) {
@@ -130,6 +132,7 @@ public class SocialAuthService {
                 .accountLocked(false)
                 .failedLoginAttempts(0)
                 .isDeleted(false)
+                .role(roleRepository.findByName(az.fitnest.iam.user.domain.enums.RoleName.ROLE_USER).orElse(null))
                 .build();
         return userRepository.save(user);
     }

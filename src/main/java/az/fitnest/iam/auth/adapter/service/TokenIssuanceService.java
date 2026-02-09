@@ -21,10 +21,14 @@ public class TokenIssuanceService {
 
     private final JwtService jwtService;
     private final RedisTokenService redisTokenService;
+    private final az.fitnest.iam.legal.adapter.service.LegalService legalService;
     private final AuthTokenRepository authTokenRepository;
 
     public LoginResponse issueTokens(User user) {
-        String accessToken = jwtService.generateAccessToken(user.getId());
+        String roleName = (user.getRole() != null) ? user.getRole().getName().name() : "ROLE_USER"; 
+        java.util.List<String> roles = java.util.List.of(roleName);
+
+        String accessToken = jwtService.generateAccessToken(user.getId(), roles);
         String refreshToken = jwtService.generateRefreshToken(user.getId());
 
         Instant accessExpiresAt = jwtService.parseExpiration(accessToken);
@@ -35,7 +39,8 @@ public class TokenIssuanceService {
 
         saveAuthToken(user.getId(), accessToken, refreshToken, accessExpiresAt, refreshExpiresAt);
 
-        UserResponse userResponse = UserResponseMapper.toResponse(user);
+        boolean consentRequired = legalService.isConsentRequired(user.getId());
+        UserResponse userResponse = UserResponseMapper.toResponse(user, consentRequired);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)

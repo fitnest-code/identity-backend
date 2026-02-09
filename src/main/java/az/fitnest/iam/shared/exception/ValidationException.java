@@ -14,6 +14,11 @@ public class ValidationException extends BaseException {
         this.bindingResult = bindingResult;
     }
     
+    public ValidationException(String message, String code) {
+        super(message, HttpStatus.BAD_REQUEST, code);
+        this.bindingResult = null;
+    }
+    
     public BindingResult getBindingResult() {
         return bindingResult;
     }

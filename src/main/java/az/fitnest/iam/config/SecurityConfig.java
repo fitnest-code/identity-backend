@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/social/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/forgot-password/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/reset-password")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/legal/privacy-policy")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/legal/terms-of-use")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()

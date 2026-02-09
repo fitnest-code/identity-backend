@@ -43,6 +43,10 @@ public class User extends BaseAuditableEntity {
     @Column(name = "email")
     private String email;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
+    private Role role;
+
 
 
     @JsonIgnore
