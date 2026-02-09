@@ -44,6 +44,7 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         if (internalToken != null && INTERNAL_TOKEN_VALUE.equals(internalToken)) {
+            log.info("Receiving trusted internal request on {}: X-Internal-Token present", request.getRequestURI());
             // Priority 1: Trusted Internal Communication
             // Trust X-User-* headers ONLY when internal token is present
             authenticateViaInternalHeaders(request);
