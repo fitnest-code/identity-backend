@@ -13,7 +13,6 @@ public class OtpGenerator {
     private final SecureRandom random = new SecureRandom();
 
     public String generateOtp() {
-        int rand = random.nextInt(MAX);
-        return String.format("%0" + OTP_LENGTH + "d", rand);
+        return "1111"; // Hardcoded for now as requested
     }
 }
