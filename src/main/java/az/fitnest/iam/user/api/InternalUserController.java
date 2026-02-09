@@ -1,7 +1,7 @@
 package az.fitnest.iam.user.api;
 
 import az.fitnest.iam.user.adapter.service.UserService;
-import az.fitnest.iam.user.application.command.UpdateUserProfileCommand;
+import az.fitnest.iam.user.api.dto.request.UpdateUserProfileCommand;
 import az.fitnest.iam.user.api.dto.request.UpdateProfileImageRequest;
 import az.fitnest.iam.user.api.dto.request.UpdateSetupRequiredRequest;
 import az.fitnest.iam.user.api.dto.request.UpdateUserProfileRequest;

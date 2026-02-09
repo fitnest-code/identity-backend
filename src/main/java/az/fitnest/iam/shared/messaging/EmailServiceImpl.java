@@ -1,4 +1,4 @@
-package az.fitnest.iam.messaging;
+package az.fitnest.iam.shared.messaging;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

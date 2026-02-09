@@ -4,7 +4,7 @@ import az.fitnest.iam.auth.api.dto.request.LoginRequest;
 import az.fitnest.iam.auth.api.dto.response.LoginResponse;
 import az.fitnest.iam.auth.api.dto.response.RefreshResponse;
 import az.fitnest.iam.auth.adapter.persistence.AuthTokenRepository;
-import az.fitnest.iam.messaging.EmailService;
+import az.fitnest.iam.shared.messaging.EmailService;
 import az.fitnest.iam.shared.exception.InvalidCredentialsException;
 import az.fitnest.iam.shared.exception.UnauthorizedException;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;

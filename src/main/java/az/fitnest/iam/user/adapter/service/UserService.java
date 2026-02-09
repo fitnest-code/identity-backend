@@ -2,11 +2,11 @@ package az.fitnest.iam.user.adapter.service;
 
 import az.fitnest.iam.auth.adapter.persistence.AuthTokenRepository;
 import az.fitnest.iam.auth.domain.model.AuthToken;
-import az.fitnest.iam.messaging.EmailService;
+import az.fitnest.iam.shared.messaging.EmailService;
 import az.fitnest.iam.security.RedisTokenService;
 import az.fitnest.iam.shared.exception.ConflictException;
 import az.fitnest.iam.shared.exception.ResourceNotFoundException;
-import az.fitnest.iam.user.application.command.UpdateUserProfileCommand;
+import az.fitnest.iam.user.api.dto.request.UpdateUserProfileCommand;
 import az.fitnest.iam.user.adapter.persistence.RoleRepository;
 import az.fitnest.iam.user.adapter.persistence.UserRepository;
 import az.fitnest.iam.user.domain.enums.RoleName;

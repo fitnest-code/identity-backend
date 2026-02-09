@@ -1,4 +1,4 @@
-package az.fitnest.iam.messaging;
+package az.fitnest.iam.shared.messaging;
 
 
 import org.springframework.stereotype.Service;
