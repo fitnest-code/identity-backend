@@ -27,6 +27,9 @@ public class FitnestSecurityFilterTest {
     private HttpServletRequest request;
 
     @Mock
+    private JwtService jwtService;
+
+    @Mock
     private HttpServletResponse response;
 
     @Mock
@@ -39,10 +42,9 @@ public class FitnestSecurityFilterTest {
     }
 
     @Test
-    void shouldAuthenticateInternalServiceWithValidToken() throws ServletException, IOException {
+    void shouldAuthenticateInternalServiceViaMesh() throws ServletException, IOException {
         // Arrange
         when(request.getRequestURI()).thenReturn("/api/v1/internal/users/123");
-        when(request.getHeader("X-Internal-Token")).thenReturn("fitnest-internal-token-2024-secure-v1");
 
         // Act
         filter.doFilterInternal(request, response, filterChain);
@@ -58,17 +60,41 @@ public class FitnestSecurityFilterTest {
     }
 
     @Test
-    void shouldNotAuthenticateInternalServiceWithInvalidToken() throws ServletException, IOException {
+    void shouldAuthenticateViaJwtWhenPresent() throws ServletException, IOException {
         // Arrange
-        when(request.getRequestURI()).thenReturn("/api/v1/internal/users/123");
-        when(request.getHeader("X-Internal-Token")).thenReturn("invalid-token");
+        String token = "valid-jwt-token";
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+        when(jwtService.parseUserId(token)).thenReturn(123L);
 
         // Act
         filter.doFilterInternal(request, response, filterChain);
 
         // Assert
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        assertNull(auth);
+        assertNotNull(auth);
+        assertEquals(123L, auth.getPrincipal());
+        assertTrue(auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_USER")));
+        
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void shouldAuthenticateViaGatewayHeadersOnInternalPath() throws ServletException, IOException {
+        // Arrange
+        when(request.getRequestURI()).thenReturn("/api/v1/internal/users/123");
+        when(request.getHeader("X-User-Id")).thenReturn("456");
+        when(request.getHeader("X-User-Roles")).thenReturn("ADMIN,USER");
+
+        // Act
+        filter.doFilterInternal(request, response, filterChain);
+
+        // Assert
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertNotNull(auth);
+        assertEquals(456L, auth.getPrincipal());
+        assertTrue(auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
         
         verify(filterChain).doFilter(request, response);
     }

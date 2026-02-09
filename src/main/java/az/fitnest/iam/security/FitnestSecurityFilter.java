@@ -24,8 +24,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class FitnestSecurityFilter extends OncePerRequestFilter {
 
-    private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
-    private static final String INTERNAL_TOKEN_VALUE = "fitnest-internal-token-2024-secure-v1";
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
     private static final String USER_ROLES_HEADER = "X-User-Roles";
@@ -47,21 +45,18 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
             }
         }
 
-        // Ensure clean context at start
-        SecurityContextHolder.clearContext();
+        // Ensure clean context at start - REMOVED: redundant and potentially harmful
+        // SecurityContextHolder.clearContext();
 
-        String internalToken = request.getHeader(INTERNAL_TOKEN_HEADER);
         String authHeader = request.getHeader("Authorization");
 
-        if (internalToken != null && INTERNAL_TOKEN_VALUE.equals(internalToken)) {
-            log.info("Receiving trusted internal request on {}: X-Internal-Token present", request.getRequestURI());
-            // Priority 1: Trusted Internal Communication
-            // Trust X-User-* headers ONLY when internal token is present
-            authenticateViaInternalHeaders(request);
-        } else if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            // Priority 2: Direct Client Communication
-            // Validate JWT directly if no internal token (fallback)
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            // Validate JWT directly (public or internal delegation)
             authenticateViaJwt(authHeader.substring(7));
+        } else if (request.getRequestURI().startsWith("/api/v1/internal")) {
+            // Internal call without JWT - Rely on mesh for access control, 
+            // but we can still extract identity headers if provided by the gateway/mesh
+            authenticateViaInternalHeaders(request);
         }
 
         filterChain.doFilter(request, response);
@@ -71,8 +66,10 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
         String userIdStr = request.getHeader(USER_ID_HEADER);
         
         if (userIdStr != null && !userIdStr.isBlank()) {
+            log.debug("Authenticating internal request via headers for user: {}", userIdStr);
             authenticateGatewayUser(request);
         } else {
+            log.debug("Internal service-to-service call detected on {}", request.getRequestURI());
             authenticateInternalService();
         }
     }
@@ -108,7 +105,7 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
             Long userId = Long.parseLong(userIdStr);
             List<SimpleGrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-            // IMPORTANT: If we are here, we are verified via X-Internal-Token
+            // We still grant ROLE_INTERNAL for endpoints that might still check it
             authorities.add(new SimpleGrantedAuthority("ROLE_INTERNAL"));
 
             if (rolesStr != null && !rolesStr.isBlank()) {
