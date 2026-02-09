@@ -53,9 +53,11 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             // Validate JWT directly (public or internal delegation)
             authenticateViaJwt(authHeader.substring(7));
-        } else if (request.getRequestURI().startsWith("/api/v1/internal")) {
-            // Internal call without JWT - Rely on mesh for access control, 
-            // but we can still extract identity headers if provided by the gateway/mesh
+        }
+
+        if (request.getRequestURI().startsWith("/api/v1/internal")) {
+            // Internal call - Also check for internal identity headers or mesh principal
+            // This ensures ROLE_INTERNAL is granted even if a user JWT is present
             authenticateViaInternalHeaders(request);
         }
 
