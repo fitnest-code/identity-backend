@@ -10,6 +10,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +19,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
+@RequiredArgsConstructor
+@Slf4j
 public class FitnestSecurityFilter extends OncePerRequestFilter {
 
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
@@ -24,24 +29,56 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
     private static final String USER_ROLES_HEADER = "X-User-Roles";
+    
+    private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        
+        // Ensure clean context at start
+        SecurityContextHolder.clearContext();
 
-        String path = request.getRequestURI();
         String internalToken = request.getHeader(INTERNAL_TOKEN_HEADER);
-        String userIdStr = request.getHeader(USER_ID_HEADER);
+        String authHeader = request.getHeader("Authorization");
 
         if (internalToken != null && INTERNAL_TOKEN_VALUE.equals(internalToken)) {
-            authenticateInternalService();
-        }
-        else if (userIdStr != null && !userIdStr.isBlank()) {
-            authenticateGatewayUser(request);
+            // Priority 1: Trusted Internal Communication
+            // Trust X-User-* headers ONLY when internal token is present
+            authenticateViaInternalHeaders(request);
+        } else if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            // Priority 2: Direct Client Communication
+            // Validate JWT directly if no internal token (fallback)
+            authenticateViaJwt(authHeader.substring(7));
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void authenticateViaInternalHeaders(HttpServletRequest request) {
+        String userIdStr = request.getHeader(USER_ID_HEADER);
+        
+        if (userIdStr != null && !userIdStr.isBlank()) {
+            authenticateGatewayUser(request);
+        } else {
+            authenticateInternalService();
+        }
+    }
+
+    private void authenticateViaJwt(String token) {
+        try {
+            Long userId = jwtService.parseUserId(token);
+            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+            
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                    userId, null, authorities);
+            
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            log.debug("Authenticated user {} via JWT", userId);
+        } catch (Exception e) {
+            log.warn("JWT validation failed: {}", e.getMessage());
+        }
     }
 
     private void authenticateInternalService() {
