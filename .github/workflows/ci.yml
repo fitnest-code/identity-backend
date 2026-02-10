@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: ghcr.io/fitnest-backend/iam-service
+  IMAGE_NAME: ghcr.io/fitnest-backend/identity-service
   HELM_VALUES_FILE: values.yaml
 
 jobs:
@@ -70,7 +70,7 @@ jobs:
       - name: Checkout Helm repo via SSH
         uses: actions/checkout@v4
         with:
-          repository: fitnest-chart/iam-service
+          repository: fitnest-chart/identity-service
           ref: ${{ github.ref_name }}
           path: helm-repo
           ssh-key: ${{ secrets.CHART_REPO_SSH_PRIVATE_KEY }}
@@ -115,5 +115,5 @@ jobs:
           curl -k -X POST \
             -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
             -H "Content-Type: application/json" \
-            http://161.97.183.7:31052/api/v1/applications/fitnest-iam-service-dev/sync \
+            http://161.97.183.7:31052/api/v1/applications/fitnest-identity-service-dev/sync \
             -d '{}'

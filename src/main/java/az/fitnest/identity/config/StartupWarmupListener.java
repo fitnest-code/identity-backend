@@ -22,7 +22,7 @@ public class StartupWarmupListener {
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        log.info("🚀 Starting application warm-up for iam-service...");
+        log.info("🚀 Starting application warm-up for identity-service...");
         
         warmupDatabase();
         

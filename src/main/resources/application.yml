@@ -28,9 +28,9 @@ spring:
     name: identity-service
   # Database
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/fitnest_iam}
-    username: ${SPRING_DATASOURCE_USERNAME:fitnest_iam}
-    password: ${SPRING_DATASOURCE_PASSWORD:iam_password_123}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/fitnest_identity}
+    username: ${SPRING_DATASOURCE_USERNAME:fitnest_identity}
+    password: ${SPRING_DATASOURCE_PASSWORD:identity_password_123}
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-timeout: 30000
@@ -39,7 +39,7 @@ spring:
       keep-alive-time: 300000
       minimum-idle: ${HIKARI_MIN_IDLE:2}
       maximum-pool-size: ${HIKARI_MAX_POOL:20}
-      pool-name: HikariCP-IAM
+      pool-name: HikariCP-Identity
       auto-commit: true
       connection-test-query: SELECT 1
       data-source-properties:
@@ -88,7 +88,7 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service.fitnest-dev.svc.cluster.local:9092}
     consumer:
-      group-id: iam-group
+      group-id: identity-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -254,7 +254,7 @@ app:
   warmup:
     enabled: ${APP_WARMUP_ENABLED:true}
     db: ${APP_WARMUP_DB:true}
-    jwks: ${APP_WARMUP_JWKS:false} # IAM is the provider, no need to fetch from itself
+    jwks: ${APP_WARMUP_JWKS:false} # Identity is the provider, no need to fetch from itself
 
 # Actuator
 management:
@@ -337,13 +337,13 @@ task:
   scheduling:
     pool:
       size: 5
-    thread-name-prefix: iam-scheduler-
+    thread-name-prefix: identity-scheduler-
   execution:
     pool:
       core-size: 5
       max-size: 20
       queue-capacity: 100
-    thread-name-prefix: iam-async-
+    thread-name-prefix: identity-async-
 
 
 # HTTP Client
