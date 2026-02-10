@@ -12,9 +12,13 @@ import az.fitnest.identity.user.adapter.persistence.UserRepository;
 import az.fitnest.identity.user.domain.enums.RoleName;
 import az.fitnest.identity.user.domain.model.Role;
 import az.fitnest.identity.user.domain.model.User;
+import az.fitnest.identity.user.events.IdentityEventPublisher;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,8 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final IdentityEventPublisher eventPublisher;
 
     @Transactional
     public User updateUserRole(Long userId, RoleName roleName) {
@@ -105,7 +111,9 @@ public class UserService {
             user.setEmail(command.email());
         }
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        publishUserEvent("USER_UPDATED", userId);
+        return saved;
     }
 
     @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
@@ -114,15 +122,21 @@ public class UserService {
         User user = getUserOrThrow(userId);
 
         user.setProfileImageUrl(profileImageUrl);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        publishUserEvent("USER_UPDATED", userId);
+        return saved;
     }
 
     @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
     @Transactional
     public User updateSetupRequired(Long userId, boolean setupRequired) {
-        User user = getUserOrThrow(userId);
+        User user = getUserById(userId);
         user.setSetupRequired(setupRequired);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        if (!setupRequired) {
+            eventPublisher.publishSetupCompleted(userId);
+        }
+        return saved;
     }
 
     @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
@@ -190,5 +204,14 @@ public class UserService {
     }
 
     private record NameParts(String firstName, String lastName) {
+    }
+
+    private void publishUserEvent(String eventType, Long userId) {
+        Map<String, Object> event = Map.of(
+            "eventType", eventType,
+            "userId", userId,
+            "timestamp", System.currentTimeMillis()
+        );
+        kafkaTemplate.send("user-events", event);
     }
 }
