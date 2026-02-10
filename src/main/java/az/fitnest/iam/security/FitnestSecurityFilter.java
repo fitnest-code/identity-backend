@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -28,21 +29,39 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
     private static final String USER_EMAIL_HEADER = "X-User-Email";
     private static final String USER_ROLES_HEADER = "X-User-Roles";
     
+    // Pre-compiled set of paths that don't need security filter processing
+    private static final Set<String> SKIP_FILTER_PATH_PREFIXES = Set.of(
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/actuator",
+            "/webjars"
+    );
+
     private final JwtService jwtService;
+
+    /**
+     * Skip filter processing for public endpoints like Swagger and Actuator.
+     * This improves performance by avoiding unnecessary JWT parsing.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return SKIP_FILTER_PATH_PREFIXES.stream().anyMatch(path::startsWith);
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         
-        // DEBUG: Log all headers to debug 403 issue
-        if (request.getRequestURI().startsWith("/api/v1/internal")) {
-            log.info("DEBUG: Incoming request to {}", request.getRequestURI());
+        // DEBUG: Log all headers to debug 403 issue (only for internal endpoints)
+        if (log.isDebugEnabled() && request.getRequestURI().startsWith("/api/v1/internal")) {
+            log.debug("Incoming request to {}", request.getRequestURI());
             java.util.Enumeration<String> headerNames = request.getHeaderNames();
             if (headerNames != null) {
                 while (headerNames.hasMoreElements()) {
                     String headerName = headerNames.nextElement();
-                    log.info("DEBUG: Header {}: {}", headerName, request.getHeader(headerName));
+                    log.debug("Header {}: {}", headerName, request.getHeader(headerName));
                 }
             }
         }

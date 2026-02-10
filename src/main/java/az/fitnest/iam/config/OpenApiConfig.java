@@ -7,20 +7,33 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+/**
+ * OpenAPI configuration optimized for fast loading.
+ * Uses lazy initialization and caching for better performance.
+ */
 @Configuration
 public class OpenApiConfig {
 
     @Value("${springdoc.server-url:}")
     private String serverUrl;
 
+    // Cache the OpenAPI instance since it doesn't change at runtime
+    private volatile OpenAPI cachedOpenAPI;
+
     @Bean
     public OpenAPI customOpenAPI() {
+        if (cachedOpenAPI != null) {
+            return cachedOpenAPI;
+        }
+
         OpenAPI openAPI = new OpenAPI()
                 .info(new Info()
                         .title("IAM Service API")
@@ -42,6 +55,22 @@ public class OpenApiConfig {
             openAPI.servers(List.of(new Server().url(serverUrl).description("API Server")));
         }
 
+        cachedOpenAPI = openAPI;
         return openAPI;
+    }
+
+    /**
+     * Customizer to optimize operation processing.
+     * Skips unnecessary processing for faster spec generation.
+     */
+    @Bean
+    public OperationCustomizer operationCustomizer() {
+        return (operation, handlerMethod) -> {
+            // Remove null descriptions to reduce JSON size
+            if (operation.getDescription() != null && operation.getDescription().isEmpty()) {
+                operation.setDescription(null);
+            }
+            return operation;
+        };
     }
 }

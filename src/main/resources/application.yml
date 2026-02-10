@@ -11,12 +11,15 @@ server:
     connection-timeout: 20000
     max-connections: 8192
     accept-count: 100
+    # Enable URI encoding for proper Swagger URL handling
+    uri-encoding: UTF-8
   servlet:
     context-path: ${SERVER_SERVLET_CONTEXT_PATH:}
   compression:
     enabled: true
-    mime-types: application/json,text/plain,text/css,application/javascript,application/openapi+json,application/vnd.api+json
-    min-response-size: 2048
+    # Lower threshold for earlier compression - benefits Swagger JSON responses
+    min-response-size: 1024
+    mime-types: application/json,text/plain,text/css,application/javascript,application/openapi+json,application/vnd.api+json,text/html,application/xml
 
 spring:
   main:
@@ -146,12 +149,15 @@ spring:
             read-timeout: ${FEIGN_READ_TIMEOUT:10000}
             logger-level: BASIC
 
-# SpringDoc OpenAPI (Swagger)
+# SpringDoc OpenAPI (Swagger) - Optimized for fast loading
 springdoc:
   api-docs:
     path: /v3/api-docs
+    enabled: true
     cache:
       enabled: true
+    # Resolve schema refs to reduce JSON size
+    resolve-schema-properties: true
   paths-to-exclude: /api/v1/internal/**
   swagger-ui:
     enabled: true
@@ -162,10 +168,26 @@ springdoc:
     try-it-out-enabled: true
     operations-sorter: alpha
     tags-sorter: alpha
+    # Disable syntax highlighting for faster rendering
+    syntax-highlight:
+      activated: false
+    # Disable deep linking for faster initial load
+    deep-linking: false
+    # Persist authorization to avoid re-entering token
+    persist-authorization: true
+    # Disable validator badge (external call)
+    disable-swagger-default-url: true
+    validator-url: none
   show-actuator: false
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
   writer-with-default-pretty-printer: false
+  # Pre-load OpenAPI spec at startup
+  pre-loading-enabled: true
+  # Use faster model converters
+  model-converters:
+    deprecating-converter:
+      enabled: false
 
 # JWT Configuration
 jwt:
