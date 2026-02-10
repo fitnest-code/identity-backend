@@ -11,7 +11,29 @@ import org.hibernate.annotations.Where;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-
+/**
+ * Entity representing a user in the identity system.
+ * Manages user authentication, authorization, and account status.
+ *
+ * <p>Key Features:
+ * <ul>
+ *   <li>Soft deletion support - deleted users are marked but not physically removed</li>
+ *   <li>Account locking mechanism to prevent brute-force attacks</li>
+ *   <li>Multi-language support</li>
+ *   <li>Profile setup tracking</li>
+ *   <li>Role-based access control</li>
+ * </ul>
+ *
+ * <p>Security Features:
+ * <ul>
+ *   <li>Failed login attempt tracking</li>
+ *   <li>Temporary account locking after multiple failed attempts</li>
+ *   <li>Password hash storage (never plain text)</li>
+ * </ul>
+ *
+ * @see Role
+ * @see Language
+ */
 @Entity
 @SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE user_id = ?")
 @Where(clause = "is_deleted = false")
