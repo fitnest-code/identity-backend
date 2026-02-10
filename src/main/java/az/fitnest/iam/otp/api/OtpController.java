@@ -26,11 +26,11 @@ public class OtpController {
 
     @Operation(
             summary = "Send OTP",
-            description = "Sends a 4-digit OTP code to the specified email address. " +
+            description = "Sends a 4-digit OTP code to the specified mobile number. " +
                     "Supports REGISTRATION and LOGIN purposes. " +
                     "Rate limiting is applied to prevent abuse. " +
-                    "For REGISTRATION: email must not be already registered. " +
-                    "For LOGIN: email must be registered."
+                    "For REGISTRATION: mobile number must not be already registered. " +
+                    "For LOGIN: mobile number must be registered."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -45,12 +45,12 @@ public class OtpController {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Email not found (for LOGIN purpose)",
+                    description = "Mobile number not found (for LOGIN purpose)",
                     content = @Content
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "Email already registered (for REGISTRATION purpose)",
+                    description = "Mobile number already registered (for REGISTRATION purpose)",
                     content = @Content
             ),
             @ApiResponse(

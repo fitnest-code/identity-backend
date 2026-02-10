@@ -115,7 +115,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Invalid request data or email already in use",
+                    description = "Invalid request data or mobile number already in use",
                     content = @Content
             ),
             @ApiResponse(
@@ -154,7 +154,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "Email already registered",
+                    description = "Mobile number already registered",
                     content = @Content
             )
     })
@@ -192,7 +192,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "Account conflict: email already registered",
+                    description = "Account conflict: mobile number already registered",
                     content = @Content
             )
     })
@@ -231,7 +231,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "Account conflict: email already registered",
+                    description = "Account conflict: mobile number already registered",
                     content = @Content
             )
     })
@@ -251,7 +251,7 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "OTP sent successfully (if email exists)",
+                    description = "OTP sent successfully (if mobile number exists)",
                     content = @Content(schema = @Schema(implementation = ForgotPasswordResponse.class))
             ),
             @ApiResponse(
