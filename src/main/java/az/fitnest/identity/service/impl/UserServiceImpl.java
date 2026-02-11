@@ -17,6 +17,7 @@ import az.fitnest.identity.entity.Role;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.service.impl.IdentityEventPublisher;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -27,6 +28,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -152,7 +154,13 @@ public class UserServiceImpl implements UserService {
         user.setSetupRequired(setupRequired);
         User saved = userRepository.save(user);
         if (!setupRequired) {
-            eventPublisher.publishSetupCompleted(userId);
+            try {
+                eventPublisher.publishSetupCompleted(userId);
+            } catch (Exception e) {
+                // Log the error but don't fail the entire operation
+                // Kafka event publishing should not block the core business logic
+                log.error("Failed to publish setup completed event for userId: {}", userId, e);
+            }
         }
         return saved;
     }
