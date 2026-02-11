@@ -14,6 +14,8 @@ import az.fitnest.identity.user.domain.model.Role;
 import az.fitnest.identity.user.domain.model.User;
 import az.fitnest.identity.user.events.IdentityEventPublisher;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +49,11 @@ public class UserService {
     @Transactional(readOnly = true)
     public User getUserById(Long userId) {
         return getUserOrThrow(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<User> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable);
     }
 
     @Transactional
