@@ -1,10 +1,10 @@
 package az.fitnest.identity.otp.adapter.store.redis;
 
-import az.fitnest.identity.otp.domain.model.OtpSessionPayload;
-import az.fitnest.identity.otp.domain.enums.OtpPurpose;
-import az.fitnest.identity.otp.domain.enums.OtpVerificationStatus;
-import az.fitnest.identity.shared.exception.BadRequestException;
-import az.fitnest.identity.shared.exception.InternalServerException;
+import az.fitnest.identity.entity.OtpSessionPayload;
+import az.fitnest.identity.constants.OtpPurpose;
+import az.fitnest.identity.constants.OtpVerificationStatus;
+import az.fitnest.identity.exception.BadRequestException;
+import az.fitnest.identity.exception.InternalServerException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

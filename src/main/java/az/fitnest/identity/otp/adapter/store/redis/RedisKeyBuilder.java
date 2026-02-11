@@ -1,6 +1,6 @@
 package az.fitnest.identity.otp.adapter.store.redis;
 
-import az.fitnest.identity.otp.domain.enums.OtpPurpose;
+import az.fitnest.identity.constants.OtpPurpose;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;

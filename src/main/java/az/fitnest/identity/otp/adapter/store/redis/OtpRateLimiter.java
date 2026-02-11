@@ -1,6 +1,6 @@
 package az.fitnest.identity.otp.adapter.store.redis;
 
-import az.fitnest.identity.otp.domain.enums.OtpPurpose;
+import az.fitnest.identity.constants.OtpPurpose;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -109,7 +109,7 @@ public class OtpRateLimiter {
         try {
             result = redisTemplate.execute(RATE_LIMIT_SCRIPT, keys, args.toArray());
         } catch (Exception e) {
-            throw new az.fitnest.identity.shared.exception.InternalServerException(
+            throw new az.fitnest.identity.exception.InternalServerException(
                 "Failed to execute Redis script for checking OTP rate limit: " + e.getMessage()
             );
         }
