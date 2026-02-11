@@ -162,7 +162,7 @@ springdoc:
     cache:
       enabled: true
     # Resolve schema refs to reduce JSON size
-    resolve-schema-properties: true
+
   paths-to-exclude: /api/v1/internal/**
   swagger-ui:
     enabled: true
@@ -188,7 +188,8 @@ springdoc:
   default-produces-media-type: application/json
   writer-with-default-pretty-printer: false
   # Pre-load OpenAPI spec at startup
-  pre-loading-enabled: true
+  pre-loading-enabled: false
+
   # Use faster model converters
   model-converters:
     deprecating-converter:

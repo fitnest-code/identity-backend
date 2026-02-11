@@ -25,15 +25,8 @@ public class OpenApiConfig {
     @Value("${springdoc.server-url:}")
     private String serverUrl;
 
-    // Cache the OpenAPI instance since it doesn't change at runtime
-    private volatile OpenAPI cachedOpenAPI;
-
     @Bean
     public OpenAPI customOpenAPI() {
-        if (cachedOpenAPI != null) {
-            return cachedOpenAPI;
-        }
-
         OpenAPI openAPI = new OpenAPI()
                 .info(new Info()
                         .title("Identity Service API")
@@ -55,9 +48,9 @@ public class OpenApiConfig {
             openAPI.servers(List.of(new Server().url(serverUrl).description("API Server")));
         }
 
-        cachedOpenAPI = openAPI;
         return openAPI;
     }
+
 
     /**
      * Customizer to optimize operation processing.
