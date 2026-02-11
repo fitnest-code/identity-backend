@@ -1,7 +1,7 @@
 package az.fitnest.identity.controller;
 
 import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.dto.UserResponseMapper;
+import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.entity.User;

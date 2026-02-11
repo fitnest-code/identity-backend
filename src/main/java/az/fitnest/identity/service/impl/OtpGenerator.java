@@ -1,4 +1,6 @@
-package az.fitnest.identity.service;
+package az.fitnest.identity.service.impl;
+import az.fitnest.identity.service.*;
+import az.fitnest.identity.service.*;
 
 import org.springframework.stereotype.Service;
 

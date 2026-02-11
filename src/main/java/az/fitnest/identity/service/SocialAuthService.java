@@ -1,176 +1,23 @@
 package az.fitnest.identity.service;
 
+import az.fitnest.identity.constants.SocialProvider;
 import az.fitnest.identity.dto.AppleSocialRequest;
 import az.fitnest.identity.dto.GoogleSocialRequest;
 import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.repository.SocialAuthRepository;
-import az.fitnest.identity.constants.SocialProvider;
 import az.fitnest.identity.entity.SocialAuth;
+import az.fitnest.identity.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.exception.InvalidCredentialsException;
-import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.repository.RoleRepository;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.repository.SocialAuthRepository;
+import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.identity.service.*;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
-@Service
-@RequiredArgsConstructor
-public class SocialAuthService {
-
-    private final UserRepository userRepository;
-    private final SocialAuthRepository socialAuthRepository;
-    private final GoogleTokenVerifier googleTokenVerifier;
-    private final AppleTokenVerifier appleTokenVerifier;
-    private final TokenIssuanceService tokenIssuanceService;
-    private final az.fitnest.identity.repository.RoleRepository roleRepository;
-
-    @Transactional
-    public LoginResponse socialLoginApple(AppleSocialRequest request) {
-        AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.getIdentityToken());
-        String providerId = claims.userId();
-        
-        Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
-                SocialProvider.APPLE, providerId);
-        
-        if (existingSocialAuth.isPresent()) {
-            SocialAuth socialAuth = existingSocialAuth.get();
-            User user = userRepository.findByIdIncludingDeleted(socialAuth.getUserId())
-                    .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
-
-            if (user.isDeleted()) {
-                User newUser = createUserForSocialLogin(
-                        request.getFirstName(),
-                        request.getLastName(),
-                        request.getFullName() != null ? request.getFullName() : "User",
-                        null
-                );
-                socialAuth.setUserId(newUser.getId());
-                socialAuthRepository.save(socialAuth);
-                return tokenIssuanceService.issueTokens(newUser);
-            }
-
-            return tokenIssuanceService.issueTokens(user);
-        }
-        
-        // No email linking anymore. Create new user.
-        
-        User newUser = createUserForSocialLogin(
-                request.getFirstName(),
-                request.getLastName(),
-                request.getFullName() != null ? request.getFullName() : "User",
-                null);
-        
-        SocialAuth socialAuth = SocialAuth.builder()
-                .userId(newUser.getId())
-                .provider(SocialProvider.APPLE)
-                .providerId(providerId)
-                .build();
-        socialAuthRepository.save(socialAuth);
-        
-        return tokenIssuanceService.issueTokens(newUser);
-    }
-
-    @Transactional
-    public LoginResponse socialLoginGoogle(GoogleSocialRequest request) {
-        GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.getIdToken());
-        String providerId = claims.userId();
-        
-        Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
-                SocialProvider.GOOGLE, providerId);
-        
-        if (existingSocialAuth.isPresent()) {
-            SocialAuth socialAuth = existingSocialAuth.get();
-            User user = userRepository.findByIdIncludingDeleted(socialAuth.getUserId())
-                    .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
-
-            if (user.isDeleted()) {
-                User newUser = createUserForSocialLogin(
-                        request.getFirstName(),
-                        request.getLastName(),
-                        request.getFullName() != null ? request.getFullName() : "User",
-                        null
-                );
-                socialAuth.setUserId(newUser.getId());
-                socialAuthRepository.save(socialAuth);
-                return tokenIssuanceService.issueTokens(newUser);
-            }
-
-            return tokenIssuanceService.issueTokens(user);
-        }
-        
-        // No email linking anymore. Create new user.
-        
-        User newUser = createUserForSocialLogin(
-                request.getFirstName(),
-                request.getLastName(),
-                request.getFullName() != null ? request.getFullName() : "User",
-                null);
-        
-        SocialAuth socialAuth = SocialAuth.builder()
-                .userId(newUser.getId())
-                .provider(SocialProvider.GOOGLE)
-                .providerId(providerId)
-                .build();
-        socialAuthRepository.save(socialAuth);
-        
-        return tokenIssuanceService.issueTokens(newUser);
-    }
-
-    private User createUserForSocialLogin(String firstName, String lastName, String fullName, String mobile) {
-        NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
-        User user = User.builder()
-                .firstName(nameParts.firstName())
-                .lastName(nameParts.lastName())
-                .mobile(mobile)
-                .passwordHash(null)
-                .hasAccount(true)
-                .setupRequired(true)
-                .accountLocked(false)
-                .failedLoginAttempts(0)
-                .isDeleted(false)
-                .role(roleRepository.findByName(az.fitnest.identity.constants.RoleName.ROLE_USER).orElse(null))
-                .build();
-        return userRepository.save(user);
-    }
-
-    private NameParts resolveNameParts(String firstName, String lastName, String fullName) {
-        String fn = normalizeNamePart(firstName);
-        String ln = normalizeNamePart(lastName);
-        if (fn != null || ln != null) {
-            return new NameParts(fn, ln);
-        }
-        return splitFullName(fullName);
-    }
-
-    private String normalizeNamePart(String value) {
-        if (value == null) {
-            return null;
-        }
-        String v = value.trim();
-        return v.isEmpty() ? null : v;
-    }
-
-    private NameParts splitFullName(String fullName) {
-        if (fullName == null) {
-            return new NameParts(null, null);
-        }
-        String v = fullName.trim();
-        if (v.isEmpty()) {
-            return new NameParts(null, null);
-        }
-        String[] parts = v.split("\\s+");
-        if (parts.length == 1) {
-            return new NameParts(parts[0], null);
-        }
-        String first = parts[0];
-        String last = String.join(" ", java.util.Arrays.asList(parts).subList(1, parts.length));
-        return new NameParts(first, last);
-    }
-
-    private record NameParts(String firstName, String lastName) {
-    }
+public interface SocialAuthService {
+    LoginResponse socialLoginApple(AppleSocialRequest request);
+    LoginResponse socialLoginGoogle(GoogleSocialRequest request);
 }

@@ -5,7 +5,7 @@ import az.fitnest.identity.dto.UpdateUserProfileCommand;
 import az.fitnest.identity.dto.UpdateProfileImageRequest;
 import az.fitnest.identity.dto.UpdateSetupRequiredRequest;
 import az.fitnest.identity.dto.UpdateUserProfileRequest;
-import az.fitnest.identity.dto.UserResponseMapper;
+import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.entity.User;
 import io.swagger.v3.oas.annotations.Hidden;

@@ -1,4 +1,5 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.mapper;
+import az.fitnest.identity.dto.*;
 
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.entity.User;
