@@ -1,11 +1,8 @@
 package az.fitnest.identity.service;
 
-import org.springframework.stereotype.Service;
-
 import java.security.SecureRandom;
 import java.util.Base64;
 
-@Service
 public class OtpSessionIdGenerator {
 
     private static final int BYTES_LENGTH = 16;

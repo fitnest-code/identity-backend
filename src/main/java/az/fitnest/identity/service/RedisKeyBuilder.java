@@ -1,14 +1,12 @@
 package az.fitnest.identity.service;
 
 import az.fitnest.identity.constants.OtpPurpose;
-import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-@Component
 public class RedisKeyBuilder {
 
     private static final String PREFIX = "otp";
