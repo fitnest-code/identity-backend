@@ -1,4 +1,4 @@
-package az.fitnest.identity.shared.messaging;
+package az.fitnest.identity.service;
 
 import java.util.Map;
 

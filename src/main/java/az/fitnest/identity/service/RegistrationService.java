@@ -29,7 +29,7 @@ public class RegistrationService {
     private final RegistrationTokenService registrationTokenService;
 
     public OtpSendResponse startRegistration(RegisterRequest request) {
-        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getMobile());
+        String mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(request.getMobile());
         if (userRepository.findByMobileIncludingDeleted(mobile).isPresent()) {
             throw new ConflictException("Mobile number already registered");
         }

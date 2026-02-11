@@ -1,4 +1,4 @@
-package az.fitnest.identity.shared.persistence;
+package az.fitnest.identity.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

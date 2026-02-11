@@ -2,7 +2,7 @@ package az.fitnest.identity.service;
 
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.entity.AuthToken;
-import az.fitnest.identity.shared.messaging.EmailService;
+import az.fitnest.identity.service.EmailService;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.exception.ResourceNotFoundException;
@@ -12,7 +12,7 @@ import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.entity.Role;
 import az.fitnest.identity.entity.User;
-import az.fitnest.identity.user.events.IdentityEventPublisher;
+import az.fitnest.identity.service.IdentityEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,7 +58,7 @@ public class UserService {
 
     @Transactional
     public User createNewUser(String firstName, String lastName, String passwordHash, String mobile) {
-        mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(mobile);
+        mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(mobile);
         if (mobile != null && userRepository.findByMobileIncludingDeleted(mobile).isPresent()) {
             throw new ConflictException("Mobile number already registered");
         }
@@ -81,7 +81,7 @@ public class UserService {
 
     @Transactional
     public User createNewUserWithFullName(String fullName, String passwordHash, String mobile) {
-        mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(mobile);
+        mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(mobile);
         NameParts nameParts = splitFullName(fullName);
         User user = User.builder()
                 .firstName(nameParts.firstName())

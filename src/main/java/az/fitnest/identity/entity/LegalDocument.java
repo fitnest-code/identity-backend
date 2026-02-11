@@ -1,7 +1,7 @@
 package az.fitnest.identity.entity;
 
 import az.fitnest.identity.constants.LegalDocumentType;
-import az.fitnest.identity.shared.persistence.BaseAuditableEntity;
+import az.fitnest.identity.entity.BaseAuditableEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

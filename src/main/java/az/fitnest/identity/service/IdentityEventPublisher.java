@@ -1,4 +1,4 @@
-package az.fitnest.identity.user.events;
+package az.fitnest.identity.service;
 
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

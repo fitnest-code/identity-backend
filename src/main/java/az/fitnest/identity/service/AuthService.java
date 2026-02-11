@@ -4,7 +4,7 @@ import az.fitnest.identity.dto.LoginRequest;
 import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.dto.RefreshResponse;
 import az.fitnest.identity.repository.AuthTokenRepository;
-import az.fitnest.identity.shared.messaging.EmailService;
+import az.fitnest.identity.service.EmailService;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.repository.UserRepository;
@@ -38,7 +38,7 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getMobile());
+        String mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(request.getMobile());
         User user = userRepository.findByMobileIncludingDeleted(mobile)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 

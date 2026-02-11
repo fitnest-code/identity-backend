@@ -1,4 +1,4 @@
-package az.fitnest.identity.util;
+package az.fitnest.identity.criteria;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

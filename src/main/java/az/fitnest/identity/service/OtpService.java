@@ -9,15 +9,15 @@ import az.fitnest.identity.dto.OtpVerifyResponse;
 import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.OtpRateLimitedException;
-import az.fitnest.identity.shared.messaging.EmailService;
-import az.fitnest.identity.shared.messaging.SmsService;
+import az.fitnest.identity.service.EmailService;
+import az.fitnest.identity.service.SmsService;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.service.EmailNormalizationService;
-import az.fitnest.identity.otp.adapter.store.redis.OtpStore;
-import az.fitnest.identity.otp.adapter.store.redis.OtpRateLimiter;
+import az.fitnest.identity.service.OtpStore;
+import az.fitnest.identity.service.OtpRateLimiter;
 import az.fitnest.identity.service.OtpGenerator;
 import az.fitnest.identity.service.OtpSessionIdGenerator;
-import az.fitnest.identity.otp.domain.constants.OtpMessages;
+import az.fitnest.identity.constants.OtpMessages;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
 import az.fitnest.identity.service.ResetPasswordTokenService;
@@ -81,7 +81,7 @@ public class OtpService {
 
     public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile) {
         String rawMobile = request.getMobile() != null ? request.getMobile() : mobile;
-        String mobileNumber = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
+        String mobileNumber = az.fitnest.identity.criteria.MobileNumberUtils.normalize(rawMobile);
 
         if (mobileNumber == null) {
             throw new IllegalArgumentException("Mobile number must be provided");

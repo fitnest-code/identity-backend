@@ -1,4 +1,4 @@
-package az.fitnest.identity.otp.adapter.store.redis;
+package az.fitnest.identity.service;
 
 import az.fitnest.identity.constants.OtpPurpose;
 import org.springframework.stereotype.Component;

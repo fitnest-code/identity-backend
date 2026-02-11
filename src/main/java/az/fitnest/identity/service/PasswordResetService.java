@@ -35,7 +35,7 @@ public class PasswordResetService {
     @Transactional
     public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
         String rawMobile = request.getMobile();
-        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
+        String mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(rawMobile);
         
         if (userRepository.findByMobileIncludingDeleted(mobile).isEmpty()) {
            // Don't reveal user existence

@@ -1,4 +1,4 @@
-package az.fitnest.identity.otp.domain.constants;
+package az.fitnest.identity.constants;
 
 public final class OtpMessages {
 
