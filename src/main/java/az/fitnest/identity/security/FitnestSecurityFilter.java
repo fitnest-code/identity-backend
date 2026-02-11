@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FitnestSecurityFilter extends OncePerRequestFilter {
@@ -54,18 +52,6 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         
-        // DEBUG: Log all headers to debug 403 issue (only for internal endpoints)
-        if (log.isDebugEnabled() && request.getRequestURI().startsWith("/api/v1/internal")) {
-            log.debug("Incoming request to {}", request.getRequestURI());
-            java.util.Enumeration<String> headerNames = request.getHeaderNames();
-            if (headerNames != null) {
-                while (headerNames.hasMoreElements()) {
-                    String headerName = headerNames.nextElement();
-                    log.debug("Header {}: {}", headerName, request.getHeader(headerName));
-                }
-            }
-        }
-
         // Ensure clean context at start - REMOVED: redundant and potentially harmful
         // SecurityContextHolder.clearContext();
 
@@ -80,15 +66,6 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
             // Internal call - Also check for internal identity headers or mesh principal
             // This ensures ROLE_INTERNAL is granted even if a user JWT is present
             authenticateViaInternalHeaders(request);
-
-            // Log final authentication state for debugging
-            org.springframework.security.core.Authentication finalAuth = SecurityContextHolder.getContext().getAuthentication();
-            if (finalAuth != null) {
-                log.info("Final auth for internal endpoint: principal={}, authorities={}, authenticated={}",
-                        finalAuth.getPrincipal(), finalAuth.getAuthorities(), finalAuth.isAuthenticated());
-            } else {
-                log.warn("No authentication set for internal endpoint: {}", request.getRequestURI());
-            }
         }
 
         filterChain.doFilter(request, response);
@@ -96,20 +73,17 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
 
     private void authenticateViaInternalHeaders(HttpServletRequest request) {
         String userIdStr = request.getHeader(USER_ID_HEADER);
-        
+
         // Check for valid user ID (not null, not blank, not literal "null" string)
         if (userIdStr != null && !userIdStr.isBlank() && !userIdStr.equalsIgnoreCase("null")) {
-            log.info("Authenticating internal request via headers for user: {}", userIdStr);
-            boolean success = authenticateGatewayUser(request);
-            if (!success) {
-                // Fallback to internal service authentication if user parsing fails
-                log.warn("Failed to parse user from headers, falling back to internal service auth");
-                authenticateInternalService();
-            }
-        } else {
-            log.info("Internal service-to-service call detected on {} (no valid X-User-Id)", request.getRequestURI());
-            authenticateInternalService();
-        }
+             boolean success = authenticateGatewayUser(request);
+             if (!success) {
+                 // Fallback to internal service authentication if user parsing fails
+                 authenticateInternalService();
+             }
+         } else {
+             authenticateInternalService();
+         }
     }
 
     private void authenticateViaJwt(String token) {
@@ -124,9 +98,7 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
                     userId, null, authorities);
             
             SecurityContextHolder.getContext().setAuthentication(auth);
-            log.debug("Authenticated user {} via JWT with roles {}", userId, roles);
         } catch (Exception e) {
-            log.warn("JWT validation failed: {}", e.getMessage());
         }
     }
 
@@ -135,7 +107,6 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                 "INTERNAL_SERVICE", null, authorities);
         SecurityContextHolder.getContext().setAuthentication(auth);
-        log.info("Authenticated as INTERNAL_SERVICE with ROLE_INTERNAL");
     }
 
     private boolean authenticateGatewayUser(HttpServletRequest request) {
@@ -163,10 +134,8 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
             
             auth.setDetails(email);
             SecurityContextHolder.getContext().setAuthentication(auth);
-            log.info("Authenticated internal request for user {} with authorities: {}", userId, authorities);
             return true;
         } catch (NumberFormatException e) {
-            log.warn("Invalid user ID format in X-User-Id header: '{}' - error: {}", userIdStr, e.getMessage());
             return false;
         }
     }

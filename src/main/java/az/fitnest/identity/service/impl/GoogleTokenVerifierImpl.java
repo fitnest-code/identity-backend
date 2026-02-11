@@ -1,8 +1,8 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
 
 import az.fitnest.identity.exception.UnauthorizedException;
+import az.fitnest.identity.service.GoogleTokenVerifier;
+import az.fitnest.identity.service.GoogleTokenVerifier.GoogleTokenClaims;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -15,7 +15,7 @@ import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
-public class GoogleTokenVerifier {
+public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
     @Value("${auth.google.client-id:}")
     private String googleClientId;
@@ -34,6 +34,7 @@ public class GoogleTokenVerifier {
         return verifier;
     }
 
+    @Override
     public GoogleTokenClaims verify(String idToken) {
         if (googleClientId == null || googleClientId.isEmpty()) {
             throw new IllegalStateException("Google client ID not configured");
@@ -72,6 +73,4 @@ public class GoogleTokenVerifier {
             throw new UnauthorizedException("Invalid Google token: " + e.getMessage());
         }
     }
-
-    public record GoogleTokenClaims(String userId, String email, boolean emailVerified) {}
 }

@@ -1,7 +1,8 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
+import az.fitnest.identity.service.AppleTokenVerifier;
+import az.fitnest.identity.service.GoogleTokenVerifier;
+import az.fitnest.identity.service.SocialAuthService;
+import az.fitnest.identity.service.TokenIssuanceService;
 
 import az.fitnest.identity.dto.AppleSocialRequest;
 import az.fitnest.identity.dto.GoogleSocialRequest;

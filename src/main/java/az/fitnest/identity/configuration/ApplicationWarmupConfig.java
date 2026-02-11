@@ -1,6 +1,5 @@
 package az.fitnest.identity.configuration;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +16,6 @@ import java.sql.ResultSet;
  * Application warmup configuration that pre-warms various resources at startup.
  * This helps eliminate cold-start latency on the first requests.
  */
-@Slf4j
 @Configuration
 public class ApplicationWarmupConfig {
 
@@ -65,8 +63,6 @@ public class ApplicationWarmupConfig {
      */
     private void warmupDatabase() {
         try {
-            long start = System.currentTimeMillis();
-
             // Execute multiple queries to warm up multiple connections in the pool
             for (int i = 0; i < 3; i++) {
                 try (Connection conn = dataSource.getConnection();
@@ -77,10 +73,7 @@ public class ApplicationWarmupConfig {
                     }
                 }
             }
-
-            log.debug("Database warmup completed in {}ms", System.currentTimeMillis() - start);
         } catch (Exception e) {
-            log.warn("Failed to warm up database: {}", e.getMessage());
         }
     }
 
@@ -89,15 +82,9 @@ public class ApplicationWarmupConfig {
      */
     private void warmupRedis() {
         try {
-            log.debug("Warming up Redis connection...");
-            long start = System.currentTimeMillis();
-
             // Simple ping to establish connection
             redisTemplate.hasKey("__warmup__");
-
-            log.debug("Redis warmup completed in {}ms", System.currentTimeMillis() - start);
         } catch (Exception e) {
-            log.warn("Failed to warm up Redis: {}", e.getMessage());
         }
     }
 
@@ -106,9 +93,6 @@ public class ApplicationWarmupConfig {
      */
     private void warmupJit() {
         try {
-            log.debug("Warming up JIT...");
-            long start = System.currentTimeMillis();
-
             // Touch common string operations
             String test = "warmup-test-string";
             test.toLowerCase();
@@ -123,10 +107,7 @@ public class ApplicationWarmupConfig {
             java.util.Map<String, Object> map = new java.util.HashMap<>();
             map.put("key", "value");
             map.get("key");
-
-            log.debug("JIT warmup completed in {}ms", System.currentTimeMillis() - start);
         } catch (Exception e) {
-            log.warn("Failed JIT warmup: {}", e.getMessage());
         }
     }
 }
