@@ -1,9 +1,6 @@
 package az.fitnest.identity.service;
 
 
-import org.springframework.stereotype.Service;
-
-@Service
 public class MockSmsService implements SmsService {
 
     @Override
