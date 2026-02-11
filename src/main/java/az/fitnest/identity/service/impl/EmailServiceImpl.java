@@ -1,7 +1,5 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
+import az.fitnest.identity.service.EmailService;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
