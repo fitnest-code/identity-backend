@@ -1,4 +1,4 @@
-package az.fitnest.identity.configurationuration;
+package az.fitnest.identity.configuration;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

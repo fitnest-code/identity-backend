@@ -1,4 +1,4 @@
-package az.fitnest.identity.configurationuration;
+package az.fitnest.identity.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

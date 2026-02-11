@@ -1,6 +1,5 @@
-package az.fitnest.identity.configurationuration;
+package az.fitnest.identity.configuration;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.webmvc.api.OpenApiWebMvcResource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import java.util.Locale;
  * This pre-generates the OpenAPI spec so the first request is fast.
  */
 @Configuration
-@Slf4j
 public class OpenApiWarmupConfig {
 
     private final SpringDocConfigProperties springDocConfigProperties;
@@ -45,33 +43,23 @@ public class OpenApiWarmupConfig {
     @Async
     public void warmUpOpenApi() {
         if (!springDocConfigProperties.getApiDocs().isEnabled()) {
-            log.debug("OpenAPI docs are disabled, skipping warmup");
             return;
         }
 
         try {
-            log.info("Warming up OpenAPI documentation...");
-            long start = System.currentTimeMillis();
-
             // Try direct resource call first (faster, no network)
             if (openApiResource != null) {
                 try {
                     openApiResource.openapiJson(null, "", Locale.getDefault());
-                    log.info("OpenAPI documentation warmed up via direct call in {}ms",
-                            System.currentTimeMillis() - start);
                     return;
                 } catch (Exception e) {
-                    log.debug("Direct OpenAPI warmup failed, falling back to HTTP: {}", e.getMessage());
+                    // Fall back to HTTP
                 }
             }
 
             // Fallback: HTTP call to trigger generation
             warmupViaHttp();
-
-            long elapsed = System.currentTimeMillis() - start;
-            log.info("OpenAPI documentation warmed up successfully in {}ms", elapsed);
         } catch (Exception e) {
-            log.warn("Failed to warm up OpenAPI documentation: {}", e.getMessage());
             // Non-critical, don't fail startup
         }
     }
@@ -97,14 +85,11 @@ public class OpenApiWarmupConfig {
             if (responseCode == 200) {
                 // Read the response to ensure it's fully generated
                 connection.getInputStream().readAllBytes();
-                log.debug("OpenAPI warmup via HTTP completed successfully");
-            } else {
-                log.warn("OpenAPI warmup HTTP call returned status: {}", responseCode);
             }
 
             connection.disconnect();
         } catch (Exception e) {
-            log.debug("HTTP warmup failed (service might still be starting): {}", e.getMessage());
+            // Ignore warmup failures
         }
     }
 }

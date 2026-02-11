@@ -1,4 +1,4 @@
-package az.fitnest.identity.configurationuration;
+package az.fitnest.identity.configuration;
 
 import io.grpc.ServerBuilder;
 import net.devh.boot.grpc.server.config.GrpcServerProperties;

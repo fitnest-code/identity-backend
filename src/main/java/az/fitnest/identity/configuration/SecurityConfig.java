@@ -1,4 +1,4 @@
-package az.fitnest.identity.configurationuration;
+package az.fitnest.identity.configuration;
 
 import az.fitnest.identity.security.FitnestSecurityFilter;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,4 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
 
 import az.fitnest.identity.entity.OtpSessionPayload;
 import az.fitnest.identity.entity.OtpVerificationResult;
@@ -12,14 +9,9 @@ import az.fitnest.identity.dto.OtpVerifyResponse;
 import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.OtpRateLimitedException;
-import az.fitnest.identity.service.EmailService;
+import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.SmsService;
 import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.service.EmailNormalizationService;
-import az.fitnest.identity.service.impl.OtpStore;
-import az.fitnest.identity.service.impl.OtpRateLimiter;
-import az.fitnest.identity.service.impl.OtpGenerator;
-import az.fitnest.identity.service.impl.OtpSessionIdGenerator;
 import az.fitnest.identity.constants.OtpMessages;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
@@ -30,7 +22,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.nio.charset.StandardCharsets;
@@ -78,14 +69,12 @@ public class OtpServiceImpl implements OtpService {
         }
     }
 
-        @Override
-        @Override
+    @Override
     public OtpSendResponse sendOtp(OtpSendRequest request) {
         return sendOtp(request, null, null, null, null);
     }
 
-        @Override
-        @Override
+    @Override
     public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile) {
         String rawMobile = request.getMobile() != null ? request.getMobile() : mobile;
         String mobileNumber = az.fitnest.identity.criteria.MobileNumberUtils.normalize(rawMobile);
@@ -184,7 +173,7 @@ public class OtpServiceImpl implements OtpService {
                 .build();
     }
 
-        @Override
+    @Override
     public OtpVerificationResult verifyOtp(String sessionId, String otpCode) {
         Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
         
@@ -243,7 +232,7 @@ public class OtpServiceImpl implements OtpService {
                 .build();
     }
 
-        @Override
+    @Override
     public OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, identifier)
                 .orElseThrow(() -> new InvalidCredentialsException(OtpMessages.INVALID_OTP));
@@ -251,7 +240,7 @@ public class OtpServiceImpl implements OtpService {
         return verifyOtp(sessionId, otpCode);
     }
 
-        @Override
+    @Override
     public OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request) {
         OtpVerificationResult verificationResult = verifyOtp(request.getOtpSessionId(), request.getOtpCode());
         
@@ -269,7 +258,7 @@ public class OtpServiceImpl implements OtpService {
                 .build();
     }
 
-        @Override
+    @Override
     public String verifyOtpAndIssueResetToken(String sessionId, String otpCode) {
         OtpVerificationResult verificationResult = verifyOtp(sessionId, otpCode);
         

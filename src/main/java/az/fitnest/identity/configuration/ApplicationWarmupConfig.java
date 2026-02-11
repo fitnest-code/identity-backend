@@ -1,6 +1,5 @@
-package az.fitnest.identity.configurationuration;
+package az.fitnest.identity.configuration;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -18,9 +17,8 @@ import java.sql.ResultSet;
  * Application warmup configuration that pre-warms various resources at startup.
  * This helps eliminate cold-start latency on the first requests.
  */
-@Configuration
-@RequiredArgsConstructor
 @Slf4j
+@Configuration
 public class ApplicationWarmupConfig {
 
     private final DataSource dataSource;
@@ -28,6 +26,11 @@ public class ApplicationWarmupConfig {
 
     @Value("${app.warmup.enabled:true}")
     private boolean warmupEnabled;
+
+    public ApplicationWarmupConfig(DataSource dataSource, RedisTemplate<String, Object> redisTemplate) {
+        this.dataSource = dataSource;
+        this.redisTemplate = redisTemplate;
+    }
 
     @Value("${app.warmup.db:true}")
     private boolean warmupDb;
@@ -40,12 +43,9 @@ public class ApplicationWarmupConfig {
     @Async
     public void warmupApplication() {
         if (!warmupEnabled) {
-            log.info("Application warmup is disabled");
             return;
         }
 
-        log.info("Starting application warmup...");
-        long startTime = System.currentTimeMillis();
 
         // Warm up database connection pool
         if (warmupDb) {
@@ -57,9 +57,6 @@ public class ApplicationWarmupConfig {
 
         // Warm up JIT by touching commonly used classes
         warmupJit();
-
-        long elapsed = System.currentTimeMillis() - startTime;
-        log.info("Application warmup completed in {}ms", elapsed);
     }
 
     /**
@@ -68,7 +65,6 @@ public class ApplicationWarmupConfig {
      */
     private void warmupDatabase() {
         try {
-            log.debug("Warming up database connection pool...");
             long start = System.currentTimeMillis();
 
             // Execute multiple queries to warm up multiple connections in the pool

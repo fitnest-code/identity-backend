@@ -1,21 +1,20 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
 
-import az.fitnest.identity.dto.RegisterCompleteRequest;
-import az.fitnest.identity.dto.RegisterRequest;
+import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.OtpSendResponse;
-import az.fitnest.identity.constants.OtpPurpose;
-import az.fitnest.identity.entity.OtpVerificationResult;
-import az.fitnest.identity.exception.InvalidCredentialsException;
-import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.dto.RegisterCompleteRequest;
+import az.fitnest.identity.dto.RegisterRequest;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.exception.ConflictException;
+import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.identity.service.OtpService;
+import az.fitnest.identity.service.PasswordService;
+import az.fitnest.identity.service.RegistrationService;
+import az.fitnest.identity.service.RegistrationTokenService;
+import az.fitnest.identity.service.TokenIssuanceService;
+import az.fitnest.identity.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +30,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final OtpService otpService;
     private final RegistrationTokenService registrationTokenService;
 
-        @Override
+    @Override
     public OtpSendResponse startRegistration(RegisterRequest request) {
         String mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(request.getMobile());
         if (userRepository.findByMobileIncludingDeleted(mobile).isPresent()) {
@@ -53,7 +52,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     }
 
     @Transactional
-        @Override
+    @Override
     public LoginResponse completeRegistration(RegisterCompleteRequest request) {
         String registrationToken = request.getRegistrationToken();
         String identifier = registrationTokenService.requireIdentifier(registrationToken);
@@ -75,6 +74,5 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         return tokenIssuanceService.issueTokens(user);
     }
-
 
 }

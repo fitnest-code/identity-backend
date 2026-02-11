@@ -1,10 +1,9 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
 
 import az.fitnest.identity.constants.OtpPurpose;
+import az.fitnest.identity.dto.RegistrationTokenPayload;
 import az.fitnest.identity.exception.UnauthorizedException;
+import az.fitnest.identity.service.RegistrationTokenService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +27,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
     @Value("${auth.registration-token.ttl-hours:24}")
     private long ttlHours;
 
-
-        @Override
+    @Override
     public String issueForIdentifier(String identifier) {
         String token = UUID.randomUUID().toString();
         String key = registrationKey(token);
@@ -45,7 +43,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
         return token;
     }
 
-        @Override
+    @Override
     public RegistrationTokenPayload requirePayload(String token) {
         String key = registrationKey(token);
         String payloadJson = redisTemplate.opsForValue().get(key);
@@ -65,12 +63,12 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
         }
     }
 
-        @Override
+    @Override
     public String requireIdentifier(String token) {
         return requirePayload(token).getIdentifier();
     }
 
-        @Override
+    @Override
     public void consume(String token) {
         String key = registrationKey(token);
         redisTemplate.delete(key);
@@ -78,37 +76,5 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
 
     private String registrationKey(String token) {
         return tokenPrefix + token;
-    }
-
-    private static class RegistrationTokenPayload {
-        private String identifier;
-        private OtpPurpose purpose;
-
-        public RegistrationTokenPayload() {}
-
-        public RegistrationTokenPayload(String identifier, OtpPurpose purpose) {
-            this.identifier = identifier;
-            this.purpose = purpose;
-        }
-
-            @Override
-    public String getIdentifier() {
-            return identifier;
-        }
-
-            @Override
-    public void setIdentifier(String identifier) {
-            this.identifier = identifier;
-        }
-
-            @Override
-    public OtpPurpose getPurpose() {
-            return purpose;
-        }
-
-            @Override
-    public void setPurpose(OtpPurpose purpose) {
-            this.purpose = purpose;
-        }
     }
 }

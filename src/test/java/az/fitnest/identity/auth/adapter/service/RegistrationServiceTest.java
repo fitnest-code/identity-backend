@@ -1,17 +1,21 @@
 package az.fitnest.identity.auth.adapter.service;
 
-import az.fitnest.identity.auth.api.dto.request.RegisterCompleteRequest;
-import az.fitnest.identity.auth.api.dto.request.RegisterRequest;
-import az.fitnest.identity.auth.api.dto.response.LoginResponse;
-import az.fitnest.identity.otp.adapter.service.OtpService;
-import az.fitnest.identity.otp.api.dto.request.OtpSendRequest;
-import az.fitnest.identity.user.adapter.persistence.UserRepository;
-import az.fitnest.identity.user.adapter.service.UserService;
-import az.fitnest.identity.user.domain.model.User;
-import az.fitnest.identity.shared.exception.ConflictException;
+import az.fitnest.identity.dto.LoginResponse;
+import az.fitnest.identity.dto.OtpSendRequest;
+import az.fitnest.identity.dto.RegisterCompleteRequest;
+import az.fitnest.identity.dto.RegisterRequest;
+import az.fitnest.identity.entity.User;
+import az.fitnest.identity.exception.ConflictException;
+import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.identity.service.OtpService;
+import az.fitnest.identity.service.PasswordService;
+import az.fitnest.identity.service.RegistrationTokenService;
+import az.fitnest.identity.service.TokenIssuanceService;
+import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.service.impl.RegistrationServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,8 +43,19 @@ public class RegistrationServiceTest {
     @Mock
     private RegistrationTokenService registrationTokenService;
 
-    @InjectMocks
-    private RegistrationService registrationService;
+    private RegistrationServiceImpl registrationService;
+
+    @BeforeEach
+    void setUp() {
+        registrationService = new RegistrationServiceImpl(
+            userService,
+            passwordService,
+            userRepository,
+            tokenIssuanceService,
+            otpService,
+            registrationTokenService
+        );
+    }
 
     @Test
     void startRegistration_shouldCallOtpService_whenMobileProvided() {

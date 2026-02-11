@@ -1,4 +1,4 @@
-package az.fitnest.identity.configurationuration;
+package az.fitnest.identity.configuration;
 
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.repository.RoleRepository;
@@ -6,8 +6,8 @@ import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.entity.Role;
 import az.fitnest.identity.entity.User;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,13 +15,19 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Optional;
 
 @Configuration
-@RequiredArgsConstructor
-@Slf4j
 public class DataInitializer {
+
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordService passwordService;
+
+    public DataInitializer(RoleRepository roleRepository, UserRepository userRepository, PasswordService passwordService) {
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.passwordService = passwordService;
+    }
 
     @Bean
     public CommandLineRunner initData() {
@@ -33,9 +39,13 @@ public class DataInitializer {
 
     private void initRoles() {
         if (roleRepository.count() == 0) {
-            log.info("Initializing roles...");
-            roleRepository.save(new Role(null, RoleName.ROLE_USER));
-            roleRepository.save(new Role(null, RoleName.ROLE_ADMIN));
+            Role userRole = new Role();
+            userRole.setName(RoleName.ROLE_USER);
+            roleRepository.save(userRole);
+
+            Role adminRole = new Role();
+            adminRole.setName(RoleName.ROLE_ADMIN);
+            roleRepository.save(adminRole);
         }
     }
 
@@ -44,19 +54,17 @@ public class DataInitializer {
         Optional<User> adminOptional = userRepository.findByMobileIncludingDeleted(adminMobile);
 
         if (adminOptional.isEmpty()) {
-            log.info("Creating default admin user...");
             Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN).orElseThrow();
             
-            User admin = User.builder()
-                    .firstName("Admin")
-                    .lastName("User")
-                    .mobile(adminMobile)
-                    .passwordHash(passwordService.hashPassword("Admin123!"))
-                    .hasAccount(true)
-                    .setupRequired(false)
-                    .role(adminRole)
-                    .build();
-            
+            User admin = new User();
+            admin.setFirstName("Admin");
+            admin.setLastName("User");
+            admin.setMobile(adminMobile);
+            admin.setPasswordHash(passwordService.hashPassword("Admin123!"));
+            admin.setHasAccount(true);
+            admin.setSetupRequired(false);
+            admin.setRole(adminRole);
+
             userRepository.save(admin);
         }
     }

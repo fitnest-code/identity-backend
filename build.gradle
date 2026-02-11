@@ -9,28 +9,18 @@ group = 'az.fitnest'
 version = '1.0.0'
 
 java {
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 repositories {
 	mavenCentral()
 }
 
-configurations {
-	all {
-		// Remove legacy Apache Commons Logging to avoid conflicts with spring-jcl
-		exclude group: 'commons-logging', module: 'commons-logging'
-	}
-}
-
 dependencyManagement {
 	imports {
 		mavenBom "org.springframework.cloud:spring-cloud-dependencies:2024.0.0"
-		mavenBom "io.grpc:grpc-bom:1.63.0"
 	}
 }
 
@@ -51,11 +41,11 @@ dependencies {
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 	implementation 'io.github.openfeign:feign-hc5'
-    // Using springdoc 2.7.0 compatible with Spring Boot 3.4.x
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+	compileOnly 'org.projectlombok:lombok:1.18.34'
+	annotationProcessor 'org.projectlombok:lombok:1.18.34'
+	testCompileOnly 'org.projectlombok:lombok:1.18.34'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
@@ -77,6 +67,12 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
@@ -96,3 +92,9 @@ protobuf {
 		}
 	}
 }
+
+tasks.withType(JavaCompile) {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+

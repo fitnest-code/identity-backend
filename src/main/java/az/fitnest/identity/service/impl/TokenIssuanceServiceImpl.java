@@ -1,22 +1,23 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
 
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.dto.LoginResponse;
+import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.entity.AuthToken;
+import az.fitnest.identity.entity.User;
+import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
-import az.fitnest.identity.mapper.UserResponseMapper;
-import az.fitnest.identity.dto.UserResponse;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.service.LegalService;
+import az.fitnest.identity.service.TokenIssuanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,13 +25,13 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
 
     private final JwtService jwtService;
     private final RedisTokenService redisTokenService;
-    private final az.fitnest.identity.service.impl.LegalService legalService;
+    private final LegalService legalService;
     private final AuthTokenRepository authTokenRepository;
 
-        @Override
+    @Override
     public LoginResponse issueTokens(User user) {
         String roleName = (user.getRole() != null) ? user.getRole().getName().name() : "ROLE_USER"; 
-        java.util.List<String> roles = java.util.List.of(roleName);
+        List<String> roles = List.of(roleName);
 
         String accessToken = jwtService.generateAccessToken(user.getId(), roles);
         String refreshToken = jwtService.generateRefreshToken(user.getId());
@@ -59,8 +60,8 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
                 .userId(userId)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .accessExpiresAt(LocalDateTime.ofInstant(accessExpiresAt, java.time.ZoneId.systemDefault()))
-                .refreshExpiresAt(LocalDateTime.ofInstant(refreshExpiresAt, java.time.ZoneId.systemDefault()))
+                .accessExpiresAt(LocalDateTime.ofInstant(accessExpiresAt, ZoneId.systemDefault()))
+                .refreshExpiresAt(LocalDateTime.ofInstant(refreshExpiresAt, ZoneId.systemDefault()))
                 .revoked(false)
                 .build();
 
