@@ -19,4 +19,7 @@ public class OtpVerifyResponse {
 
     @JsonProperty("message")
     private String message;
+
+    @JsonProperty("reset_token")
+    private String resetToken;
 }

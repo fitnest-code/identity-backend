@@ -41,5 +41,4 @@ public interface OtpService {
     OtpVerificationResult verifyOtp(String sessionId, String otpCode);
     OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode);
     OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request);
-    String verifyOtpAndIssueResetToken(String sessionId, String otpCode);
 }

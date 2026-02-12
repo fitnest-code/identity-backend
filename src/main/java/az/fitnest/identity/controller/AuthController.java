@@ -12,11 +12,9 @@ import az.fitnest.identity.dto.RefreshRequest;
 import az.fitnest.identity.dto.RegisterCompleteRequest;
 import az.fitnest.identity.dto.RegisterRequest;
 import az.fitnest.identity.dto.ResetPasswordRequest;
-import az.fitnest.identity.dto.ForgotPasswordResponse;
 import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.dto.RefreshResponse;
 import az.fitnest.identity.dto.ResetPasswordResponse;
-import az.fitnest.identity.dto.VerifyOtpForPasswordResetResponse;
 import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.exception.UnauthorizedException;
@@ -246,13 +244,13 @@ public class AuthController {
             summary = "Request password reset",
             description = "Starts password reset process by collecting mobile number. " +
                     "Sends an OTP code to the provided mobile number. " +
-                    "Returns a generic success message to prevent user enumeration."
+                    "Returns OTP session details including session ID."
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
                     description = "OTP sent successfully (if mobile number exists)",
-                    content = @Content(schema = @Schema(implementation = ForgotPasswordResponse.class))
+                    content = @Content(schema = @Schema(implementation = OtpSendResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -266,39 +264,11 @@ public class AuthController {
             )
     })
     @PostMapping("/forgot-password")
-    public ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        ForgotPasswordResponse response = passwordResetService.forgotPassword(request);
+    public ResponseEntity<OtpSendResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        OtpSendResponse response = passwordResetService.forgotPassword(request);
         return ResponseEntity.ok(response);
     }
 
-    @Operation(
-            summary = "Verify OTP for password reset",
-            description = "Verifies the OTP code sent for password reset and returns a reset token. " +
-                    "The reset token is required to reset the password."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "OTP verified successfully",
-                    content = @Content(schema = @Schema(implementation = VerifyOtpForPasswordResetResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid request data",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Invalid or expired OTP code",
-                    content = @Content
-            )
-    })
-    @PostMapping("/forgot-password/verify-otp")
-    public ResponseEntity<VerifyOtpForPasswordResetResponse> verifyOtpForPasswordReset(
-            @Valid @RequestBody OtpVerifyRequest request) {
-        VerifyOtpForPasswordResetResponse response = passwordResetService.verifyOtpForPasswordReset(request);
-        return ResponseEntity.ok(response);
-    }
 
     @Operation(
             summary = "Reset password",

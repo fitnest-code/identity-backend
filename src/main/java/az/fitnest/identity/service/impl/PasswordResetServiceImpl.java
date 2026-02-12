@@ -5,14 +5,12 @@ import az.fitnest.identity.service.*;
 
 import az.fitnest.identity.dto.ForgotPasswordRequest;
 import az.fitnest.identity.dto.ResetPasswordRequest;
-import az.fitnest.identity.dto.ForgotPasswordResponse;
 import az.fitnest.identity.dto.ResetPasswordResponse;
-import az.fitnest.identity.dto.VerifyOtpForPasswordResetResponse;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.entity.AuthToken;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.dto.OtpSendRequest;
-import az.fitnest.identity.dto.OtpVerifyRequest;
+import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.exception.InvalidCredentialsException;
@@ -37,41 +35,16 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     @Transactional
         @Override
-    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+    public OtpSendResponse forgotPassword(ForgotPasswordRequest request) {
         String rawMobile = request.getMobile();
         String mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(rawMobile);
         
-        if (userRepository.findByMobileIncludingDeleted(mobile).isEmpty()) {
-           // Don't reveal user existence
-           return ForgotPasswordResponse.builder()
-                   .message("If an account exists with this mobile number, an OTP code has been sent.")
-                   .build();
-        }
-
         OtpSendRequest otpRequest = OtpSendRequest.builder()
                 .mobile(mobile)
                 .purpose(OtpPurpose.PASSWORD_RESET)
                 .build();
         
-        otpService.sendOtp(otpRequest);
-        
-        return ForgotPasswordResponse.builder()
-                .message("If an account exists with this mobile number, an OTP code has been sent.")
-                .build();
-    }
-
-    @Transactional
-        @Override
-    public VerifyOtpForPasswordResetResponse verifyOtpForPasswordReset(OtpVerifyRequest request) {
-        String resetToken = otpService.verifyOtpAndIssueResetToken(
-                request.getOtpSessionId(),
-                request.getOtpCode()
-        );
-        
-        return VerifyOtpForPasswordResetResponse.builder()
-                .resetToken(resetToken)
-                .message("OTP verified. You can now reset your password.")
-                .build();
+        return otpService.sendOtp(otpRequest);
     }
 
     @Transactional

@@ -244,31 +244,25 @@ public class OtpServiceImpl implements OtpService {
     public OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request) {
         OtpVerificationResult verificationResult = verifyOtp(request.getOtpSessionId(), request.getOtpCode());
         
-        if (verificationResult.getPurpose() != OtpPurpose.REGISTRATION) {
-            throw new InvalidCredentialsException("Invalid OTP purpose for registration token");
-        }
-        
         String identifier = verificationResult.getMobile();
-        String registrationToken = registrationTokenService.issueForIdentifier(identifier);
-        
-        return OtpVerifyResponse.builder()
-                .verified(true)
-                .registrationToken(registrationToken)
-                .message(OtpMessages.OTP_VERIFIED)
-                .build();
-    }
 
-    @Override
-    public String verifyOtpAndIssueResetToken(String sessionId, String otpCode) {
-        OtpVerificationResult verificationResult = verifyOtp(sessionId, otpCode);
-        
-        if (verificationResult.getPurpose() != OtpPurpose.PASSWORD_RESET) {
-            throw new InvalidCredentialsException("Invalid OTP purpose for password reset");
+        if (verificationResult.getPurpose() == OtpPurpose.REGISTRATION) {
+            String registrationToken = registrationTokenService.issueForIdentifier(identifier);
+            return OtpVerifyResponse.builder()
+                    .verified(true)
+                    .registrationToken(registrationToken)
+                    .message(OtpMessages.OTP_VERIFIED)
+                    .build();
+        } else if (verificationResult.getPurpose() == OtpPurpose.PASSWORD_RESET) {
+            String resetToken = resetPasswordTokenService.issueForIdentifier(identifier);
+            return OtpVerifyResponse.builder()
+                    .verified(true)
+                    .resetToken(resetToken)
+                    .message(OtpMessages.OTP_VERIFIED)
+                    .build();
+        } else {
+            throw new InvalidCredentialsException("Invalid OTP purpose");
         }
-        
-        String identifier = verificationResult.getMobile();
-        
-        return resetPasswordTokenService.issueForIdentifier(identifier);
     }
 
     private String hashOtp(String otp) {

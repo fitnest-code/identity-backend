@@ -2,12 +2,11 @@ package az.fitnest.identity.service;
 
 import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.dto.ForgotPasswordRequest;
-import az.fitnest.identity.dto.ForgotPasswordResponse;
 import az.fitnest.identity.dto.OtpSendRequest;
+import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.dto.ResetPasswordRequest;
 import az.fitnest.identity.dto.ResetPasswordResponse;
-import az.fitnest.identity.dto.VerifyOtpForPasswordResetResponse;
 import az.fitnest.identity.entity.AuthToken;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.exception.InvalidCredentialsException;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface PasswordResetService {
-    ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request);
-    VerifyOtpForPasswordResetResponse verifyOtpForPasswordReset(OtpVerifyRequest request);
+    OtpSendResponse forgotPassword(ForgotPasswordRequest request);
     ResetPasswordResponse resetPassword(ResetPasswordRequest request);
 }
