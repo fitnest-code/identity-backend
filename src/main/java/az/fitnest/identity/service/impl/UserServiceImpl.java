@@ -144,6 +144,8 @@ public class UserServiceImpl implements UserService {
         return saved;
     }
 
+    private final org.springframework.context.ApplicationEventPublisher localEventPublisher;
+
     @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
     @Transactional
         @Override
@@ -152,14 +154,21 @@ public class UserServiceImpl implements UserService {
         user.setSetupRequired(setupRequired);
         User saved = userRepository.save(user);
         if (!setupRequired) {
-            try {
-                eventPublisher.publishSetupCompleted(userId);
-            } catch (Exception e) {
-                // Keep the core operation successful even if event publishing fails.
-             }
-         }
-         return saved;
+            localEventPublisher.publishEvent(new UserSetupCompletedEventLocal(userId));
+        }
+        return saved;
     }
+
+    @org.springframework.transaction.event.TransactionalEventListener(phase = org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT)
+    public void handleUserSetupCompleted(UserSetupCompletedEventLocal event) {
+        try {
+            eventPublisher.publishSetupCompleted(event.userId());
+        } catch (Exception e) {
+            log.error("Failed to publish setup completed event for user {} after commit", event.userId(), e);
+        }
+    }
+
+    private record UserSetupCompletedEventLocal(Long userId) {}
 
     @org.springframework.cache.annotation.CacheEvict(value = "users", key = "#userId")
     @Transactional
