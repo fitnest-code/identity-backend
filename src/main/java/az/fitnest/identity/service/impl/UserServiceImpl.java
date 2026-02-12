@@ -164,7 +164,6 @@ public class UserServiceImpl implements UserService {
         try {
             eventPublisher.publishSetupCompleted(event.userId());
         } catch (Exception e) {
-            log.error("Failed to publish setup completed event for user {} after commit", event.userId(), e);
         }
     }
 
