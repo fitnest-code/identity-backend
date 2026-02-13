@@ -47,7 +47,7 @@ public class DataInitializer {
     }
 
     private void initAdminUser() {
-        String adminMobile = "0500000000";
+        String adminMobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize("0500000000");
         Optional<User> adminOptional = userRepository.findByMobileIncludingDeleted(adminMobile);
 
         if (adminOptional.isEmpty()) {
