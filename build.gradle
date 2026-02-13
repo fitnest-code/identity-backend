@@ -94,8 +94,16 @@ protobuf {
 	generateProtoTasks {
 		all()*.plugins {
 			grpc {
-				outputSubDir = 'java'
 			}
+		}
+	}
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir 'build/generated/source/proto/main/java'
+			srcDir 'build/generated/source/proto/main/grpc/java'
 		}
 	}
 }
