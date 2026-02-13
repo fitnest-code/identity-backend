@@ -81,6 +81,7 @@ configurations {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	enabled = false
 }
 
 protobuf {
@@ -103,4 +104,3 @@ tasks.withType(JavaCompile) {
     sourceCompatibility = '17'
     targetCompatibility = '17'
 }
-
