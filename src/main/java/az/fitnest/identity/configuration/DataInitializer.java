@@ -34,23 +34,29 @@ public class DataInitializer {
     }
 
     private void initRoles() {
-        if (roleRepository.count() == 0) {
-            Role userRole = new Role();
-            userRole.setName(RoleName.ROLE_USER);
-            roleRepository.save(userRole);
+        createRoleIfNotFound(RoleName.ROLE_USER);
+        createRoleIfNotFound(RoleName.ROLE_ADMIN);
+    }
 
-            Role adminRole = new Role();
-            adminRole.setName(RoleName.ROLE_ADMIN);
-            roleRepository.save(adminRole);
+    private void createRoleIfNotFound(RoleName roleName) {
+        if (roleRepository.findByName(roleName).isEmpty()) {
+            Role role = new Role();
+            role.setName(roleName);
+            roleRepository.save(role);
         }
     }
 
     private void initAdminUser() {
-        String adminMobile = "0500000000"; // Example admin mobile
+        String adminMobile = "0500000000";
         Optional<User> adminOptional = userRepository.findByMobileIncludingDeleted(adminMobile);
 
         if (adminOptional.isEmpty()) {
-            Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN).orElseThrow();
+            Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
+                    .orElseGet(() -> {
+                        Role newAdminRole = new Role();
+                        newAdminRole.setName(RoleName.ROLE_ADMIN);
+                        return roleRepository.save(newAdminRole);
+                    });
             
             User admin = new User();
             admin.setFirstName("Admin");
