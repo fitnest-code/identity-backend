@@ -7,7 +7,6 @@ import az.fitnest.identity.dto.LoginRequest;
 import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.dto.RefreshResponse;
 import az.fitnest.identity.repository.AuthTokenRepository;
-import az.fitnest.identity.service.EmailService;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.repository.UserRepository;
@@ -31,7 +30,6 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthTokenRepository authTokenRepository;
     private final TokenIssuanceService tokenIssuanceService;
-    private final EmailService emailService;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
     private int maxFailedLoginAttempts;

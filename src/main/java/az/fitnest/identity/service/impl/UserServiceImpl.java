@@ -12,7 +12,6 @@ import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
-import az.fitnest.identity.service.EmailService;
 import az.fitnest.identity.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +42,6 @@ public class UserServiceImpl implements UserService {
     private final AuthTokenRepository authTokenRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final RedisTokenService redisTokenService;
-    private final EmailService emailService;
     private final IdentityEventPublisher eventPublisher;
     private final ApplicationEventPublisher localEventPublisher;
 
