@@ -93,7 +93,9 @@ protobuf {
 	}
 	generateProtoTasks {
 		all()*.plugins {
-			grpc {}
+			grpc {
+				outputSubDir = 'java'
+			}
 		}
 	}
 }
