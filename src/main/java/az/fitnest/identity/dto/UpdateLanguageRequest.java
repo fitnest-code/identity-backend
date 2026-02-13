@@ -1,12 +1,11 @@
 package az.fitnest.identity.dto;
 
-import az.fitnest.identity.constants.Language;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class UpdateLanguageRequest {
 
-    @NotNull(message = "Language is required")
-    private Language language;
+    @NotBlank(message = "Language code is required")
+    private String code;
 }

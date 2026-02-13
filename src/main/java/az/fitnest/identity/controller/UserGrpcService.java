@@ -2,7 +2,6 @@ package az.fitnest.identity.controller;
 
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
-import az.fitnest.identity.constants.Language;
 import az.fitnest.identity.entity.User;
 import az.fitnest.user.grpc.*;
 import io.grpc.Status;
@@ -28,7 +27,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                     .setMobile(user.getMobile() != null ? user.getMobile() : "")
                     .setProfileImageUrl(user.getProfileImageUrl() != null ? user.getProfileImageUrl() : "")
                     .setSetupRequired(user.isSetupRequired())
-                    .setLanguage(user.getLanguage() != null ? user.getLanguage().name() : "")
+                    .setLanguage(user.getLanguage() != null ? user.getLanguage() : "")
                     .build();
 
             responseObserver.onNext(response);
@@ -98,17 +97,11 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void updateLanguage(UpdateLanguageRequest request, StreamObserver<UserResponse> responseObserver) {
         try {
-            Language language = Language.valueOf(request.getLanguage().toUpperCase());
-            User user = userService.updateLanguage(request.getUserId(), language);
+            User user = userService.updateLanguage(request.getUserId(), request.getLanguage());
             UserResponse response = buildUserResponse(user);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (IllegalArgumentException e) {
-            responseObserver.onError(Status.INVALID_ARGUMENT
-                    .withDescription("Invalid language: " + request.getLanguage())
-                    .withCause(e)
-                    .asException());
         } catch (Exception e) {
             responseObserver.onError(Status.INTERNAL
                     .withDescription("Failed to update language: " + e.getMessage())
@@ -141,7 +134,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                 .setMobile(user.getMobile() != null ? user.getMobile() : "")
                 .setProfileImageUrl(user.getProfileImageUrl() != null ? user.getProfileImageUrl() : "")
                 .setSetupRequired(user.isSetupRequired())
-                .setLanguage(user.getLanguage() != null ? user.getLanguage().name() : "")
+                .setLanguage(user.getLanguage() != null ? user.getLanguage() : "")
                 .setCreatedAt(createdAt)
                 .build();
     }

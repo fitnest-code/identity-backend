@@ -1,7 +1,6 @@
 package az.fitnest.identity.entity;
 
 import az.fitnest.identity.entity.BaseAuditableEntity;
-import az.fitnest.identity.constants.Language;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -76,9 +75,8 @@ public class User extends BaseAuditableEntity {
     @Column(name = "password_hash")
     private String passwordHash;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "language")
-    private Language language;
+    private String language;
 
     @Builder.Default
     @Column(name = "has_account", nullable = false)

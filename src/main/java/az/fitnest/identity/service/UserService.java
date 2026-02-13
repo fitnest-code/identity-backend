@@ -31,6 +31,6 @@ public interface UserService {
     User updateUserProfile(Long userId, UpdateUserProfileCommand command);
     User updateProfileImageUrl(Long userId, String profileImageUrl);
     User updateSetupRequired(Long userId, boolean setupRequired);
-    User updateLanguage(Long userId, az.fitnest.identity.constants.Language language);
+    User updateLanguage(Long userId, String language);
     void deleteUser(Long userId, String reason);
 }

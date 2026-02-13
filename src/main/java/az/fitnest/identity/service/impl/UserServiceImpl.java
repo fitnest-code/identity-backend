@@ -172,7 +172,7 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
         @Override
-    public User updateLanguage(Long userId, az.fitnest.identity.constants.Language language) {
+    public User updateLanguage(Long userId, String language) {
         User user = getUserOrThrow(userId);
         user.setLanguage(language);
         return userRepository.save(user);
