@@ -4,6 +4,7 @@ import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
 import az.fitnest.identity.entity.User;
 import az.fitnest.user.grpc.*;
+import com.google.protobuf.Empty;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -111,10 +112,10 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void deleteUser(DeleteUserRequest request, StreamObserver<Empty> responseObserver) {
+    public void deleteUser(DeleteUserRequest request, StreamObserver<com.google.protobuf.Empty> responseObserver) {
         try {
             userService.deleteUser(request.getUserId(), request.getReason());
-            responseObserver.onNext(Empty.newBuilder().build());
+            responseObserver.onNext(com.google.protobuf.Empty.getDefaultInstance());
             responseObserver.onCompleted();
         } catch (Exception e) {
             responseObserver.onError(Status.INTERNAL
