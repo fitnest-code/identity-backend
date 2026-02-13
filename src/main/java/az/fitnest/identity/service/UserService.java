@@ -11,8 +11,6 @@ import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.EmailService;
 import az.fitnest.identity.service.impl.IdentityEventPublisher;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

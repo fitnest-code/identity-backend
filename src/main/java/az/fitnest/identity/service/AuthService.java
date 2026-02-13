@@ -9,8 +9,6 @@ import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.JwtService;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.EmailService;
 import io.jsonwebtoken.JwtException;
 import java.time.Instant;
 import java.time.LocalDateTime;

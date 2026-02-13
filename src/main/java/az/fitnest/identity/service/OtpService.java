@@ -12,7 +12,6 @@ import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.OtpRateLimitedException;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.EmailService;
 import az.fitnest.identity.service.SmsService;
 import az.fitnest.identity.service.EmailNormalizationService;
 import az.fitnest.identity.service.impl.OtpGenerator;

@@ -54,7 +54,7 @@ public class NotificationsGrpcClient {
                 .build();
 
         try {
-            SendEmailResponse response = withDeadline().sendEmail(request);
+            SendEmailResponse response = withDeadline().sendSimpleEmail(request);
             if (!response.getSuccess()) {
                 throw new RuntimeException("Failed to send email: " + response.getErrorMessage());
             }
