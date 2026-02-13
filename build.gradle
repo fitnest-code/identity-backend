@@ -84,27 +84,16 @@ tasks.named('test') {
 
 protobuf {
 	protoc {
-		artifact = 'com.google.protobuf:protoc:3.21.12'
+		artifact = 'com.google.protobuf:protoc:3.25.5'
 	}
 	plugins {
 		grpc {
-			artifact = 'io.grpc:protoc-gen-grpc-java:1.50.1'
+			artifact = 'io.grpc:protoc-gen-grpc-java:1.66.0'
 		}
 	}
 	generateProtoTasks {
 		all()*.plugins {
-			grpc {
-				outputSubDir = 'grpc'
-			}
-		}
-	}
-}
-
-sourceSets {
-	main {
-		java {
-			srcDir 'build/generated/source/proto/main/java'
-			srcDir 'build/generated/source/proto/main/grpc/java'
+			grpc {}
 		}
 	}
 }
