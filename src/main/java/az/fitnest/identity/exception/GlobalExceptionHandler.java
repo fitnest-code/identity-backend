@@ -1,7 +1,8 @@
 package az.fitnest.identity.exception;
 
-import az.fitnest.identity.dto.ErrorResponse;
-import az.fitnest.identity.dto.ErrorWrapper;
+import az.fitnest.identity.dto.ApiError;
+import az.fitnest.identity.dto.ApiResponse;
+import az.fitnest.identity.dto.FieldIssue;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 @RestControllerAdvice
@@ -22,11 +23,11 @@ public class GlobalExceptionHandler {
 
     // ---------- OTP Rate Limit ----------
     @ExceptionHandler(OtpRateLimitedException.class)
-    public ResponseEntity<ErrorWrapper> handleOtpRateLimitedException(
+    public ResponseEntity<ApiResponse> handleOtpRateLimitedException(
             OtpRateLimitedException exception,
             HttpServletRequest request
     ) {
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 exception.getErrorCode(),
                 exception.getMessage(),
                 HttpStatus.TOO_MANY_REQUESTS,
@@ -41,7 +42,7 @@ public class GlobalExceptionHandler {
 
     // ---------- Custom BaseException ----------
     @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ErrorWrapper> handleBaseException(
+    public ResponseEntity<ApiResponse> handleBaseException(
             BaseException exception,
             HttpServletRequest request
     ) {
@@ -55,7 +56,7 @@ public class GlobalExceptionHandler {
             details = Map.of("validationErrors", validationErrors);
         }
 
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 exception.getErrorCode(),
                 safeMessage(exception.getMessage()),
                 exception.getHttpStatus(),
@@ -68,13 +69,13 @@ public class GlobalExceptionHandler {
 
     // ---------- Bean Validation on @RequestBody ----------
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorWrapper> handleMethodArgumentNotValid(
+    public ResponseEntity<ApiResponse> handleMethodArgumentNotValid(
             MethodArgumentNotValidException exception,
             HttpServletRequest request
     ) {
-        List<ErrorWrapper.FieldIssue> issues = new ArrayList<>();
+        List<FieldIssue> issues = new ArrayList<>();
         for (FieldError error : exception.getBindingResult().getFieldErrors()) {
-            issues.add(ErrorWrapper.FieldIssue.builder()
+            issues.add(FieldIssue.builder()
                     .field(error.getField())
                     .issue(safeMessage(error.getDefaultMessage()))
                     .build());
@@ -82,7 +83,7 @@ public class GlobalExceptionHandler {
 
         Map<String, Object> details = Map.of("fieldIssues", issues);
 
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 "VALIDATION_ERROR",
                 "Validation failed",
                 HttpStatus.BAD_REQUEST,
@@ -95,13 +96,13 @@ public class GlobalExceptionHandler {
 
     // ---------- @Validated on params/path/query ----------
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorWrapper> handleConstraintViolationException(
+    public ResponseEntity<ApiResponse> handleConstraintViolationException(
             ConstraintViolationException exception,
             HttpServletRequest request
     ) {
-        List<ErrorWrapper.FieldIssue> issues = new ArrayList<>();
+        List<FieldIssue> issues = new ArrayList<>();
         exception.getConstraintViolations().forEach(v -> {
-            issues.add(ErrorWrapper.FieldIssue.builder()
+            issues.add(FieldIssue.builder()
                     .field(v.getPropertyPath() != null ? v.getPropertyPath().toString() : "param")
                     .issue(safeMessage(v.getMessage()))
                     .build());
@@ -109,7 +110,7 @@ public class GlobalExceptionHandler {
 
         Map<String, Object> details = Map.of("fieldIssues", issues);
 
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 "VALIDATION_ERROR",
                 "Validation failed",
                 HttpStatus.BAD_REQUEST,
@@ -122,11 +123,11 @@ public class GlobalExceptionHandler {
 
     // ---------- Bad arguments ----------
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorWrapper> handleIllegalArgument(
+    public ResponseEntity<ApiResponse> handleIllegalArgument(
             IllegalArgumentException exception,
             HttpServletRequest request
     ) {
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 "INVALID_ARGUMENT",
                 "Invalid request data",
                 HttpStatus.BAD_REQUEST,
@@ -139,7 +140,7 @@ public class GlobalExceptionHandler {
 
     // ---------- Malformed JSON / request body ----------
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorWrapper> handleNotReadable(
+    public ResponseEntity<ApiResponse> handleNotReadable(
             HttpMessageNotReadableException exception,
             HttpServletRequest request
     ) {
@@ -158,7 +159,7 @@ public class GlobalExceptionHandler {
         // If you *want* a safe detail field, include a generic hint, not raw stack info.
         details = Map.of("hint", userMessage);
 
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 "INVALID_JSON",
                 userMessage,
                 HttpStatus.BAD_REQUEST,
@@ -171,7 +172,7 @@ public class GlobalExceptionHandler {
 
     // ---------- DB constraint / unique violations ----------
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorWrapper> handleDataIntegrityViolation(
+    public ResponseEntity<ApiResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException exception,
             HttpServletRequest request
     ) {
@@ -193,7 +194,7 @@ public class GlobalExceptionHandler {
             code = "NULL_CONSTRAINT_VIOLATION";
         }
 
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 code,
                 msg,
                 HttpStatus.CONFLICT,
@@ -206,7 +207,7 @@ public class GlobalExceptionHandler {
 
     // ---------- Transaction wrapper for validation exceptions ----------
     @ExceptionHandler(TransactionSystemException.class)
-    public ResponseEntity<ErrorWrapper> handleTransactionSystemException(
+    public ResponseEntity<ApiResponse> handleTransactionSystemException(
             TransactionSystemException exception,
             HttpServletRequest request
     ) {
@@ -215,7 +216,7 @@ public class GlobalExceptionHandler {
             return handleConstraintViolationException(cve, request);
         }
 
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 "TRANSACTION_ERROR",
                 "Əməliyyat zamanı xəta baş verdi.",
                 HttpStatus.INTERNAL_SERVER_ERROR,
@@ -227,11 +228,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorWrapper> handleGeneric(
+    public ResponseEntity<ApiResponse> handleGeneric(
             Exception exception,
             HttpServletRequest request
     ) {
-        ErrorWrapper body = wrap(
+        ApiResponse body = wrap(
                 "INTERNAL_SERVER_ERROR",
                 "Internal server error",
                 HttpStatus.INTERNAL_SERVER_ERROR,
@@ -243,21 +244,21 @@ public class GlobalExceptionHandler {
     }
 
     // ---------- Helpers ----------
-    private ErrorWrapper wrap(
+    private ApiResponse<Void> wrap(
             String code,
             String message,
             HttpStatus status,
             String path,
             Map<String, Object> details
     ) {
-        return ErrorWrapper.builder()
-                .error(ErrorWrapper.ErrorDetail.builder()
+        return ApiResponse.<Void>builder()
+                .error(ApiError.builder()
                         .code(code)
                         .message(message)
                         .status(status.value())
                         .path(path)
-                        .timestamp(LocalDateTime.now())
-                        .details(details) // keep it consistently Map-based
+                        .timestamp(OffsetDateTime.now())
+                        .details(details)
                         .build())
                 .build();
     }
