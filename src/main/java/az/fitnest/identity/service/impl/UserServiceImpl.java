@@ -244,6 +244,10 @@ public class UserServiceImpl implements UserService {
             "userId", userId,
             "timestamp", System.currentTimeMillis()
         );
-        kafkaTemplate.send("user-events", event);
+        try {
+            kafkaTemplate.send("user-events", event);
+        } catch (Exception e) {
+            log.error("Failed to publish user event: {} for userId: {}. Error: {}", eventType, userId, e.getMessage(), e);
+        }
     }
 }
