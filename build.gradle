@@ -93,20 +93,9 @@ protobuf {
 	}
 	generateProtoTasks {
 		all()*.plugins {
-			grpc {}
+			grpc {
+				outputSubDir = 'java'
+			}
 		}
 	}
-}
-
-sourceSets {
-	main {
-		java {
-			srcDir 'build/generated/source/proto/main/grpc'
-		}
-	}
-}
-
-tasks.withType(JavaCompile) {
-    sourceCompatibility = '17'
-    targetCompatibility = '17'
 }
