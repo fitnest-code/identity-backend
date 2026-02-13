@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package az.fitnest.notifications;
+
+option java_multiple_files = true;
+option java_package = "az.fitnest.notifications.grpc";
+option java_outer_classname = "NotificationsServiceProto";
+
+service NotificationsService {
+  rpc SendSMS (SendSMSRequest) returns (SendSMSResponse);
+  rpc SendHtmlEmail (SendHtmlEmailRequest) returns (SendEmailResponse);
+  rpc SendSimpleEmail (SendSimpleEmailRequest) returns (SendEmailResponse);
+}
+
+message SendSMSRequest {
+  string to = 1;
+  string message = 2;
+}
+
+message SendSMSResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message SendHtmlEmailRequest {
+  string to = 1;
+  string subject = 2;
+  string template_name = 3;
+  map<string, string> variables = 4;
+}
+
+message SendSimpleEmailRequest {
+  string to = 1;
+  string subject = 2;
+  string body = 3;
+}
+
+message SendEmailResponse {
+  bool success = 1;
+  string error_message = 2;
+}
