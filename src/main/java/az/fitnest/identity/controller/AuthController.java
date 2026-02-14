@@ -31,6 +31,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -42,6 +44,8 @@ public class AuthController {
     private final SocialAuthService socialAuthService;
     private final PasswordResetService passwordResetService;
     private final RegistrationService registrationService;
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @Operation(
             summary = "User login",
@@ -67,7 +71,9 @@ public class AuthController {
     })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        logger.info("User login attempt for mobile: {}", request.getMobile());
         LoginResponse response = authService.login(request);
+        logger.info("User logged in successfully: {}", request.getMobile());
         return ResponseEntity.ok(response);
     }
 
