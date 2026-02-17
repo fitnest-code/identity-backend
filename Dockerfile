@@ -1,23 +1,24 @@
+# -----------------------------
 # Stage 1: Build JAR
 # -----------------------------
 FROM gradle:8.5.0-jdk17 AS builder
 WORKDIR /app
 
-# Copy build files and proto definitions (proto changes bust the cache)
+# Cache dependencies
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle settings.gradle ./
 COPY src/main/proto src/main/proto
 RUN ./gradlew dependencies --no-daemon
 
-# Copy remaining source and build
-COPY src src
+# Copy source and build
+COPY . .
 RUN ./gradlew clean bootJar --no-build-cache --no-daemon
 
 # -----------------------------
 # Stage 2: Runtime image
 # -----------------------------
-FROM eclipse-temurin:17.0.10_7-jre-alpine
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
