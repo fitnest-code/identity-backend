@@ -31,4 +31,5 @@ public interface UserService {
     User updateSetupRequired(Long userId, boolean setupRequired);
     User updateLanguage(Long userId, String language);
     void deleteUser(Long userId, String reason);
+    void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
 }

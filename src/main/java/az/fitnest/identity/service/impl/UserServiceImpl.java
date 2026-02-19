@@ -12,6 +12,7 @@ import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
+import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final RedisTokenService redisTokenService;
     private final IdentityEventPublisher eventPublisher;
     private final ApplicationEventPublisher localEventPublisher;
+    private final PasswordService passwordService;
 
     @Transactional
         @Override
@@ -189,6 +191,20 @@ public class UserServiceImpl implements UserService {
         }
         authTokenRepository.deleteByUserId(userId);
 
+    }
+
+    @Transactional
+    @Override
+    public void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword) {
+        User user = getUserById(userId);
+        if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash())) {
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("Old password is incorrect");
+        }
+        if (!newPassword.equals(confirmNewPassword)) {
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("New passwords do not match");
+        }
+        user.setPasswordHash(passwordService.hashPassword(newPassword));
+        userRepository.save(user);
     }
 
     private User getUserOrThrow(Long userId) {

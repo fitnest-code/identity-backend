@@ -4,6 +4,7 @@ import az.fitnest.identity.service.AuthService;
 import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.PasswordResetService;
 import az.fitnest.identity.service.RegistrationService;
+import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.AppleSocialRequest;
 import az.fitnest.identity.dto.GoogleSocialRequest;
 import az.fitnest.identity.dto.LoginRequest;
@@ -17,6 +18,7 @@ import az.fitnest.identity.dto.RefreshResponse;
 import az.fitnest.identity.dto.ResetPasswordResponse;
 import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyRequest;
+import az.fitnest.identity.dto.ChangePasswordRequest;
 import az.fitnest.identity.exception.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -44,6 +46,7 @@ public class AuthController {
     private final SocialAuthService socialAuthService;
     private final PasswordResetService passwordResetService;
     private final RegistrationService registrationService;
+    private final UserService userService;
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
@@ -308,6 +311,34 @@ public class AuthController {
     public ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         ResetPasswordResponse response = passwordResetService.resetPassword(request);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+        summary = "Change password",
+        description = "Allows an authenticated user to change their password by providing the old password and the new password twice."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Password changed successfully"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data or validation failed",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Invalid credentials or not authenticated",
+            content = @Content
+        )
+    })
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(userId, request.getOldPassword(), request.getNewPassword(), request.getConfirmNewPassword());
+        return ResponseEntity.ok().build();
     }
 
     private String extractBearerToken(String authorization) {
