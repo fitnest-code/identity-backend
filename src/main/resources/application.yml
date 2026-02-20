@@ -219,7 +219,7 @@ otp:
 # User Service
 user:
   service:
-    url: ${USER_SERVICE_URL:http://user-service:9090}
+    url: ${USER_SERVICE_URL:http://user-service:8080}
 
 # Application-specific configurations
 app:
