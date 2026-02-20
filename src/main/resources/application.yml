@@ -19,7 +19,7 @@ server:
     enabled: true
     # Lower threshold for earlier compression - benefits Swagger JSON responses
     min-response-size: 1024
-    mime-types: application/json,text/plain,text/css,application/javascript,application/openapi+json,application/vnd.api+json,text/html,application/xml
+    mime-types: application/json,text/plain,text/css,application/javascript,application/openapi+json,application/vnd.api+json,text/html,application/xml,application/vnd.oai.openapi+json
 
 spring:
   main:

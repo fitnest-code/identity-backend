@@ -32,7 +32,8 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
             "/swagger-ui",
             "/v3/api-docs",
             "/actuator",
-            "/webjars"
+            "/webjars",
+            "/error"
     );
 
     private final JwtService jwtService;
