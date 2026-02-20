@@ -55,35 +55,54 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
         // Ensure clean context at start - REMOVED: redundant and potentially harmful
         // SecurityContextHolder.clearContext();
 
-        String authHeader = request.getHeader("Authorization");
+        String gatewayFlag = request.getHeader("X-From-Gateway");
+        String userIdHeader = request.getHeader(USER_ID_HEADER);
+        String requestId = request.getHeader("X-Request-Id");
+        String caller = request.getHeader("X-Service-Name");
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            // Validate JWT directly (public or internal delegation)
-            authenticateViaJwt(authHeader.substring(7));
-        }
-
-        if (request.getRequestURI().startsWith("/api/v1/internal")) {
-            // Internal call - Also check for internal identity headers or mesh principal
-            // This ensures ROLE_INTERNAL is granted even if a user JWT is present
-            authenticateViaInternalHeaders(request);
+        // Prefer Pattern A headers if from Gateway
+        if ("1".equals(gatewayFlag) && userIdHeader != null && !userIdHeader.isBlank()) {
+            authenticateViaPatternA(request, userIdHeader, requestId, caller);
+        } else {
+            // Legacy/Direct JWT support
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                authenticateViaJwt(authHeader.substring(7));
+            }
+            
+            if (request.getRequestURI().startsWith("/api/v1/internal")) {
+                authenticateViaInternalHeaders(request);
+            }
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private void authenticateViaInternalHeaders(HttpServletRequest request) {
-        String userIdStr = request.getHeader(USER_ID_HEADER);
+    private void authenticateViaPatternA(HttpServletRequest request, String userIdStr, String requestId, String caller) {
+        try {
+            Long userId = Long.parseLong(userIdStr);
+            String scopes = request.getHeader("X-Scopes");
+            String email = request.getHeader(USER_EMAIL_HEADER);
 
-        // Check for valid user ID (not null, not blank, not literal "null" string)
-        if (userIdStr != null && !userIdStr.isBlank() && !userIdStr.equalsIgnoreCase("null")) {
-             boolean success = authenticateGatewayUser(request);
-             if (!success) {
-                 // Fallback to internal service authentication if user parsing fails
-                 authenticateInternalService();
-             }
-         } else {
-             authenticateInternalService();
-         }
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_INTERNAL"));
+
+            if (scopes != null && !scopes.isBlank()) {
+                authorities.addAll(Arrays.stream(scopes.split(" "))
+                        .map(role -> role.trim().toUpperCase())
+                        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList()));
+            }
+
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                    userId, null, authorities);
+            
+            auth.setDetails("PatternA:" + caller + ":" + requestId + (email != null ? ":" + email : ""));
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        } catch (Exception e) {
+        }
     }
 
     private void authenticateViaJwt(String token) {
