@@ -158,4 +158,22 @@ public class FitnestSecurityFilter extends OncePerRequestFilter {
             return false;
         }
     }
+
+    /**
+     * Handle authentication for internal endpoints. We prefer to use gateway-provided
+     * user headers when available (allowing the gateway to pass authenticated users),
+     * otherwise fall back to marking the request as an internal service call.
+     */
+    private void authenticateViaInternalHeaders(HttpServletRequest request) {
+        // If gateway provided user headers, authenticate as that user. Otherwise, mark as internal service.
+        try {
+            boolean gatewayUserAuthenticated = authenticateGatewayUser(request);
+            if (!gatewayUserAuthenticated) {
+                authenticateInternalService();
+            }
+        } catch (Exception ignored) {
+            // Swallow exceptions - security failures should not break the filter chain here.
+        }
+    }
+
 }
