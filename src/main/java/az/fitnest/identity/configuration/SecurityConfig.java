@@ -52,6 +52,7 @@ public class SecurityConfig {
                 .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
