@@ -5,20 +5,10 @@ import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.PasswordResetService;
 import az.fitnest.identity.service.RegistrationService;
 import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.dto.AppleSocialRequest;
-import az.fitnest.identity.dto.GoogleSocialRequest;
-import az.fitnest.identity.dto.LoginRequest;
-import az.fitnest.identity.dto.ForgotPasswordRequest;
-import az.fitnest.identity.dto.RefreshRequest;
-import az.fitnest.identity.dto.RegisterCompleteRequest;
-import az.fitnest.identity.dto.RegisterRequest;
-import az.fitnest.identity.dto.ResetPasswordRequest;
-import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.dto.RefreshResponse;
-import az.fitnest.identity.dto.ResetPasswordResponse;
-import az.fitnest.identity.dto.OtpSendResponse;
-import az.fitnest.identity.dto.OtpVerifyRequest;
-import az.fitnest.identity.dto.ChangePasswordRequest;
+import az.fitnest.identity.dto.*;
+import az.fitnest.identity.mapper.UserResponseMapper;
+import az.fitnest.identity.constants.RoleName;
+import az.fitnest.identity.entity.User;
 import az.fitnest.identity.exception.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,8 +20,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -340,6 +333,52 @@ public class AuthController {
         userService.changePassword(userId, request.getOldPassword(), request.getNewPassword(), request.getConfirmNewPassword());
         return ResponseEntity.ok().build();
     }
+
+    // ==================== Admin User Management ====================
+
+    @GetMapping("/admin/users")
+    @Operation(summary = "Get all users", description = "Returns a paginated list of all users. Requires ADMIN role.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int page_size) {
+        Page<User> userPage = userService.getAllUsers(PageRequest.of(page - 1, page_size));
+        return ResponseEntity.ok(userPage.map(UserResponseMapper::toResponse));
+    }
+
+    @GetMapping("/admin/users/{userId}")
+    @Operation(summary = "Get user by ID", description = "Returns user details by ID. Requires ADMIN role.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
+        User user = userService.getUserById(userId);
+        return ResponseEntity.ok(UserResponseMapper.toResponse(user));
+    }
+
+    @PutMapping("/admin/users/{userId}/role")
+    @Operation(summary = "Change user role", description = "Promote or demote a user role. Requires ADMIN role.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<UserResponse> changeUserRole(
+            @PathVariable Long userId,
+            @RequestParam RoleName roleName) {
+        User user = userService.updateUserRole(userId, roleName);
+        return ResponseEntity.ok(UserResponseMapper.toResponse(user));
+    }
+
+    @DeleteMapping("/admin/users/{userId}")
+    @Operation(summary = "Delete user", description = "Deletes a user account. Requires ADMIN role.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long userId,
+            @RequestParam(required = false) String reason) {
+        userService.deleteUser(userId, reason);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ==================== Helpers ====================
 
     private String extractBearerToken(String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
