@@ -8,7 +8,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "legal_documents")
+@Table(name = "legal_documents", indexes = {
+        @Index(name = "idx_legal_docs_type_lang_active", columnList = "type, language, is_active"),
+        @Index(name = "idx_legal_docs_type_active", columnList = "type, is_active")
+})
 @Getter
 @Setter
 @NoArgsConstructor

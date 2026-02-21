@@ -1,7 +1,7 @@
 package az.fitnest.identity.entity;
 
 import az.fitnest.identity.entity.BaseAuditableEntity;
-import jakarta.persistence.Column;
+import jakarta.persistence.*;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.*;
@@ -9,7 +9,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_consents")
+@Table(name = "user_consents", indexes = {
+        @Index(name = "idx_user_consents_user_id", columnList = "user_id"),
+        @Index(name = "idx_user_consents_user_accepted", columnList = "user_id, accepted_at DESC")
+})
 @Getter
 @Setter
 @NoArgsConstructor
