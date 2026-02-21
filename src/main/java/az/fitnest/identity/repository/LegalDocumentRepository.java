@@ -5,6 +5,7 @@ import az.fitnest.identity.entity.LegalDocument;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,5 +14,12 @@ public interface LegalDocumentRepository extends JpaRepository<LegalDocument, Lo
     Optional<LegalDocument> findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(LegalDocumentType type);
     boolean existsByTypeAndVersionAndIsActiveTrue(LegalDocumentType type, String version);
     boolean existsByTypeAndVersion(LegalDocumentType type, String version);
-    java.util.List<LegalDocument> findAllByTypeAndLanguageAndIsActiveTrue(LegalDocumentType type, String language);
+    List<LegalDocument> findAllByTypeAndLanguageAndIsActiveTrue(LegalDocumentType type, String language);
+
+    // Admin queries
+    List<LegalDocument> findAllByOrderByPublishedAtDesc();
+    List<LegalDocument> findAllByTypeOrderByPublishedAtDesc(LegalDocumentType type);
+    List<LegalDocument> findAllByTypeAndLanguageOrderByPublishedAtDesc(LegalDocumentType type, String language);
+    List<LegalDocument> findAllByIsActiveOrderByPublishedAtDesc(boolean isActive);
+    List<LegalDocument> findAllByTypeAndIsActiveOrderByPublishedAtDesc(LegalDocumentType type, boolean isActive);
 }

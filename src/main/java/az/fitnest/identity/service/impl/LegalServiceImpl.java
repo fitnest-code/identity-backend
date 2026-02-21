@@ -1,22 +1,23 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
 
 import az.fitnest.identity.repository.UserConsentRepository;
-import az.fitnest.identity.dto.ConsentAcceptRequest;
-import az.fitnest.identity.dto.CreateLegalDocumentRequest;
-import az.fitnest.identity.dto.LegalDocumentResponse;
-import az.fitnest.identity.dto.UserConsentStatusResponse;
+import az.fitnest.identity.repository.LegalDocumentRepository;
+import az.fitnest.identity.dto.*;
 import az.fitnest.identity.constants.LegalDocumentType;
+import az.fitnest.identity.entity.LegalDocument;
 import az.fitnest.identity.entity.UserConsent;
 import az.fitnest.identity.exception.ValidationException;
+import az.fitnest.identity.service.LegalService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +25,7 @@ public class LegalServiceImpl implements LegalService {
 
     private final UserConsentRepository userConsentRepository;
 
-    private final az.fitnest.identity.repository.LegalDocumentRepository legalDocumentRepository;
+    private final LegalDocumentRepository legalDocumentRepository;
 
         @Override
     public LegalDocumentResponse getPrivacyPolicy(String lang, String format) {
@@ -40,7 +41,7 @@ public class LegalServiceImpl implements LegalService {
         String normalizedLang = normalizeLanguage(lang);
         
         // Fallback to EN if requested lang not found, or just return empty if nothing exists
-        az.fitnest.identity.entity.LegalDocument doc = legalDocumentRepository
+        LegalDocument doc = legalDocumentRepository
                 .findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
                 .or(() -> legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, "EN"))
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
@@ -74,7 +75,7 @@ public class LegalServiceImpl implements LegalService {
             }
         }
 
-        az.fitnest.identity.entity.LegalDocument doc = az.fitnest.identity.entity.LegalDocument.builder()
+        LegalDocument doc = LegalDocument.builder()
                 .type(request.getType())
                 .version(request.getVersion())
                 .language(normalizedLang)
@@ -200,6 +201,112 @@ public class LegalServiceImpl implements LegalService {
         return !privacyOk || !termsOk;
     }
     
+    // ==================== Admin Methods ====================
+
+    @Override
+    public List<AdminLegalDocumentResponse> getAllDocuments(LegalDocumentType type, String language, Boolean active) {
+        List<LegalDocument> docs;
+
+        if (type != null && language != null) {
+            docs = legalDocumentRepository.findAllByTypeAndLanguageOrderByPublishedAtDesc(type, normalizeLanguage(language));
+        } else if (type != null && active != null) {
+            docs = legalDocumentRepository.findAllByTypeAndIsActiveOrderByPublishedAtDesc(type, active);
+        } else if (type != null) {
+            docs = legalDocumentRepository.findAllByTypeOrderByPublishedAtDesc(type);
+        } else if (active != null) {
+            docs = legalDocumentRepository.findAllByIsActiveOrderByPublishedAtDesc(active);
+        } else {
+            docs = legalDocumentRepository.findAllByOrderByPublishedAtDesc();
+        }
+
+        return docs.stream().map(this::toAdminResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public AdminLegalDocumentResponse getDocumentById(Long id) {
+        LegalDocument doc = legalDocumentRepository.findById(id)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+        return toAdminResponse(doc);
+    }
+
+    @Transactional
+    @Override
+    public AdminLegalDocumentResponse updateDocument(Long id, UpdateLegalDocumentRequest request) {
+        LegalDocument doc = legalDocumentRepository.findById(id)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+
+        if (request.getVersion() != null && !request.getVersion().isBlank()) {
+            doc.setVersion(request.getVersion());
+        }
+        if (request.getLanguage() != null && !request.getLanguage().isBlank()) {
+            doc.setLanguage(normalizeLanguage(request.getLanguage()));
+        }
+        if (request.getContent() != null && !request.getContent().isBlank()) {
+            doc.setContent(request.getContent());
+        }
+
+        legalDocumentRepository.save(doc);
+        return toAdminResponse(doc);
+    }
+
+    @Transactional
+    @Override
+    public void deleteDocument(Long id) {
+        if (!legalDocumentRepository.existsById(id)) {
+            throw new az.fitnest.identity.exception.ResourceNotFoundException("Document not found");
+        }
+        legalDocumentRepository.deleteById(id);
+    }
+
+    @Transactional
+    @Override
+    public void activateDocument(Long id) {
+        LegalDocument doc = legalDocumentRepository.findById(id)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+
+        // Deactivate all other documents of the same type and language
+        var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(doc.getType(), doc.getLanguage());
+        activeDocs.forEach(d -> d.setActive(false));
+        legalDocumentRepository.saveAll(activeDocs);
+
+        doc.setActive(true);
+        doc.setPublishedAt(LocalDateTime.now());
+        legalDocumentRepository.save(doc);
+    }
+
+    @Transactional
+    @Override
+    public void deactivateDocument(Long id) {
+        LegalDocument doc = legalDocumentRepository.findById(id)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+
+        doc.setActive(false);
+        legalDocumentRepository.save(doc);
+    }
+
+    @Override
+    public Page<AdminConsentResponse> getConsents(Long userId, Pageable pageable) {
+        Page<UserConsent> consents;
+        if (userId != null) {
+            consents = userConsentRepository.findAllByUserIdOrderByAcceptedAtDesc(userId, pageable);
+        } else {
+            consents = userConsentRepository.findAllByOrderByAcceptedAtDesc(pageable);
+        }
+
+        return consents.map(c -> AdminConsentResponse.builder()
+                .id(c.getId())
+                .userId(c.getUserId())
+                .privacyPolicyVersion(c.getPrivacyPolicyVersion())
+                .termsOfUseVersion(c.getTermsOfUseVersion())
+                .acceptedAt(c.getAcceptedAt())
+                .ipAddress(c.getIpAddress())
+                .userAgent(c.getUserAgent())
+                .platform(c.getPlatform())
+                .build());
+    }
+
+    // ==================== Helper Methods ====================
+
     private String normalizeLanguage(String lang) {
         if (lang == null || lang.isBlank()) {
             return "EN";
@@ -209,7 +316,21 @@ public class LegalServiceImpl implements LegalService {
 
     private String getLatestVersion(LegalDocumentType type) {
         return legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
-                .map(az.fitnest.identity.entity.LegalDocument::getVersion)
+                .map(LegalDocument::getVersion)
                 .orElse(null);
+    }
+
+    private AdminLegalDocumentResponse toAdminResponse(LegalDocument doc) {
+        return AdminLegalDocumentResponse.builder()
+                .id(doc.getId())
+                .type(doc.getType().name())
+                .version(doc.getVersion())
+                .language(doc.getLanguage())
+                .content(doc.getContent())
+                .isActive(doc.isActive())
+                .publishedAt(doc.getPublishedAt())
+                .createdDate(doc.getCreatedDate())
+                .lastModifiedDate(doc.getLastModifiedDate())
+                .build();
     }
 }

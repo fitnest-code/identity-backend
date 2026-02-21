@@ -1,19 +1,11 @@
 package az.fitnest.identity.service;
 
 import az.fitnest.identity.constants.LegalDocumentType;
-import az.fitnest.identity.dto.ConsentAcceptRequest;
-import az.fitnest.identity.dto.CreateLegalDocumentRequest;
-import az.fitnest.identity.dto.LegalDocumentResponse;
-import az.fitnest.identity.dto.UserConsentStatusResponse;
-import az.fitnest.identity.entity.UserConsent;
-import az.fitnest.identity.exception.ValidationException;
-import az.fitnest.identity.repository.UserConsentRepository;
-import az.fitnest.identity.service.*;
-import java.time.LocalDateTime;
-import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import az.fitnest.identity.dto.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 public interface LegalService {
     LegalDocumentResponse getPrivacyPolicy(String lang, String format);
@@ -22,4 +14,14 @@ public interface LegalService {
     void acceptConsent(Long userId, ConsentAcceptRequest request, String ipAddress, String userAgent);
     UserConsentStatusResponse getUserConsentStatus(Long userId);
     boolean isConsentRequired(Long userId);
+
+    // Admin methods
+    List<AdminLegalDocumentResponse> getAllDocuments(LegalDocumentType type, String language, Boolean active);
+    AdminLegalDocumentResponse getDocumentById(Long id);
+    AdminLegalDocumentResponse updateDocument(Long id, UpdateLegalDocumentRequest request);
+    void deleteDocument(Long id);
+    void activateDocument(Long id);
+    void deactivateDocument(Long id);
+    Page<AdminConsentResponse> getConsents(Long userId, Pageable pageable);
 }
+
