@@ -334,50 +334,6 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    // ==================== Admin User Management ====================
-
-    @GetMapping("/admin/users")
-    @Operation(summary = "Get all users", description = "Returns a paginated list of all users. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Page<UserResponse>> getAllUsers(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int page_size) {
-        Page<User> userPage = userService.getAllUsers(PageRequest.of(page - 1, page_size));
-        return ResponseEntity.ok(userPage.map(UserResponseMapper::toResponse));
-    }
-
-    @GetMapping("/admin/users/{userId}")
-    @Operation(summary = "Get user by ID", description = "Returns user details by ID. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
-        User user = userService.getUserById(userId);
-        return ResponseEntity.ok(UserResponseMapper.toResponse(user));
-    }
-
-    @PutMapping("/admin/users/{userId}/role")
-    @Operation(summary = "Change user role", description = "Promote or demote a user role. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<UserResponse> changeUserRole(
-            @PathVariable Long userId,
-            @RequestParam RoleName roleName) {
-        User user = userService.updateUserRole(userId, roleName);
-        return ResponseEntity.ok(UserResponseMapper.toResponse(user));
-    }
-
-    @DeleteMapping("/admin/users/{userId}")
-    @Operation(summary = "Delete user", description = "Deletes a user account. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteUser(
-            @PathVariable Long userId,
-            @RequestParam(required = false) String reason) {
-        userService.deleteUser(userId, reason);
-        return ResponseEntity.noContent().build();
-    }
-
     // ==================== Helpers ====================
 
     private String extractBearerToken(String authorization) {

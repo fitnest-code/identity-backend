@@ -1,10 +1,10 @@
 package az.fitnest.identity.controller;
 
-import az.fitnest.identity.constants.LegalDocumentType;
-import az.fitnest.identity.dto.*;
 import az.fitnest.identity.service.LegalService;
+import az.fitnest.identity.dto.ConsentAcceptRequest;
+import az.fitnest.identity.dto.LegalDocumentResponse;
+import az.fitnest.identity.dto.UserConsentStatusResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,15 +14,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/legal")
@@ -31,8 +26,6 @@ import java.util.List;
 public class LegalController {
 
     private final LegalService legalService;
-
-    // ==================== Public Endpoints ====================
 
     @GetMapping("/privacy-policy")
     @Operation(summary = "Get Privacy Policy", description = "Returns the content and version of the privacy policy.")
@@ -57,8 +50,6 @@ public class LegalController {
             @RequestParam(defaultValue = "html") String format) {
         return ResponseEntity.ok(legalService.getTermsOfUse(lang, format));
     }
-
-    // ==================== Authenticated User Endpoints ====================
 
     @PostMapping("/consents/accept")
     @Operation(summary = "Accept Consents", description = "Records user acceptance of privacy policy and terms of use.")
@@ -93,86 +84,6 @@ public class LegalController {
         Long userId = getCurrentUserId();
         return ResponseEntity.ok(legalService.getUserConsentStatus(userId));
     }
-
-    // ==================== Admin Endpoints ====================
-
-    @GetMapping("/admin/documents")
-    @Operation(summary = "List all legal documents", description = "Returns all legal documents with optional filtering. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<AdminLegalDocumentResponse>> getAllDocuments(
-            @Parameter(description = "Filter by document type") @RequestParam(required = false) LegalDocumentType type,
-            @Parameter(description = "Filter by language code (e.g. AZ, EN)") @RequestParam(required = false) String language,
-            @Parameter(description = "Filter by active status") @RequestParam(required = false) Boolean active) {
-        return ResponseEntity.ok(legalService.getAllDocuments(type, language, active));
-    }
-
-    @GetMapping("/admin/documents/{id}")
-    @Operation(summary = "Get legal document by ID", description = "Returns a single legal document with all its details. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<AdminLegalDocumentResponse> getDocumentById(@PathVariable Long id) {
-        return ResponseEntity.ok(legalService.getDocumentById(id));
-    }
-
-    @PostMapping("/admin/documents")
-    @Operation(summary = "Create legal document", description = "Publish a new version of a legal document. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> createDocument(@Valid @RequestBody CreateLegalDocumentRequest request) {
-        legalService.createDocument(request);
-        return ResponseEntity.ok().build();
-    }
-
-    @PutMapping("/admin/documents/{id}")
-    @Operation(summary = "Update legal document", description = "Update content, version, or language. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<AdminLegalDocumentResponse> updateDocument(
-            @PathVariable Long id,
-            @RequestBody UpdateLegalDocumentRequest request) {
-        return ResponseEntity.ok(legalService.updateDocument(id, request));
-    }
-
-    @DeleteMapping("/admin/documents/{id}")
-    @Operation(summary = "Delete legal document", description = "Permanently removes a legal document. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
-        legalService.deleteDocument(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @PatchMapping("/admin/documents/{id}/activate")
-    @Operation(summary = "Activate legal document", description = "Activates the document and deactivates others of same type+language. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> activateDocument(@PathVariable Long id) {
-        legalService.activateDocument(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @PatchMapping("/admin/documents/{id}/deactivate")
-    @Operation(summary = "Deactivate legal document", description = "Deactivates the document. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> deactivateDocument(@PathVariable Long id) {
-        legalService.deactivateDocument(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/admin/consents")
-    @Operation(summary = "List user consents", description = "Returns paginated list of user consent records. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Page<AdminConsentResponse>> getConsents(
-            @Parameter(description = "Filter by user ID") @RequestParam(required = false) Long userId,
-            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(legalService.getConsents(userId, PageRequest.of(page, size)));
-    }
-
-    // ==================== Helper ====================
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
