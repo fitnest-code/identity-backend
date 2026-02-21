@@ -3,11 +3,13 @@ package az.fitnest.identity.service.impl;
 import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.criteria.MobileNumberUtils;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
+import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.entity.AuthToken;
 import az.fitnest.identity.entity.Role;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.exception.ResourceNotFoundException;
+import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.UserRepository;
@@ -20,6 +22,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -27,10 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-
 import java.util.Map;
 
 @Service
@@ -260,5 +260,11 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             log.error("Failed to publish user event: {} for userId: {}. Error: {}", eventType, userId, e.getMessage(), e);
         }
+    }
+    @Transactional(readOnly = true)
+    @Override
+    public Page<UserResponse> getAllUsersMapped(int page, int size) {
+        return userRepository.findAll(PageRequest.of(page - 1, size))
+                .map(UserResponseMapper::toResponse);
     }
 }
