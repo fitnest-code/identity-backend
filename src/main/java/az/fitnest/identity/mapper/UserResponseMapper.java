@@ -14,7 +14,7 @@ public final class UserResponseMapper {
 
     public static UserResponse toResponse(User user, boolean consentRequired) {
         UserResponse response = new UserResponse();
-        response.setUserId(String.valueOf(user.getId()));
+        response.setUserId(user.getId());
         response.setFirstName(user.getFirstName());
         response.setLastName(user.getLastName());
         response.setMobile(user.getMobile());

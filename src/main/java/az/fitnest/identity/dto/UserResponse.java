@@ -18,8 +18,8 @@ import lombok.NoArgsConstructor;
 public class UserResponse {
 
     @JsonProperty("user_id")
-    @Schema(description = "Unique identifier for the user", example = "550e8400-e29b-41d4-a716-446655440000")
-    private String userId;
+    @Schema(description = "Unique identifier for the user", example = "12345")
+    private Long userId;
 
     @JsonProperty("first_name")
     @Schema(description = "User's first name", example = "John")
