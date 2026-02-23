@@ -7,6 +7,7 @@ import az.fitnest.identity.service.RegistrationService;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.*;
 import az.fitnest.identity.mapper.UserResponseMapper;
+import az.fitnest.identity.criteria.UserContext;
 import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.exception.UnauthorizedException;
@@ -142,8 +143,8 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "New password does not meet requirements")
     })
     public ResponseEntity<Void> changePassword(
-            @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody ChangePasswordRequest request) {
+        Long userId = UserContext.getRequiredUserId();
         userService.changePassword(userId, request.getOldPassword(), request.getNewPassword(), request.getConfirmNewPassword());
         return ResponseEntity.ok().build();
     }
