@@ -6,7 +6,7 @@ server:
     enabled: true
   tomcat:
     threads:
-      max: 75
+      max: 200
       min-spare: 20
     connection-timeout: 20000
     max-connections: 8192
