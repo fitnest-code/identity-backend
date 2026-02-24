@@ -150,8 +150,8 @@ spring:
       client:
         config:
           default:
-            connect-timeout: ${FEIGN_CONNECT_TIMEOUT:5000}
-            read-timeout: ${FEIGN_READ_TIMEOUT:10000}
+            connect-timeout: ${FEIGN_CONNECT_TIMEOUT:500}
+            read-timeout: ${FEIGN_READ_TIMEOUT:2000}
             logger-level: BASIC
 
 # SpringDoc OpenAPI (Swagger) - Optimized for fast loading
@@ -291,8 +291,8 @@ management:
 logging:
   level:
     root: ${LOGGING_LEVEL_ROOT:INFO}
-    az.fitnest.identity: ${LOGGING_LEVEL_AZ_FITNEST_IDENTITY:DEBUG}
-    org.springframework.security: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY:DEBUG}
+    az.fitnest.identity: ${LOGGING_LEVEL_AZ_FITNEST_IDENTITY:INFO}
+    org.springframework.security: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY:INFO}
     org.springdoc: ${LOGGING_LEVEL_SPRINGDOC:INFO}
     org.hibernate.SQL: ${LOGGING_LEVEL_HIBERNATE_SQL:DEBUG}
     org.hibernate.type.descriptor.sql.BasicBinder: ${LOGGING_LEVEL_HIBERNATE_PARAM:TRACE}
