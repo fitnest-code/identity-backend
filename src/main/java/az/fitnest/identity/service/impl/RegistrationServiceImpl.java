@@ -15,6 +15,7 @@ import az.fitnest.identity.service.RegistrationService;
 import az.fitnest.identity.service.RegistrationTokenService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.util.DeviceDetector;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,7 +73,7 @@ public class RegistrationServiceImpl implements RegistrationService {
                 mobile
         );
 
-        return tokenIssuanceService.issueTokens(user, null);
+        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
     }
 
 }

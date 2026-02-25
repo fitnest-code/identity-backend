@@ -15,6 +15,7 @@ import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.entity.User;
+import az.fitnest.identity.util.DeviceDetector;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,10 +56,10 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 );
                 socialAuth.setUserId(newUser.getId());
                 socialAuthRepository.save(socialAuth);
-                return tokenIssuanceService.issueTokens(newUser, null);
+                return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
             }
 
-            return tokenIssuanceService.issueTokens(user, null);
+            return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
         
         // No email linking anymore. Create new user.
@@ -76,7 +77,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .build();
         socialAuthRepository.save(socialAuth);
         
-        return tokenIssuanceService.issueTokens(newUser, null);
+        return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
     }
 
     @Transactional
@@ -102,10 +103,10 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 );
                 socialAuth.setUserId(newUser.getId());
                 socialAuthRepository.save(socialAuth);
-                return tokenIssuanceService.issueTokens(newUser, null);
+                return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
             }
 
-            return tokenIssuanceService.issueTokens(user, null);
+            return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
         
         // No email linking anymore. Create new user.
@@ -123,7 +124,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .build();
         socialAuthRepository.save(socialAuth);
         
-        return tokenIssuanceService.issueTokens(newUser, null);
+        return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
     }
 
     private User createUserForSocialLogin(String firstName, String lastName, String fullName, String mobile) {

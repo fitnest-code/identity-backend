@@ -13,6 +13,7 @@ import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
+import az.fitnest.identity.util.DeviceDetector;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,7 +79,12 @@ public class AuthServiceImpl implements AuthService {
 
         resetFailedLoginAttempts(user);
 
-        return tokenIssuanceService.issueTokens(user, request.getDeviceType());
+        String deviceType = request.getDeviceType();
+        if (deviceType == null || deviceType.isBlank()) {
+            deviceType = DeviceDetector.detectDeviceType();
+        }
+
+        return tokenIssuanceService.issueTokens(user, deviceType);
     }
 
     @Transactional
@@ -112,7 +118,8 @@ public class AuthServiceImpl implements AuthService {
 
         authTokenRepository.deleteByUserId(userId);
         
-        LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, null); // Refresh doesn't have device info easily accessible
+        String deviceType = DeviceDetector.detectDeviceType();
+        LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType); 
         
         return RefreshResponse.builder()
                 .accessToken(loginResponse.getAccessToken())

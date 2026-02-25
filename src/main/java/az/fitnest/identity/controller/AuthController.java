@@ -51,27 +51,9 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials"),
             @ApiResponse(responseCode = "400", description = "Invalid request format")
     })
-    public ResponseEntity<LoginResponse> login(
-            @Valid @RequestBody LoginRequest request,
-            @RequestHeader(value = "User-Agent", required = false) String userAgent) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         logger.info("User login attempt for mobile: {}", request.getMobile());
-        
-        if (request.getDeviceType() == null || request.getDeviceType().isBlank()) {
-            request.setDeviceType(parseDeviceType(userAgent));
-        }
-        
         return ResponseEntity.ok(authService.login(request));
-    }
-
-    private String parseDeviceType(String userAgent) {
-        if (userAgent == null) return null;
-        String ua = userAgent.toLowerCase();
-        if (ua.contains("android")) {
-            return "Android";
-        } else if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("ios")) {
-            return "iOS";
-        }
-        return null;
     }
 
     @PostMapping("/refresh")
