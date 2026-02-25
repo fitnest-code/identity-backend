@@ -29,7 +29,7 @@ public class AuthToken extends BaseAuditableEntity {
     @Column(name = "refresh_token", nullable = false, length = 2000)
     private String refreshToken;
 
-    @Column(name = "jti", nullable = false)
+    @Column(name = "jti")
     private String jti;
 
     @Column(name = "device_type")

@@ -100,7 +100,7 @@ public class User extends BaseAuditableEntity {
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status")
     private Status status = Status.ACTIVE;
 
     public boolean hasAccount() { return hasAccount; }
