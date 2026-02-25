@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -77,15 +78,21 @@ public class JwtService {
         return java.util.Collections.emptyList();
     }
 
+    public String parseJti(String token) {
+        return parseClaims(token).getId();
+    }
+
     private String buildToken(Long userId, long ttlSeconds, Map<String, Object> extraClaims) {
         Instant now = Instant.now();
         Instant exp = now.plusSeconds(ttlSeconds);
+        String jti = UUID.randomUUID().toString().replace("-", "");
 
         return Jwts.builder()
                 .setIssuer(issuer)
                 .setSubject(String.valueOf(userId))
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(exp))
+                .setId(jti)
                 .addClaims(extraClaims)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();

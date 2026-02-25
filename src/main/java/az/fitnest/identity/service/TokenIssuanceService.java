@@ -16,5 +16,5 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 public interface TokenIssuanceService {
-    LoginResponse issueTokens(User user);
+    LoginResponse issueTokens(User user, String deviceType);
 }

@@ -12,6 +12,7 @@ import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.security.JwtService;
+import az.fitnest.identity.security.RedisTokenService;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordService passwordService;
     private final JwtService jwtService;
     private final AuthTokenRepository authTokenRepository;
+    private final RedisTokenService redisTokenService;
     private final TokenIssuanceService tokenIssuanceService;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
@@ -67,7 +69,7 @@ public class AuthServiceImpl implements AuthService {
 
         resetFailedLoginAttempts(user);
 
-        return tokenIssuanceService.issueTokens(user);
+        return tokenIssuanceService.issueTokens(user, request.getDeviceType());
     }
 
     @Transactional
@@ -100,12 +102,28 @@ public class AuthServiceImpl implements AuthService {
 
         authTokenRepository.deleteByUserId(userId);
         
-        LoginResponse loginResponse = tokenIssuanceService.issueTokens(user);
+        LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, null); // Refresh doesn't have device info easily accessible
         
         return RefreshResponse.builder()
                 .accessToken(loginResponse.getAccessToken())
                 .refreshToken(loginResponse.getRefreshToken())
                 .build();
+    }
+
+    @Transactional
+    @Override
+    public void logout(String accessToken) {
+        Long userId = jwtService.parseUserId(accessToken);
+        String jti = jwtService.parseJti(accessToken);
+        
+        redisTokenService.revokeAccessToken(accessToken);
+        
+        String activeJti = redisTokenService.getActiveSession(userId);
+        if (jti.equals(activeJti)) {
+            redisTokenService.removeActiveSession(userId);
+        }
+        
+        authTokenRepository.deleteByUserId(userId);
     }
 
     private void incrementFailedLoginAttempts(User user) {

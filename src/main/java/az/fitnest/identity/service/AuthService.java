@@ -20,4 +20,5 @@ import org.springframework.transaction.annotation.Transactional;
 public interface AuthService {
     LoginResponse login(LoginRequest request);
     RefreshResponse refresh(String refreshToken);
+    void logout(String accessToken);
 }

@@ -11,13 +11,16 @@ public class RedisTokenService {
 
     private final StringRedisTemplate redisTemplate;
     private final String accessPrefix;
+    private final String sessionPrefix;
 
     public RedisTokenService(
             StringRedisTemplate redisTemplate,
-            @Value("${security.redis.access-token-prefix:auth:token:access:}") String accessPrefix
+            @Value("${security.redis.access-token-prefix:auth:token:access:}") String accessPrefix,
+            @Value("${security.redis.session-prefix:auth:user:session:}") String sessionPrefix
     ) {
         this.redisTemplate = redisTemplate;
         this.accessPrefix = accessPrefix;
+        this.sessionPrefix = sessionPrefix;
     }
 
     public boolean isAccessTokenActive(String accessToken) {
@@ -45,7 +48,23 @@ public class RedisTokenService {
         redisTemplate.delete(accessKey(accessToken));
     }
 
+    public void setActiveSession(Long userId, String jti, Duration ttl) {
+        redisTemplate.opsForValue().set(sessionKey(userId), jti, ttl);
+    }
+
+    public String getActiveSession(Long userId) {
+        return redisTemplate.opsForValue().get(sessionKey(userId));
+    }
+
+    public void removeActiveSession(Long userId) {
+        redisTemplate.delete(sessionKey(userId));
+    }
+
     private String accessKey(String token) {
         return accessPrefix + token;
+    }
+
+    private String sessionKey(Long userId) {
+        return sessionPrefix + userId;
     }
 }

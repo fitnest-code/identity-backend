@@ -72,7 +72,7 @@ public class RegistrationServiceImpl implements RegistrationService {
                 mobile
         );
 
-        return tokenIssuanceService.issueTokens(user);
+        return tokenIssuanceService.issueTokens(user, null);
     }
 
 }

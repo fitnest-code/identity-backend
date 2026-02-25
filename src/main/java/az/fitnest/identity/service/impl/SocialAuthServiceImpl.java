@@ -55,10 +55,10 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 );
                 socialAuth.setUserId(newUser.getId());
                 socialAuthRepository.save(socialAuth);
-                return tokenIssuanceService.issueTokens(newUser);
+                return tokenIssuanceService.issueTokens(newUser, null);
             }
 
-            return tokenIssuanceService.issueTokens(user);
+            return tokenIssuanceService.issueTokens(user, null);
         }
         
         // No email linking anymore. Create new user.
@@ -76,7 +76,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .build();
         socialAuthRepository.save(socialAuth);
         
-        return tokenIssuanceService.issueTokens(newUser);
+        return tokenIssuanceService.issueTokens(newUser, null);
     }
 
     @Transactional
@@ -102,10 +102,10 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 );
                 socialAuth.setUserId(newUser.getId());
                 socialAuthRepository.save(socialAuth);
-                return tokenIssuanceService.issueTokens(newUser);
+                return tokenIssuanceService.issueTokens(newUser, null);
             }
 
-            return tokenIssuanceService.issueTokens(user);
+            return tokenIssuanceService.issueTokens(user, null);
         }
         
         // No email linking anymore. Create new user.
@@ -123,7 +123,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .build();
         socialAuthRepository.save(socialAuth);
         
-        return tokenIssuanceService.issueTokens(newUser);
+        return tokenIssuanceService.issueTokens(newUser, null);
     }
 
     private User createUserForSocialLogin(String firstName, String lastName, String fullName, String mobile) {

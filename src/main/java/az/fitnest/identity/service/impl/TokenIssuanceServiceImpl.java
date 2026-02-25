@@ -29,7 +29,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
     private final AuthTokenRepository authTokenRepository;
 
     @Override
-    public LoginResponse issueTokens(User user) {
+    public LoginResponse issueTokens(User user, String deviceType) {
         String roleName = (user.getRole() != null) ? user.getRole().getName().name() : "ROLE_USER"; 
         List<String> roles = List.of(roleName);
 
@@ -42,7 +42,11 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         Duration accessTtl = Duration.between(Instant.now(), accessExpiresAt);
         redisTokenService.activateAccessToken(accessToken, accessTtl);
 
-        saveAuthToken(user.getId(), accessToken, refreshToken, accessExpiresAt, refreshExpiresAt);
+        String jti = jwtService.parseJti(accessToken);
+        redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
+
+        authTokenRepository.deleteByUserId(user.getId());
+        saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
 
         boolean consentRequired = legalService.isConsentRequired(user.getId());
         UserResponse userResponse = UserResponseMapper.toResponse(user, consentRequired);
@@ -54,12 +58,14 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
                 .build();
     }
 
-    private void saveAuthToken(Long userId, String accessToken, String refreshToken,
+    private void saveAuthToken(Long userId, String accessToken, String refreshToken, String jti, String deviceType,
                                Instant accessExpiresAt, Instant refreshExpiresAt) {
         AuthToken authToken = AuthToken.builder()
                 .userId(userId)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .jti(jti)
+                .deviceType(deviceType)
                 .accessExpiresAt(LocalDateTime.ofInstant(accessExpiresAt, ZoneId.systemDefault()))
                 .refreshExpiresAt(LocalDateTime.ofInstant(refreshExpiresAt, ZoneId.systemDefault()))
                 .revoked(false)
