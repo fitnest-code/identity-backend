@@ -23,6 +23,7 @@ public final class UserResponseMapper {
         response.setSetupRequired(user.isSetupRequired());
         response.setProfileImageUrl(user.getProfileImageUrl());
         response.setLanguage(user.getLanguage());
+        response.setStatus(user.getStatus() != null ? user.getStatus().name() : null);
         response.setAccountLocked(user.isAccountLocked());
         response.setCreatedAt(user.getCreatedDate());
         response.setConsentRequired(consentRequired);

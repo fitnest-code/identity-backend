@@ -137,7 +137,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .setupRequired(true)
                 .accountLocked(false)
                 .failedLoginAttempts(0)
-                .isDeleted(false)
+                .status(User.Status.ACTIVE)
                 .role(roleRepository.findByName(az.fitnest.identity.constants.RoleName.ROLE_USER).orElse(null))
                 .build();
         return userRepository.save(user);

@@ -50,6 +50,9 @@ public class UserResponse {
     @Schema(description = "User's preferred language code", example = "en")
     private String language;
 
+    @Schema(description = "User account status (ACTIVE, INACTIVE, LOCKED, NO_SESSIONS)", example = "ACTIVE")
+    private String status;
+
     @JsonProperty("account_locked")
     @Schema(description = "Indicates if the user account is locked", example = "false")
     private boolean accountLocked;

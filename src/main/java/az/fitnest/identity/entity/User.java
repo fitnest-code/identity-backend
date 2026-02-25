@@ -4,11 +4,7 @@ import az.fitnest.identity.entity.BaseAuditableEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
-
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
  * Entity representing a user in the identity system.
@@ -16,11 +12,10 @@ import java.util.Objects;
  *
  * <p>Key Features:
  * <ul>
- *   <li>Soft deletion support - deleted users are marked but not physically removed</li>
+ *   <li>Soft deletion by using a status field (ACTIVE / INACTIVE) instead of physical removal</li>
  *   <li>Account locking mechanism to prevent brute-force attacks</li>
  *   <li>Multi-language support</li>
  *   <li>Profile setup tracking</li>
- *   <li>Role-based access control</li>
  * </ul>
  *
  * <p>Security Features:
@@ -34,8 +29,6 @@ import java.util.Objects;
  * @see Language
  */
 @Entity
-@SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE user_id = ?")
-@Where(clause = "is_deleted = false")
 @Table(
         name = "users",
         uniqueConstraints = {
@@ -50,7 +43,12 @@ import java.util.Objects;
 @Builder
 public class User extends BaseAuditableEntity {
 
-
+    public enum Status {
+        ACTIVE,
+        INACTIVE,
+        LOCKED,
+        NO_SESSIONS
+    }
 
     @Column(name = "first_name")
     private String firstName;
@@ -101,13 +99,13 @@ public class User extends BaseAuditableEntity {
     private String profileImageUrl;
 
     @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private Status status = Status.ACTIVE;
 
     public boolean hasAccount() { return hasAccount; }
     public boolean isSetupRequired() { return setupRequired; }
-    public boolean isAccountLocked() { return accountLocked || (lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now())); }
-    public boolean isDeleted() { return isDeleted; }
-
+    public boolean isAccountLocked() { return status == Status.LOCKED || accountLocked || (lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now())); }
+    public boolean isDeleted() { return this.status == Status.INACTIVE; }
 
 }

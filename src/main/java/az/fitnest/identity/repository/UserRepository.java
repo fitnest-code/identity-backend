@@ -11,13 +11,15 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findByMobile(String mobile);
+    @Query(value = "SELECT * FROM users WHERE mobile = :mobile AND status = 'ACTIVE' LIMIT 1", nativeQuery = true)
+    Optional<User> findByMobile(@Param("mobile") String mobile);
 
-    boolean existsByMobile(String mobile);
+    @Query(value = "SELECT COUNT(*) > 0 FROM users WHERE mobile = :mobile AND status = 'ACTIVE'", nativeQuery = true)
+    boolean existsByMobile(@Param("mobile") String mobile);
 
     /**
-     * Native query that ignores @Where(is_deleted = false) filter
-     * so we can distinguish between "non-existent" and "deleted" users.
+     * Native query that returns users regardless of their status (ACTIVE/INACTIVE)
+     * so we can distinguish between "non-existent" and "inactive" users.
      */
     @Query(value = "SELECT * FROM users WHERE mobile = :mobile LIMIT 1", nativeQuery = true)
     Optional<User> findByMobileIncludingDeleted(@Param("mobile") String mobile);

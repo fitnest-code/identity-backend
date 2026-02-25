@@ -100,7 +100,7 @@ public class UserServiceImpl implements UserService {
                 .setupRequired(true)
                 .accountLocked(false)
                 .failedLoginAttempts(0)
-                .isDeleted(false)
+                .status(User.Status.ACTIVE)
                 .role(roleRepository.findByName(RoleName.ROLE_USER).orElse(null))
                 .build();
 
@@ -183,7 +183,9 @@ public class UserServiceImpl implements UserService {
         @Override
     public void deleteUser(Long userId, String reason) {
         User user = getUserOrThrow(userId);
-        userRepository.delete(user);
+        // Soft-delete: set status to INACTIVE and persist
+        user.setStatus(User.Status.INACTIVE);
+        userRepository.save(user);
 
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
         for (AuthToken token : tokens) {

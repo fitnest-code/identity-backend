@@ -31,6 +31,8 @@ message UserResponse {
   bool setup_required = 7;
   string language = 8;
   string created_at = 9;
+  string status = 10;
+  bool account_locked = 11;
 }
 
 message UpdateUserProfileRequest {

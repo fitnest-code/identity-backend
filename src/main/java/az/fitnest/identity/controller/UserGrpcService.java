@@ -136,6 +136,8 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                 .setProfileImageUrl(user.getProfileImageUrl() != null ? user.getProfileImageUrl() : "")
                 .setSetupRequired(user.isSetupRequired())
                 .setLanguage(user.getLanguage() != null ? user.getLanguage() : "")
+                .setStatus(user.getStatus() != null ? user.getStatus().name() : "")
+                .setAccountLocked(user.isAccountLocked())
                 .setCreatedAt(createdAt)
                 .build();
     }

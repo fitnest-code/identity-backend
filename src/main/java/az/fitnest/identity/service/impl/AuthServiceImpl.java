@@ -48,10 +48,19 @@ public class AuthServiceImpl implements AuthService {
 
         if (user.isDeleted()) {
             // Auto-recover account on successful login attempt
-            user.setDeleted(false);
+            user.setStatus(User.Status.ACTIVE);
             userRepository.save(user);
+        }
 
+        // Deny login if user is administratively locked
+        if (user.getStatus() == User.Status.LOCKED) {
+            throw new InvalidCredentialsException("Invalid credentials");
+        }
 
+        // If user was marked as NO_SESSIONS (no active sessions), continue with login and mark ACTIVE
+        if (user.getStatus() == User.Status.NO_SESSIONS) {
+            user.setStatus(User.Status.ACTIVE);
+            userRepository.save(user);
         }
 
         if (isAccountLocked(user)) {
@@ -96,7 +105,8 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid credentials");
         }
 
-        if (isAccountLocked(user)) {
+        // Prevent token refresh if user is locked
+        if (user.getStatus() == User.Status.LOCKED) {
             throw new UnauthorizedException("Invalid credentials");
         }
 
@@ -124,6 +134,11 @@ public class AuthServiceImpl implements AuthService {
         }
         
         authTokenRepository.deleteByUserId(userId);
+        // mark as no active sessions
+        userRepository.findById(userId).ifPresent(u -> {
+            u.setStatus(User.Status.NO_SESSIONS);
+            userRepository.save(u);
+        });
     }
 
     private void incrementFailedLoginAttempts(User user) {
@@ -133,6 +148,7 @@ public class AuthServiceImpl implements AuthService {
         if (attempts >= maxFailedLoginAttempts) {
             user.setAccountLocked(true);
             user.setLockedUntil(LocalDateTime.now().plusMinutes(accountLockDurationMinutes));
+            user.setStatus(User.Status.LOCKED);
         }
 
         userRepository.save(user);
@@ -166,6 +182,7 @@ public class AuthServiceImpl implements AuthService {
         user.setAccountLocked(false);
         user.setLockedUntil(null);
         user.setFailedLoginAttempts(0);
+        user.setStatus(User.Status.ACTIVE);
         userRepository.save(user);
     }
 
