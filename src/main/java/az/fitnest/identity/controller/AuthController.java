@@ -31,9 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Endpoints for user authentication, registration, and admin user management")
+@Tag(name = "Authentication", description = "Endpoints for user authentication, registration, and password management")
 public class AuthController {
 
     private final AuthService authService;
@@ -44,13 +44,11 @@ public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    // --- Authentication & Registration ---
-
-    @PostMapping("/auth/login")
-    @Operation(summary = "User login", description = "Authenticates a user with mobile number and password. Returns access and refresh tokens.")
+    @PostMapping("/login")
+    @Operation(summary = "User login", description = "Authenticates a user with mobile number and password.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(examples = @ExampleObject(value = "{\"error\": \"Invalid mobile number or password\"}"))),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials"),
             @ApiResponse(responseCode = "400", description = "Invalid request format")
     })
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -58,8 +56,8 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    @PostMapping("/auth/refresh")
-    @Operation(summary = "Refresh access token", description = "Generates a new access token using a valid refresh token.")
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh access token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Token refreshed successfully", content = @Content(schema = @Schema(implementation = RefreshResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
@@ -68,142 +66,52 @@ public class AuthController {
         return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
     }
 
-    @PostMapping("/auth/register")
-    @Operation(summary = "Initiate registration", description = "Starts the registration process by collecting and validating the mobile number. An OTP will be sent.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP sent successfully", content = @Content(schema = @Schema(implementation = OtpSendResponse.class))),
-            @ApiResponse(responseCode = "409", description = "Mobile number already registered")
-    })
+    @PostMapping("/register")
+    @Operation(summary = "Initiate registration")
     public ResponseEntity<OtpSendResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(registrationService.startRegistration(request));
     }
 
-    @PostMapping("/auth/register/complete")
-    @Operation(summary = "Complete registration", description = "Completes the registration process using the token received after OTP verification.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid registration token")
-    })
+    @PostMapping("/register/complete")
+    @Operation(summary = "Complete registration")
     public ResponseEntity<LoginResponse> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(registrationService.completeRegistration(request));
     }
 
-    @PostMapping("/auth/social/apple")
-    @Operation(summary = "Apple social login", description = "Authenticates or registers a user using Apple ID.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login successful"),
-            @ApiResponse(responseCode = "201", description = "New user registered via Apple", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid Apple identity token")
-    })
+    @PostMapping("/social/apple")
+    @Operation(summary = "Apple social login")
     public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginApple(request);
         HttpStatus status = response.getUser().isSetupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);
     }
 
-    @PostMapping("/auth/social/google")
-    @Operation(summary = "Google social login", description = "Authenticates or registers a user using Google account.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login successful"),
-            @ApiResponse(responseCode = "201", description = "New user registered via Google", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid Google identity token")
-    })
+    @PostMapping("/social/google")
+    @Operation(summary = "Google social login")
     public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
         HttpStatus status = response.getUser().isSetupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);
     }
 
-    @PostMapping("/auth/forgot-password")
-    @Operation(summary = "Forgot password", description = "Initiates password reset process for the given mobile number.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP for password reset sent"),
-            @ApiResponse(responseCode = "404", description = "User not found with this mobile number")
-    })
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot password")
     public ResponseEntity<OtpSendResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         return ResponseEntity.ok(passwordResetService.forgotPassword(request));
     }
 
-    @PostMapping("/auth/reset-password")
-    @Operation(summary = "Reset password", description = "Resets user password using the reset token and new password.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Password reset successful"),
-            @ApiResponse(responseCode = "400", description = "Invalid reset token or password policy violation")
-    })
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password")
     public ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         return ResponseEntity.ok(passwordResetService.resetPassword(request));
     }
 
-    @PostMapping("/auth/change-password")
-    @Operation(summary = "Change password", description = "Changes password for an authenticated user. Requires current password verification.")
+    @PostMapping("/change-password")
+    @Operation(summary = "Change password")
     @SecurityRequirement(name = "bearerAuth")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
-            @ApiResponse(responseCode = "401", description = "Invalid current password or session"),
-            @ApiResponse(responseCode = "400", description = "New password does not meet requirements")
-    })
-    public ResponseEntity<Void> changePassword(
-            @Valid @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         Long userId = UserContext.getRequiredUserId();
         userService.changePassword(userId, request.getOldPassword(), request.getNewPassword(), request.getConfirmNewPassword());
         return ResponseEntity.ok().build();
-    }
-
-    // --- Admin User Management ---
-
-    @GetMapping("/admin/users")
-    @Operation(summary = "Get all users (Admin)", description = "Returns a paginated list of all users. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = UserResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
-    })
-    public ResponseEntity<PaginatedResponse<UserResponse>> getAllUsers(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int page_size) {
-        return ResponseEntity.ok(PaginatedResponse.of(userService.getAllUsersMapped(page, page_size)));
-    }
-
-    @GetMapping("/admin/users/{userId}")
-    @Operation(summary = "Get user by ID (Admin)", description = "Returns detailed user profile by ID. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User details retrieved"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
-        return ResponseEntity.ok(UserResponseMapper.toResponse(userService.getUserById(userId)));
-    }
-
-    @PutMapping("/admin/users/{userId}/role")
-    @Operation(summary = "Change user role (Admin)", description = "Updates the role of a user. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Role updated successfully"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
-    public ResponseEntity<UserResponse> changeUserRole(
-            @PathVariable Long userId,
-            @RequestParam RoleName roleName) {
-        User user = userService.updateUserRole(userId, roleName);
-        return ResponseEntity.ok(UserResponseMapper.toResponse(user));
-    }
-
-    @DeleteMapping("/admin/users/{userId}")
-    @Operation(summary = "Delete user (Admin)", description = "Permanently deletes a user account. Requires ADMIN role.")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "User deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
-    public ResponseEntity<Void> deleteUser(
-            @PathVariable Long userId,
-            @RequestParam(required = false) String reason) {
-        userService.deleteUser(userId, reason);
-        return ResponseEntity.noContent().build();
     }
 }
