@@ -159,10 +159,10 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = UserResponse.class))),
             @ApiResponse(responseCode = "403", description = "Insufficient permissions")
     })
-    public ResponseEntity<Page<UserResponse>> getAllUsers(
+    public ResponseEntity<PaginatedResponse<UserResponse>> getAllUsers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int page_size) {
-        return ResponseEntity.ok(userService.getAllUsersMapped(page, page_size));
+        return ResponseEntity.ok(PaginatedResponse.of(userService.getAllUsersMapped(page, page_size)));
     }
 
     @GetMapping("/admin/users/{userId}")

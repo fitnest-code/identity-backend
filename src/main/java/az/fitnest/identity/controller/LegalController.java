@@ -182,11 +182,11 @@ public class LegalController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Consents retrieved successfully")
     })
-    public ResponseEntity<Page<AdminConsentResponse>> getConsents(
+    public ResponseEntity<PaginatedResponse<AdminConsentResponse>> getConsents(
             @Parameter(description = "Filter by User ID") @RequestParam(required = false) Long userId,
             @Parameter(description = "Page index (0-based)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(legalService.getConsents(userId, PageRequest.of(page, size)));
+        return ResponseEntity.ok(PaginatedResponse.of(legalService.getConsents(userId, PageRequest.of(page, size))));
     }
 
     private Long getCurrentUserId() {
