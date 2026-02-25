@@ -27,7 +27,4 @@ public class LoginRequest {
     @Size(min = 8, max = 64)
     @Schema(description = "User's password (8-64 characters)", example = "SecurePass123!", requiredMode = Schema.RequiredMode.REQUIRED, minLength = 8, maxLength = 64)
     private String password;
-
-    @Schema(description = "Type of device (e.g., Android, iOS)", example = "Android")
-    private String deviceType;
 }

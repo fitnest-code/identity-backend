@@ -79,12 +79,7 @@ public class AuthServiceImpl implements AuthService {
 
         resetFailedLoginAttempts(user);
 
-        String deviceType = request.getDeviceType();
-        if (deviceType == null || deviceType.isBlank()) {
-            deviceType = DeviceDetector.detectDeviceType();
-        }
-
-        return tokenIssuanceService.issueTokens(user, deviceType);
+        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
     }
 
     @Transactional
