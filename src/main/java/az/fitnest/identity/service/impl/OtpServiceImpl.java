@@ -6,7 +6,6 @@ import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyResponse;
-import az.fitnest.identity.dto.ReactivationVerifyResponse;
 import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.OtpRateLimitedException;
@@ -263,36 +262,26 @@ public class OtpServiceImpl implements OtpService {
                     .resetToken(resetToken)
                     .message(OtpMessages.OTP_VERIFIED)
                     .build();
+        } else if (verificationResult.getPurpose() == OtpPurpose.REACTIVATION) {
+            az.fitnest.identity.entity.User user = userRepository.findFirstByMobile(identifier)
+                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("User not found"));
+
+            user.setStatus(az.fitnest.identity.entity.User.Status.ACTIVE);
+            userRepository.save(user);
+
+            String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
+            az.fitnest.identity.dto.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
+
+            return OtpVerifyResponse.builder()
+                    .verified(true)
+                    .message(az.fitnest.identity.constants.OtpMessages.OTP_VERIFIED)
+                    .accessToken(loginResponse.getAccessToken())
+                    .refreshToken(loginResponse.getRefreshToken())
+                    .user(loginResponse.getUser())
+                    .build();
         } else {
             throw new InvalidCredentialsException("Invalid OTP purpose");
         }
-    }
-
-    @Override
-    public ReactivationVerifyResponse verifyReactivationOtp(OtpVerifyRequest request) {
-        OtpVerificationResult verificationResult = verifyOtp(request.getOtpSessionId(), request.getOtpCode());
-
-        if (verificationResult.getPurpose() != OtpPurpose.REACTIVATION) {
-            throw new InvalidCredentialsException("Invalid OTP purpose for reactivation");
-        }
-
-        String identifier = verificationResult.getMobile();
-        az.fitnest.identity.entity.User user = userRepository.findFirstByMobile(identifier)
-                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("User not found"));
-
-        user.setStatus(az.fitnest.identity.entity.User.Status.ACTIVE);
-        userRepository.save(user);
-
-        String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
-        az.fitnest.identity.dto.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
-
-        return ReactivationVerifyResponse.builder()
-                .verified(true)
-                .message(OtpMessages.OTP_VERIFIED)
-                .accessToken(loginResponse.getAccessToken())
-                .refreshToken(loginResponse.getRefreshToken())
-                .user(loginResponse.getUser())
-                .build();
     }
 
     private String hashOtp(String otp) {
