@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public enum OtpPurpose {
     REGISTRATION,
     LOGIN,
-    PASSWORD_RESET;
+    PASSWORD_RESET,
+    REACTIVATION;
 
     @JsonCreator
     public static OtpPurpose from(String value) {

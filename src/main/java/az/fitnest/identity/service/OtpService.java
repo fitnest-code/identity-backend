@@ -6,6 +6,7 @@ import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.dto.OtpVerifyResponse;
+import az.fitnest.identity.dto.ReactivationVerifyResponse;
 import az.fitnest.identity.entity.OtpSessionPayload;
 import az.fitnest.identity.entity.OtpVerificationResult;
 import az.fitnest.identity.exception.InvalidCredentialsException;
@@ -40,4 +41,5 @@ public interface OtpService {
     OtpVerificationResult verifyOtp(String sessionId, String otpCode);
     OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode);
     OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request);
+    ReactivationVerifyResponse verifyReactivationOtp(OtpVerifyRequest request);
 }

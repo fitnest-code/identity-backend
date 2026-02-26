@@ -5,7 +5,7 @@ import az.fitnest.identity.service.SmsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-// @Service  // Temporarily disabled — notifications service is offline; using MockSmsService instead
+@Service
 @RequiredArgsConstructor
 public class SmsServiceImpl implements SmsService {
 

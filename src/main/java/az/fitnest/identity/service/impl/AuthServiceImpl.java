@@ -33,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthTokenRepository authTokenRepository;
     private final RedisTokenService redisTokenService;
     private final TokenIssuanceService tokenIssuanceService;
+    private final OtpService otpService;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
     private int maxFailedLoginAttempts;
@@ -48,9 +49,23 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         if (user.isDeleted()) {
-            // Auto-recover account on successful login attempt
-            user.setStatus(User.Status.ACTIVE);
-            userRepository.save(user);
+            // Check if password is correct first
+            if (user.getPasswordHash() == null || !passwordService.verifyPassword(request.getPassword(), user.getPasswordHash())) {
+                incrementFailedLoginAttempts(user);
+                throw new InvalidCredentialsException("Invalid credentials");
+            }
+            
+            // Trigger reactivation OTP
+            az.fitnest.identity.dto.OtpSendRequest otpRequest = az.fitnest.identity.dto.OtpSendRequest.builder()
+                    .mobile(user.getMobile())
+                    .purpose(az.fitnest.identity.constants.OtpPurpose.REACTIVATION)
+                    .build();
+            az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
+            
+            throw new az.fitnest.identity.exception.AccountDeactivatedException(
+                    "Account is deactivated. Please verify with OTP to reactivate.",
+                    otpResponse.getOtpSessionId()
+            );
         }
 
         // Deny login if user is administratively locked

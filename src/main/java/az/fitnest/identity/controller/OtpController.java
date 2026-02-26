@@ -4,6 +4,7 @@ import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyResponse;
+import az.fitnest.identity.dto.ReactivationVerifyResponse;
 import az.fitnest.identity.service.OtpService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -100,6 +101,29 @@ public class OtpController {
             @Valid @RequestBody OtpVerifyRequest request
     ) {
         OtpVerifyResponse response = otpService.verifyOtpAndIssueToken(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Verify Reactivation OTP",
+            description = "Verifies the OTP code for account reactivation. " +
+                    "On success, reactivates the account and issues login tokens."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "OTP verified successfully, account reactivated and tokens issued",
+                    content = @Content(schema = @Schema(implementation = ReactivationVerifyResponse.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "Invalid request or OTP"),
+            @ApiResponse(responseCode = "401", description = "Invalid code"),
+            @ApiResponse(responseCode = "404", description = "Session not found")
+    })
+    @PostMapping("/verify-reactivation")
+    public ResponseEntity<ReactivationVerifyResponse> verifyReactivationOtp(
+            @Valid @RequestBody OtpVerifyRequest request
+    ) {
+        ReactivationVerifyResponse response = otpService.verifyReactivationOtp(request);
         return ResponseEntity.ok(response);
     }
 }

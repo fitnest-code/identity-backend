@@ -40,6 +40,24 @@ public class GlobalExceptionHandler {
                 .body(body);
     }
 
+    @ExceptionHandler(AccountDeactivatedException.class)
+    public ResponseEntity<ApiResponse> handleAccountDeactivatedException(
+            AccountDeactivatedException exception,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> details = Map.of("otp_session_id", exception.getOtpSessionId());
+        
+        ApiResponse body = wrap(
+                "ACCOUNT_DEACTIVATED",
+                exception.getMessage(),
+                HttpStatus.FORBIDDEN,
+                request.getRequestURI(),
+                details
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
     // ---------- Custom BaseException ----------
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ApiResponse> handleBaseException(
