@@ -31,6 +31,7 @@ public interface UserService {
     User updateSetupRequired(Long userId, boolean setupRequired);
     User updateLanguage(Long userId, String language);
     void deleteUser(Long userId, String reason);
+    void deactivateAccount(Long userId);
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
     Page<az.fitnest.identity.dto.UserResponse> getAllUsersMapped(int page, int size);
 }

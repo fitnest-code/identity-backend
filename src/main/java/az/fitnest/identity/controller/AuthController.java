@@ -27,8 +27,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -42,8 +40,6 @@ public class AuthController {
     private final RegistrationService registrationService;
     private final UserService userService;
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
-
     @PostMapping("/login")
     @Operation(summary = "User login", description = "Authenticates a user with mobile number and password.")
     @ApiResponses(value = {
@@ -52,7 +48,6 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Invalid request format")
     })
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        logger.info("User login attempt for mobile: {}", request.getMobile());
         return ResponseEntity.ok(authService.login(request));
     }
 
@@ -128,5 +123,18 @@ public class AuthController {
         Long userId = UserContext.getRequiredUserId();
         userService.changePassword(userId, request.getOldPassword(), request.getNewPassword(), request.getConfirmNewPassword());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/deactivate")
+    @Operation(summary = "Deactivate account", description = "Disables the authenticated user's account. This is a soft deletion (status becomes INACTIVE).")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Account deactivated successfully"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    public ResponseEntity<Void> deactivateAccount() {
+        Long userId = UserContext.getRequiredUserId();
+        userService.deactivateAccount(userId);
+        return ResponseEntity.noContent().build();
     }
 }

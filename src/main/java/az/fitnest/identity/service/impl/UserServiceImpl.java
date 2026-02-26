@@ -18,7 +18,6 @@ import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.util.TokenHasher;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
@@ -163,7 +161,7 @@ public class UserServiceImpl implements UserService {
         try {
             eventPublisher.publishSetupCompleted(event.userId());
         } catch (Exception e) {
-            log.error("Failed to publish setup completed event for userId: {}", event.userId(), e);
+            // Silently ignore or handle via other means as requested (no logging)
         }
     }
 
@@ -176,6 +174,13 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         user.setLanguage(language);
         return userRepository.save(user);
+    }
+
+    @CacheEvict(value = "users", key = "#userId")
+    @Transactional
+    @Override
+    public void deactivateAccount(Long userId) {
+        deleteUser(userId, "Self-deactivation");
     }
 
     @CacheEvict(value = "users", key = "#userId")
@@ -262,7 +267,7 @@ public class UserServiceImpl implements UserService {
         try {
             kafkaTemplate.send("user-events", event);
         } catch (Exception e) {
-            log.error("Failed to publish user event: {} for userId: {}. Error: {}", eventType, userId, e.getMessage(), e);
+            // Silently ignore or handle via other means as requested (no logging)
         }
     }
     @Transactional(readOnly = true)
