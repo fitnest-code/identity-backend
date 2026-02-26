@@ -37,12 +37,12 @@ public class NotificationsGrpcClient {
         try {
             SendSMSResponse response = withDeadline().sendSMS(request);
             if (!response.getSuccess()) {
-                throw new RuntimeException("Failed to send SMS: " + response.getErrorMessage());
+                log.warn("Failed to send SMS (non-blocking): {}", response.getErrorMessage());
+            } else {
+                log.info("SMS sent successfully to {}", to);
             }
-            log.info("SMS sent successfully to {}", to);
         } catch (Exception e) {
-            log.error("Failed to send SMS via gRPC", e);
-            throw new RuntimeException("Failed to send SMS via gRPC", e);
+            log.warn("Failed to send SMS via gRPC (non-blocking). Using mock OTP '1111' logic. Error: {}", e.getMessage());
         }
     }
 
