@@ -56,7 +56,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         String identifier = resetPasswordTokenService.requireIdentifier(request.getResetToken());
         
-        User user = userRepository.findByMobileIncludingDeleted(identifier)
+        User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         if (user.isDeleted()) {

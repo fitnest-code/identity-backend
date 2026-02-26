@@ -90,7 +90,7 @@ public class OtpServiceImpl implements OtpService {
         
         validateRateLimit(purpose, mobileNumber);
 
-        boolean exists = userRepository.findByMobileIncludingDeleted(mobileNumber).isPresent();
+        boolean exists = userRepository.findFirstByMobile(mobileNumber).isPresent();
 
         boolean shouldSendOtp = doesPurposeMatchExistence(purpose, exists);
 
@@ -277,7 +277,7 @@ public class OtpServiceImpl implements OtpService {
         }
 
         String identifier = verificationResult.getMobile();
-        az.fitnest.identity.entity.User user = userRepository.findByMobileIncludingDeleted(identifier)
+        az.fitnest.identity.entity.User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("User not found"));
 
         user.setStatus(az.fitnest.identity.entity.User.Status.ACTIVE);

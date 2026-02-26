@@ -48,7 +48,7 @@ public class DataInitializer {
 
     private void initAdminUser() {
         String adminMobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize("0500000000");
-        Optional<User> adminOptional = userRepository.findByMobileIncludingDeleted(adminMobile);
+        Optional<User> adminOptional = userRepository.findFirstByMobile(adminMobile);
 
         if (adminOptional.isEmpty()) {
             Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)

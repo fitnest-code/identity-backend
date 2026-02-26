@@ -4,6 +4,7 @@ import az.fitnest.identity.entity.BaseAuditableEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
@@ -88,12 +89,9 @@ public class User extends BaseAuditableEntity {
     @Column(name = "failed_login_attempts", nullable = false)
     private int failedLoginAttempts = 0;
 
-    @Builder.Default
-    @Column(name = "account_locked", nullable = false)
-    private boolean accountLocked = false;
 
     @Column(name = "locked_until")
-    private LocalDateTime lockedUntil;
+    private Instant lockedUntil;
 
     @Column(name = "profile_image_url")
     private String profileImageUrl;
@@ -106,7 +104,7 @@ public class User extends BaseAuditableEntity {
     public boolean hasAccount() { return hasAccount; }
     public boolean isSetupRequired() { return setupRequired; }
     public boolean isAccountLocked() {
-        return status == Status.LOCKED || (lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now()));
+        return status == Status.LOCKED && lockedUntil != null && lockedUntil.isAfter(Instant.now());
     }
 
     public boolean isDeleted() { return this.status == Status.INACTIVE; }

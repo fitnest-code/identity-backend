@@ -44,7 +44,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
-            User user = userRepository.findByIdIncludingDeleted(socialAuth.getUserId())
+            User user = userRepository.findById(socialAuth.getUserId())
                     .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
             if (user.isDeleted()) {
@@ -91,7 +91,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
-            User user = userRepository.findByIdIncludingDeleted(socialAuth.getUserId())
+            User user = userRepository.findById(socialAuth.getUserId())
                     .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
             if (user.isDeleted()) {
@@ -136,7 +136,6 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .passwordHash(null)
                 .hasAccount(true)
                 .setupRequired(true)
-                .accountLocked(false)
                 .failedLoginAttempts(0)
                 .status(User.Status.ACTIVE)
                 .role(roleRepository.findByName(az.fitnest.identity.constants.RoleName.ROLE_USER).orElse(null))

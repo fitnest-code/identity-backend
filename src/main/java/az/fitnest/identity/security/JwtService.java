@@ -46,8 +46,14 @@ public class JwtService {
         return buildToken(userId, refreshTtlSeconds, Map.of("typ", "refresh"));
     }
 
-    public Long parseUserId(String token) {
+    public Long parseUserId(String token, String expectedType) {
         Claims claims = parseClaims(token);
+        
+        String actualType = claims.get("typ", String.class);
+        if (expectedType != null && !expectedType.equals(actualType)) {
+            throw new IllegalArgumentException("Invalid JWT token type. Expected: " + expectedType + ", Got: " + actualType);
+        }
+
         String sub = claims.getSubject();
         if (sub == null || sub.isBlank()) {
             throw new IllegalArgumentException("JWT subject (sub) is missing.");
@@ -57,6 +63,10 @@ public class JwtService {
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("JWT subject (sub) is not a valid Long.");
         }
+    }
+
+    public Long parseUserId(String token) {
+        return parseUserId(token, null);
     }
 
     public Instant parseExpiration(String token) {

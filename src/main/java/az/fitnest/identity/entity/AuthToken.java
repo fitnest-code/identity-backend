@@ -4,6 +4,7 @@ import az.fitnest.identity.entity.BaseAuditableEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,16 +12,16 @@ import java.time.LocalDateTime;
         name = "auth_tokens",
         indexes = {
                 @Index(name = "idx_auth_tokens_user_id", columnList = "user_id"),
-                @Index(name = "idx_auth_tokens_access_token", columnList = "access_token"),
-                @Index(name = "idx_auth_tokens_refresh_token", columnList = "refresh_token"),
-                @Index(name = "idx_auth_tokens_jti", columnList = "jti")
+                @Index(name = "idx_auth_tokens_access_token", columnList = "access_token", unique = true),
+                @Index(name = "idx_auth_tokens_refresh_token", columnList = "refresh_token", unique = true),
+                @Index(name = "idx_auth_tokens_jti", columnList = "jti", unique = true)
         }
 )
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"accessToken", "refreshToken"})
+@ToString(exclude = {"accessTokenHash", "refreshTokenHash"})
 public class AuthToken extends BaseAuditableEntity {
 
     @Column(name = "access_token", nullable = false, length = 2000)
@@ -39,10 +40,10 @@ public class AuthToken extends BaseAuditableEntity {
     private Long userId;
 
     @Column(name = "access_expires_at", nullable = false)
-    private LocalDateTime accessExpiresAt;
+    private Instant accessExpiresAt;
 
     @Column(name = "refresh_expires_at")
-    private LocalDateTime refreshExpiresAt;
+    private Instant refreshExpiresAt;
 
     @Column(name = "revoked", nullable = false)
     @Builder.Default

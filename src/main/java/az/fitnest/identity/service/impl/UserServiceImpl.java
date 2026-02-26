@@ -88,7 +88,7 @@ public class UserServiceImpl implements UserService {
 
     private User createNewUserInternal(String firstName, String lastName, String passwordHash, String mobile) {
         mobile = MobileNumberUtils.normalize(mobile);
-        if (mobile != null && userRepository.findByMobileIncludingDeleted(mobile).isPresent()) {
+        if (mobile != null && userRepository.findFirstByMobile(mobile).isPresent()) {
             throw new ConflictException("Mobile number already registered");
         }
 
@@ -99,7 +99,6 @@ public class UserServiceImpl implements UserService {
                 .mobile(mobile)
                 .hasAccount(true)
                 .setupRequired(true)
-                .accountLocked(false)
                 .failedLoginAttempts(0)
                 .status(User.Status.ACTIVE)
                 .role(roleRepository.findByName(RoleName.ROLE_USER).orElse(null))

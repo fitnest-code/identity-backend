@@ -28,6 +28,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
     private final RedisTokenService redisTokenService;
     private final LegalService legalService;
     private final AuthTokenRepository authTokenRepository;
+    private final TokenHasher tokenHasher;
 
     @Override
     public LoginResponse issueTokens(User user, String deviceType) {
@@ -63,12 +64,12 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
                                Instant accessExpiresAt, Instant refreshExpiresAt) {
         AuthToken authToken = AuthToken.builder()
                 .userId(userId)
-                .accessTokenHash(TokenHasher.hash(accessToken))
-                .refreshTokenHash(TokenHasher.hash(refreshToken))
+                .accessTokenHash(tokenHasher.hash(accessToken))
+                .refreshTokenHash(tokenHasher.hash(refreshToken))
                 .jti(jti)
                 .deviceType(deviceType)
-                .accessExpiresAt(LocalDateTime.ofInstant(accessExpiresAt, ZoneId.systemDefault()))
-                .refreshExpiresAt(LocalDateTime.ofInstant(refreshExpiresAt, ZoneId.systemDefault()))
+                .accessExpiresAt(accessExpiresAt)
+                .refreshExpiresAt(refreshExpiresAt)
                 .revoked(false)
                 .build();
 
