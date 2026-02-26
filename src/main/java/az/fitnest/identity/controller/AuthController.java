@@ -70,21 +70,16 @@ public class AuthController {
     @Operation(summary = "User logout")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             authService.logout(token);
+        } else {
+            throw new UnauthorizedException("Invalid Authorization header");
         }
         return ResponseEntity.ok().build();
     }
+    
 
-    @PostMapping("/logout/all")
-    @Operation(summary = "Logout from all sessions")
-    @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<Void> logoutAll() {
-        Long userId = az.fitnest.identity.criteria.UserContext.getRequiredUserId();
-        authService.logoutAll(userId);
-        return ResponseEntity.ok().build();
-    }
 
     @PostMapping("/register")
     @Operation(summary = "Initiate registration")

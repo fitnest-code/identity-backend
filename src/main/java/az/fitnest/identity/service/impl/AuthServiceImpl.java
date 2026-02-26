@@ -187,21 +187,6 @@ public class AuthServiceImpl implements AuthService {
         userRepository.markNoSessionsIfNone(userId, User.Status.NO_SESSIONS);
     }
 
-    @Override
-    public void logoutAll(Long userId) {
-        String activeJti = redisTokenService.getActiveSession(userId);
-        if (activeJti != null) {
-            redisTokenService.revokeAccessToken(activeJti);
-        }
-        redisTokenService.removeActiveSession(userId);
-        internalLogoutAll(userId);
-    }
-
-    @Transactional
-    public void internalLogoutAll(Long userId) {
-        authTokenRepository.deleteByUserId(userId);
-        userRepository.updateLockStatus(userId, 0, null, User.Status.NO_SESSIONS);
-    }
 
     private void incrementFailedLoginAttempts(Long userId, int currentAttempts, Instant now) {
         int attempts = currentAttempts + 1;
