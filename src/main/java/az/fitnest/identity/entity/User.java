@@ -105,7 +105,10 @@ public class User extends BaseAuditableEntity {
 
     public boolean hasAccount() { return hasAccount; }
     public boolean isSetupRequired() { return setupRequired; }
-    public boolean isAccountLocked() { return status == Status.LOCKED || accountLocked || (lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now())); }
+    public boolean isAccountLocked() {
+        return status == Status.LOCKED || (lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now()));
+    }
+
     public boolean isDeleted() { return this.status == Status.INACTIVE; }
 
 }

@@ -10,6 +10,7 @@ import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.TokenIssuanceService;
+import az.fitnest.identity.util.TokenHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +31,6 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
 
     @Override
     public LoginResponse issueTokens(User user, String deviceType) {
-        // Only one active session per user is allowed. Previous tokens are deleted and new session JTI is set.
         String roleName = (user.getRole() != null) ? user.getRole().getName().name() : "ROLE_USER";
         List<String> roles = List.of(roleName);
 
@@ -41,13 +41,12 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         Instant refreshExpiresAt = jwtService.parseExpiration(refreshToken);
 
         Duration accessTtl = Duration.between(Instant.now(), accessExpiresAt);
-        redisTokenService.activateAccessToken(accessToken, accessTtl);
-
         String jti = jwtService.parseJti(accessToken);
+        redisTokenService.activateAccessToken(jti, accessTtl);
+        
         redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
 
-        // Remove all previous tokens for this user (enforces single session)
-        authTokenRepository.deleteByUserId(user.getId());
+        // Do NOT remove all previous tokens for this user. Allow multiple sessions/devices.
         saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
 
         boolean consentRequired = legalService.isConsentRequired(user.getId());
@@ -64,8 +63,8 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
                                Instant accessExpiresAt, Instant refreshExpiresAt) {
         AuthToken authToken = AuthToken.builder()
                 .userId(userId)
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .accessTokenHash(TokenHasher.hash(accessToken))
+                .refreshTokenHash(TokenHasher.hash(refreshToken))
                 .jti(jti)
                 .deviceType(deviceType)
                 .accessExpiresAt(LocalDateTime.ofInstant(accessExpiresAt, ZoneId.systemDefault()))

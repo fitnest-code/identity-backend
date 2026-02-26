@@ -16,6 +16,7 @@ import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.util.TokenHasher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -189,7 +190,9 @@ public class UserServiceImpl implements UserService {
 
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
         for (AuthToken token : tokens) {
-            redisTokenService.revokeAccessToken(token.getAccessToken());
+            if (token.getJti() != null) {
+                redisTokenService.revokeAccessToken(token.getJti());
+            }
         }
         authTokenRepository.deleteByUserId(userId);
 

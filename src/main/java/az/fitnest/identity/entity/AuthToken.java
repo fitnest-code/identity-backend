@@ -24,10 +24,10 @@ import java.time.LocalDateTime;
 public class AuthToken extends BaseAuditableEntity {
 
     @Column(name = "access_token", nullable = false, length = 2000)
-    private String accessToken;
+    private String accessTokenHash;
 
     @Column(name = "refresh_token", nullable = false, length = 2000)
-    private String refreshToken;
+    private String refreshTokenHash;
 
     @Column(name = "jti")
     private String jti;

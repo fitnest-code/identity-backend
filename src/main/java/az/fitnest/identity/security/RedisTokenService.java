@@ -23,29 +23,29 @@ public class RedisTokenService {
         this.sessionPrefix = sessionPrefix;
     }
 
-    public boolean isAccessTokenActive(String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
+    public boolean isAccessTokenActive(String jti) {
+        if (jti == null || jti.isBlank()) {
             return false;
         }
-        return Boolean.TRUE.equals(redisTemplate.hasKey(accessKey(accessToken)));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(accessKey(jti)));
     }
 
-    public void activateAccessToken(String accessToken, Duration ttl) {
-        if (accessToken == null || accessToken.isBlank()) {
-            throw new IllegalArgumentException("accessToken is blank.");
+    public void activateAccessToken(String jti, Duration ttl) {
+        if (jti == null || jti.isBlank()) {
+            throw new IllegalArgumentException("jti is blank.");
         }
         if (ttl == null || ttl.isNegative() || ttl.isZero()) {
             throw new IllegalArgumentException("ttl must be positive.");
         }
 
-        redisTemplate.opsForValue().set(accessKey(accessToken), "1", ttl);
+        redisTemplate.opsForValue().set(accessKey(jti), "1", ttl);
     }
 
-    public void revokeAccessToken(String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
+    public void revokeAccessToken(String jti) {
+        if (jti == null || jti.isBlank()) {
             return;
         }
-        redisTemplate.delete(accessKey(accessToken));
+        redisTemplate.delete(accessKey(jti));
     }
 
     public void setActiveSession(Long userId, String jti, Duration ttl) {

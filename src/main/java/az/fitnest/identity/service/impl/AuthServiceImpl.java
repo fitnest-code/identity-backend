@@ -1,7 +1,5 @@
-package az.fitnest.identity.service.impl;
 import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
+import az.fitnest.identity.util.TokenHasher;
 
 import az.fitnest.identity.dto.LoginRequest;
 import az.fitnest.identity.dto.LoginResponse;
@@ -41,22 +39,14 @@ public class AuthServiceImpl implements AuthService {
     @Value("${auth.account-lock.lock-duration-minutes:30}")
     private int accountLockDurationMinutes;
 
-    @Transactional
-        @Override
+    @Override
     public LoginResponse login(LoginRequest request) {
         String mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(request.getMobile());
-        User user = userRepository.findByMobileIncludingDeleted(mobile)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+        AuthenticationResult result = authenticate(mobile, request.getPassword());
 
-        if (user.isDeleted()) {
-            // Check if password is correct first
-            if (user.getPasswordHash() == null || !passwordService.verifyPassword(request.getPassword(), user.getPasswordHash())) {
-                incrementFailedLoginAttempts(user);
-                throw new InvalidCredentialsException("Invalid credentials");
-            }
-            // Trigger reactivation OTP
+        if (result.status() == AuthenticationStatus.REACTIVATION_REQUIRED) {
             az.fitnest.identity.dto.OtpSendRequest otpRequest = az.fitnest.identity.dto.OtpSendRequest.builder()
-                    .mobile(user.getMobile())
+                    .mobile(result.user().getMobile())
                     .purpose(az.fitnest.identity.constants.OtpPurpose.REACTIVATION)
                     .build();
             az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
@@ -65,36 +55,52 @@ public class AuthServiceImpl implements AuthService {
                     otpResponse.getOtpSessionId()
             );
         }
-        // Deny login if user is administratively locked
-        if (user.getStatus() == User.Status.LOCKED) {
-            throw new InvalidCredentialsException("Invalid credentials");
-        }
-        // If user was marked as NO_SESSIONS (no active sessions), continue with login and mark ACTIVE
-        if (user.getStatus() == User.Status.NO_SESSIONS) {
-            user.setStatus(User.Status.ACTIVE);
-            userRepository.save(user);
-        }
-        if (isAccountLocked(user)) {
-            throw new InvalidCredentialsException("Invalid credentials");
-        }
-        if (user.getPasswordHash() == null) {
-            throw new InvalidCredentialsException("Invalid credentials");
-        }
-        if (!passwordService.verifyPassword(request.getPassword(), user.getPasswordHash())) {
-            incrementFailedLoginAttempts(user);
-            throw new InvalidCredentialsException("Invalid credentials");
-        }
-        resetFailedLoginAttempts(user);
-        // Issue new tokens (no more logoutAll here)
-        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
+
+        // Enforce single device policy: logout all previous sessions before issuing new tokens
+        logoutAll(result.user().getId());
+
+        return tokenIssuanceService.issueTokens(result.user(), DeviceDetector.detectDeviceType());
     }
 
     @Transactional
-        @Override
+    public AuthenticationResult authenticate(String mobile, String password) {
+        User user = userRepository.findByMobileIncludingDeleted(mobile)
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+
+        if (user.isDeleted()) {
+            if (user.getPasswordHash() == null || !passwordService.verifyPassword(password, user.getPasswordHash())) {
+                incrementFailedLoginAttempts(user);
+                throw new InvalidCredentialsException("Invalid credentials");
+            }
+            return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
+        }
+
+        if (user.getStatus() == User.Status.LOCKED || isAccountLocked(user)) {
+            throw new InvalidCredentialsException("Invalid credentials");
+        }
+
+        if (user.getPasswordHash() == null || !passwordService.verifyPassword(password, user.getPasswordHash())) {
+            incrementFailedLoginAttempts(user);
+            throw new InvalidCredentialsException("Invalid credentials");
+        }
+
+        if (user.getStatus() == User.Status.NO_SESSIONS) {
+            user.setStatus(User.Status.ACTIVE);
+        }
+
+        resetFailedLoginAttempts(user);
+        userRepository.save(user);
+
+        return new AuthenticationResult(user, AuthenticationStatus.SUCCESS);
+    }
+
+    private record AuthenticationResult(User user, AuthenticationStatus status) {}
+    private enum AuthenticationStatus { SUCCESS, REACTIVATION_REQUIRED }
+
+    @Override
     public RefreshResponse refresh(String refreshToken) {
         Long userId;
         Instant expiration;
-        
         try {
             userId = jwtService.parseUserId(refreshToken);
             expiration = jwtService.parseExpiration(refreshToken);
@@ -106,43 +112,53 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid credentials");
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
-
-        if (user.isDeleted()) {
-            throw new UnauthorizedException("Invalid credentials");
-        }
-
-        // Prevent token refresh if user is locked
-        if (user.getStatus() == User.Status.LOCKED) {
-            throw new UnauthorizedException("Invalid credentials");
-        }
-
-        authTokenRepository.deleteByUserId(userId);
-        
-        String deviceType = DeviceDetector.detectDeviceType();
-        LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType); 
+        User user = internalRefresh(userId, refreshToken);
         
         return RefreshResponse.builder()
-                .accessToken(loginResponse.getAccessToken())
-                .refreshToken(loginResponse.getRefreshToken())
+                .accessToken(tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType()).getAccessToken())
+                .refreshToken(tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType()).getRefreshToken())
                 .build();
     }
 
     @Transactional
+    public User internalRefresh(Long userId, String refreshToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+
+        if (user.isDeleted() || user.getStatus() == User.Status.LOCKED) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
+
+        String refreshTokenHash = TokenHasher.hash(refreshToken);
+        az.fitnest.identity.entity.AuthToken authToken = authTokenRepository.findByRefreshTokenHash(refreshTokenHash);
+        
+        if (authToken == null || authToken.isRevoked() || (authToken.getRefreshExpiresAt() != null && authToken.getRefreshExpiresAt().isBefore(LocalDateTime.now()))) {
+             throw new UnauthorizedException("Invalid credentials");
+        }
+
+        authTokenRepository.deleteByRefreshTokenHash(refreshTokenHash);
+        return user;
+    }
+
     @Override
     public void logout(String accessToken) {
         Long userId = jwtService.parseUserId(accessToken);
         String jti = jwtService.parseJti(accessToken);
-        redisTokenService.revokeAccessToken(accessToken);
+        
+        redisTokenService.revokeAccessToken(jti);
         String activeJti = redisTokenService.getActiveSession(userId);
         if (jti.equals(activeJti)) {
             redisTokenService.removeActiveSession(userId);
         }
-        // Only delete the current token
-        authTokenRepository.deleteByAccessToken(accessToken);
-        // If user has no more tokens, set status to NO_SESSIONS
-        if (authTokenRepository.findByUserId(userId).isEmpty()) {
+        
+        internalLogout(userId, accessToken);
+    }
+
+    @Transactional
+    public void internalLogout(Long userId, String accessToken) {
+        authTokenRepository.deleteByAccessTokenHash(TokenHasher.hash(accessToken));
+        
+        if (!authTokenRepository.existsByUserId(userId)) {
             userRepository.findById(userId).ifPresent(u -> {
                 u.setStatus(User.Status.NO_SESSIONS);
                 userRepository.save(u);
@@ -150,19 +166,23 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    @Transactional
     @Override
     public void logoutAll(Long userId) {
-        // Remove session key in Redis (O(1))
+        String activeJti = redisTokenService.getActiveSession(userId);
+        if (activeJti != null) {
+            redisTokenService.revokeAccessToken(activeJti);
+        }
         redisTokenService.removeActiveSession(userId);
-        // Remove all tokens from DB in bulk (O(1))
+        internalLogoutAll(userId);
+    }
+
+    @Transactional
+    public void internalLogoutAll(Long userId) {
         authTokenRepository.deleteByUserId(userId);
-        // Mark user as having no active sessions
         userRepository.findById(userId).ifPresent(u -> {
             u.setStatus(User.Status.NO_SESSIONS);
             userRepository.save(u);
         });
-        // Optionally: Remove OTP session pointers if needed (not implemented here)
     }
 
     private void incrementFailedLoginAttempts(User user) {
@@ -188,13 +208,15 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private boolean isAccountLocked(User user) {
-        if (user.isAccountLocked()) {
+        if (user.getStatus() == User.Status.LOCKED) {
             return true;
         }
 
-        if (user.isAccountLocked()) {
-            LocalDateTime lockedUntil = user.getLockedUntil();
-            if (lockedUntil == null || !lockedUntil.isAfter(LocalDateTime.now())) {
+        LocalDateTime lockedUntil = user.getLockedUntil();
+        if (lockedUntil != null) {
+            if (lockedUntil.isAfter(LocalDateTime.now())) {
+                return true;
+            } else {
                 unlockAccount(user);
             }
         }

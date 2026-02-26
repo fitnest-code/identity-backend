@@ -79,7 +79,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private void revokeAllUserTokens(Long userId) {
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
         for (AuthToken token : tokens) {
-            redisTokenService.revokeAccessToken(token.getAccessToken());
+            if (token.getJti() != null) {
+                redisTokenService.revokeAccessToken(token.getJti());
+            }
         }
         authTokenRepository.deleteByUserId(userId);
         // mark user as having no active sessions

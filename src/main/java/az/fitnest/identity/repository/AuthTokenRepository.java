@@ -13,5 +13,12 @@ public interface AuthTokenRepository extends JpaRepository<AuthToken, Long> {
     
     List<AuthToken> findByUserId(Long userId);
 
-    long deleteByAccessToken(String accessToken);
+    boolean existsByUserId(Long userId);
+
+    long deleteByAccessTokenHash(String accessTokenHash);
+
+    AuthToken findByRefreshTokenHash(String refreshTokenHash);
+    AuthToken findByJti(String jti);
+    long deleteByRefreshTokenHash(String refreshTokenHash);
+    long deleteByJti(String jti);
 }
