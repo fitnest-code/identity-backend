@@ -97,7 +97,7 @@ public class RegistrationServiceTest {
         when(registrationTokenService.requireIdentifier("valid-token")).thenReturn("+994501234567");
         when(passwordService.hashPassword("password")).thenReturn("hashedPass");
         when(userService.createNewUser("John", "Doe", "hashedPass", "+994501234567")).thenReturn(new User());
-        when(tokenIssuanceService.issueTokens(any(User.class), any())).thenReturn(new LoginResponse());
+        when(tokenIssuanceService.issueTokens(any(User.class), anyString())).thenReturn(new LoginResponse());
 
         registrationService.completeRegistration(request);
         
