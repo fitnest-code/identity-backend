@@ -1,6 +1,5 @@
 package az.fitnest.identity.util;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +10,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-@Slf4j
 @Component
 public class TokenHasher {
 
@@ -31,7 +29,6 @@ public class TokenHasher {
             byte[] hash = mac.doFinal(token.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            log.error("Failed to hash token using HMAC-SHA256", e);
             throw new RuntimeException("Token hashing failed", e);
         }
     }

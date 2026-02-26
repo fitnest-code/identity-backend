@@ -6,7 +6,6 @@ import az.fitnest.notifications.grpc.SendHtmlEmailRequest;
 import az.fitnest.notifications.grpc.SendSimpleEmailRequest;
 import az.fitnest.notifications.grpc.SendSMSRequest;
 import az.fitnest.notifications.grpc.SendSMSResponse;
-import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -15,7 +14,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
-@Slf4j
 public class NotificationsGrpcClient {
 
     @GrpcClient("notifications-service")
@@ -37,12 +35,12 @@ public class NotificationsGrpcClient {
         try {
             SendSMSResponse response = withDeadline().sendSMS(request);
             if (!response.getSuccess()) {
-                log.warn("Failed to send SMS (non-blocking): {}", response.getErrorMessage());
+                // log.warn("Failed to send SMS (non-blocking): {}", response.getErrorMessage());
             } else {
-                log.info("SMS sent successfully to {}", to);
+                // log.info("SMS sent successfully to {}", to);
             }
         } catch (Exception e) {
-            log.warn("Failed to send SMS via gRPC (non-blocking). Using mock OTP '1111' logic. Error: {}", e.getMessage());
+            // log.warn("Failed to send SMS via gRPC (non-blocking). Using mock OTP '1111' logic. Error: {}", e.getMessage());
         }
     }
 
@@ -58,9 +56,7 @@ public class NotificationsGrpcClient {
             if (!response.getSuccess()) {
                 throw new RuntimeException("Failed to send email: " + response.getErrorMessage());
             }
-            log.info("Email sent successfully to {}", to);
         } catch (Exception e) {
-            log.error("Failed to send email via gRPC", e);
             throw new RuntimeException("Failed to send email via gRPC", e);
         }
     }
@@ -78,9 +74,7 @@ public class NotificationsGrpcClient {
             if (!response.getSuccess()) {
                 throw new RuntimeException("Failed to send HTML email: " + response.getErrorMessage());
             }
-            log.info("HTML Email sent successfully to {}", to);
         } catch (Exception e) {
-            log.error("Failed to send HTML email via gRPC", e);
             throw new RuntimeException("Failed to send HTML email via gRPC", e);
         }
     }
