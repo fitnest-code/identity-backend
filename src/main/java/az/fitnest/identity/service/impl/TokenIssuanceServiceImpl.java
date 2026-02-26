@@ -30,7 +30,8 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
 
     @Override
     public LoginResponse issueTokens(User user, String deviceType) {
-        String roleName = (user.getRole() != null) ? user.getRole().getName().name() : "ROLE_USER"; 
+        // Only one active session per user is allowed. Previous tokens are deleted and new session JTI is set.
+        String roleName = (user.getRole() != null) ? user.getRole().getName().name() : "ROLE_USER";
         List<String> roles = List.of(roleName);
 
         String accessToken = jwtService.generateAccessToken(user.getId(), roles);
@@ -45,6 +46,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         String jti = jwtService.parseJti(accessToken);
         redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
 
+        // Remove all previous tokens for this user (enforces single session)
         authTokenRepository.deleteByUserId(user.getId());
         saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
 

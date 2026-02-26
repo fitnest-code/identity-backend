@@ -54,49 +54,38 @@ public class AuthServiceImpl implements AuthService {
                 incrementFailedLoginAttempts(user);
                 throw new InvalidCredentialsException("Invalid credentials");
             }
-            
             // Trigger reactivation OTP
             az.fitnest.identity.dto.OtpSendRequest otpRequest = az.fitnest.identity.dto.OtpSendRequest.builder()
                     .mobile(user.getMobile())
                     .purpose(az.fitnest.identity.constants.OtpPurpose.REACTIVATION)
                     .build();
             az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
-            
             throw new az.fitnest.identity.exception.AccountDeactivatedException(
                     "Account is deactivated. Please verify with OTP to reactivate.",
                     otpResponse.getOtpSessionId()
             );
         }
-
         // Deny login if user is administratively locked
         if (user.getStatus() == User.Status.LOCKED) {
             throw new InvalidCredentialsException("Invalid credentials");
         }
-
         // If user was marked as NO_SESSIONS (no active sessions), continue with login and mark ACTIVE
         if (user.getStatus() == User.Status.NO_SESSIONS) {
             user.setStatus(User.Status.ACTIVE);
             userRepository.save(user);
         }
-
         if (isAccountLocked(user)) {
             throw new InvalidCredentialsException("Invalid credentials");
         }
-
         if (user.getPasswordHash() == null) {
             throw new InvalidCredentialsException("Invalid credentials");
         }
-
         if (!passwordService.verifyPassword(request.getPassword(), user.getPasswordHash())) {
             incrementFailedLoginAttempts(user);
             throw new InvalidCredentialsException("Invalid credentials");
         }
-
         resetFailedLoginAttempts(user);
-
-        // Log out from all other devices before issuing new tokens
-        logoutAll(user.getId());
-
+        // Issue new tokens (no more logoutAll here)
         return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
     }
 
@@ -164,14 +153,9 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     @Override
     public void logoutAll(Long userId) {
-        // Revoke all access tokens in Redis
-        var tokens = authTokenRepository.findByUserId(userId);
-        for (var token : tokens) {
-            redisTokenService.revokeAccessToken(token.getAccessToken());
-        }
-        // Remove session key in Redis
+        // Remove session key in Redis (O(1))
         redisTokenService.removeActiveSession(userId);
-        // Remove all tokens from DB
+        // Remove all tokens from DB in bulk (O(1))
         authTokenRepository.deleteByUserId(userId);
         // Mark user as having no active sessions
         userRepository.findById(userId).ifPresent(u -> {
