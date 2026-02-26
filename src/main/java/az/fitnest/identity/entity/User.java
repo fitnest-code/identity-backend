@@ -101,6 +101,9 @@ public class User extends BaseAuditableEntity {
     @Column(name = "status")
     private Status status = Status.ACTIVE;
 
+    @Column(name = "deletion_reason")
+    private String deletionReason;
+
     public boolean hasAccount() { return hasAccount; }
     public boolean isSetupRequired() { return setupRequired; }
     public boolean isAccountLocked() {

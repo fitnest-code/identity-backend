@@ -64,4 +64,8 @@ public class UserResponse {
     @JsonProperty("consent_required")
     @Schema(description = "Indicates if user consent is required for certain actions", example = "false")
     private boolean consentRequired;
+
+    @JsonProperty("deletion_reason")
+    @Schema(description = "Reason for user deletion", example = "User requested account deletion")
+    private String deletionReason;
 }

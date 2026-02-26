@@ -185,6 +185,7 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         // Soft-delete: set status to INACTIVE and persist
         user.setStatus(User.Status.INACTIVE);
+        user.setDeletionReason(reason);
         userRepository.save(user);
 
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);

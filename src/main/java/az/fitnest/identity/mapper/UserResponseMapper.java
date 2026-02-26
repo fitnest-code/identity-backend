@@ -27,6 +27,7 @@ public final class UserResponseMapper {
         response.setAccountLocked(user.isAccountLocked());
         response.setCreatedAt(user.getCreatedDate());
         response.setConsentRequired(consentRequired);
+        response.setDeletionReason(user.getDeletionReason());
         return response;
     }
 }
