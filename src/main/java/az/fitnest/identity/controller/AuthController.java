@@ -77,6 +77,15 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/logout/all")
+    @Operation(summary = "Logout from all sessions")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<Void> logoutAll() {
+        Long userId = az.fitnest.identity.criteria.UserContext.getRequiredUserId();
+        authService.logoutAll(userId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/register")
     @Operation(summary = "Initiate registration")
     public ResponseEntity<OtpSendResponse> register(@Valid @RequestBody RegisterRequest request) {

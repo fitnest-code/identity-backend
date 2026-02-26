@@ -94,6 +94,9 @@ public class AuthServiceImpl implements AuthService {
 
         resetFailedLoginAttempts(user);
 
+        // Log out from all other devices before issuing new tokens
+        logoutAll(user.getId());
+
         return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
     }
 
@@ -142,20 +145,40 @@ public class AuthServiceImpl implements AuthService {
     public void logout(String accessToken) {
         Long userId = jwtService.parseUserId(accessToken);
         String jti = jwtService.parseJti(accessToken);
-        
         redisTokenService.revokeAccessToken(accessToken);
-        
         String activeJti = redisTokenService.getActiveSession(userId);
         if (jti.equals(activeJti)) {
             redisTokenService.removeActiveSession(userId);
         }
-        
+        // Only delete the current token
+        authTokenRepository.deleteByAccessToken(accessToken);
+        // If user has no more tokens, set status to NO_SESSIONS
+        if (authTokenRepository.findByUserId(userId).isEmpty()) {
+            userRepository.findById(userId).ifPresent(u -> {
+                u.setStatus(User.Status.NO_SESSIONS);
+                userRepository.save(u);
+            });
+        }
+    }
+
+    @Transactional
+    @Override
+    public void logoutAll(Long userId) {
+        // Revoke all access tokens in Redis
+        var tokens = authTokenRepository.findByUserId(userId);
+        for (var token : tokens) {
+            redisTokenService.revokeAccessToken(token.getAccessToken());
+        }
+        // Remove session key in Redis
+        redisTokenService.removeActiveSession(userId);
+        // Remove all tokens from DB
         authTokenRepository.deleteByUserId(userId);
-        // mark as no active sessions
+        // Mark user as having no active sessions
         userRepository.findById(userId).ifPresent(u -> {
             u.setStatus(User.Status.NO_SESSIONS);
             userRepository.save(u);
         });
+        // Optionally: Remove OTP session pointers if needed (not implemented here)
     }
 
     private void incrementFailedLoginAttempts(User user) {

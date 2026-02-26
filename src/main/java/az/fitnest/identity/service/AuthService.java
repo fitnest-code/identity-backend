@@ -21,4 +21,5 @@ public interface AuthService {
     LoginResponse login(LoginRequest request);
     RefreshResponse refresh(String refreshToken);
     void logout(String accessToken);
+    void logoutAll(Long userId);
 }
