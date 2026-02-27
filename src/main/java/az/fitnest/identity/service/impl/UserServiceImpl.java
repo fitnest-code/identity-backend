@@ -216,7 +216,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword) {
         User user = getUserById(userId);
-        if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash())) {
+        if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash()).matches()) {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("Old password is incorrect");
         }
         if (!newPassword.equals(confirmNewPassword)) {

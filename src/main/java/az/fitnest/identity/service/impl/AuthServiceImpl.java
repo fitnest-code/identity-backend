@@ -1,5 +1,6 @@
 package az.fitnest.identity.service.impl;
 
+import az.fitnest.identity.dto.PasswordVerificationResult;
 import az.fitnest.identity.service.*;
 import az.fitnest.identity.util.TokenHasher;
 
@@ -78,7 +79,8 @@ public class AuthServiceImpl implements AuthService {
         Instant now = Instant.now();
 
         if (user.isDeleted()) {
-            if (user.getPasswordHash() == null || !passwordService.verifyPassword(password, user.getPasswordHash())) {
+            PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
+            if (user.getPasswordHash() == null || !verification.matches()) {
                 userRepository.incrementFailedLoginAttempts(user.getId());
                 throw new InvalidCredentialsException("Invalid credentials");
             }
@@ -89,9 +91,17 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("Invalid credentials");
         }
 
-        if (user.getPasswordHash() == null || !passwordService.verifyPassword(password, user.getPasswordHash())) {
+        PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
+        if (user.getPasswordHash() == null || !verification.matches()) {
             incrementFailedLoginAttempts(user.getId(), user.getFailedLoginAttempts(), now);
             throw new InvalidCredentialsException("Invalid credentials");
+        }
+
+        // Transparent hash upgrade during login
+        if (verification.upgradeRecommended()) {
+            String newHash = passwordService.hashPassword(password);
+            user.setPasswordHash(newHash);
+            userRepository.save(user);
         }
 
         if (user.getStatus() == User.Status.NO_SESSIONS) {

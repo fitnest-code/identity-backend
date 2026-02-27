@@ -215,6 +215,8 @@ otp:
     cooldown-seconds: ${OTP_RATE_LIMIT_COOLDOWN_SECONDS:60}
     min-cooldown-seconds: ${OTP_RATE_LIMIT_MIN_COOLDOWN_SECONDS:5}
     error-message-threshold-seconds: ${OTP_RATE_LIMIT_ERROR_MESSAGE_THRESHOLD_SECONDS:30}
+  key-builder:
+    pepper: ${OTP_KEY_BUILDER_PEPPER:change-me-in-production-pepper-123}
 
 # User Service
 user:
