@@ -20,18 +20,18 @@ RUN ./gradlew clean bootJar --no-build-cache --no-daemon
 # -----------------------------
 FROM eclipse-temurin:17-jre
 
+# Create non-root user
+RUN groupadd -g 1000 fitnest && \
+    useradd -u 1000 -g fitnest -m -s /bin/bash fitnest
+
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 
+# Ensure /tmp is writable for heap dumps
+RUN chown -R fitnest:fitnest /app /tmp
+USER fitnest
+
 EXPOSE 8080
 
-# ENTRYPOINT must start at column 0, JSON array items too
-ENTRYPOINT ["java", \
-"-XX:+UseContainerSupport", \
-"-XX:MaxRAMPercentage=75.0", \
-"-XX:InitialRAMPercentage=50.0", \
-"-XX:+UseG1GC", \
-"-XX:+AlwaysPreTouch", \
-"-XX:+ExitOnOutOfMemoryError", \
-"-jar", \
-"app.jar"]
+# Using simple exec form. JVM will pick up JAVA_TOOL_OPTIONS from environment.
+ENTRYPOINT ["java", "-jar", "app.jar"]
