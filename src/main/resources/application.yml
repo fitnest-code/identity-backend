@@ -264,7 +264,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,metrics,prometheus}
+        include: health,info,prometheus
       base-path: /actuator
       cors:
         allowed-origins: ${CORS_ALLOWED_ORIGINS:http://161.97.183.7,http://localhost}
@@ -385,3 +385,7 @@ grpc:
         client-private-key: ${GRPC_CLIENT_KEY:}
   notifications:
     deadline-ms: 10000
+
+eureka:
+  client:
+    enabled: false
