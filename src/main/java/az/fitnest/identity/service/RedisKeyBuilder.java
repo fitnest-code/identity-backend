@@ -12,6 +12,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.EnumMap;
+import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Map;
 
@@ -34,8 +35,11 @@ public final class RedisKeyBuilder {
     private final Map<OtpPurpose, String> purposePrefixes = new EnumMap<>(OtpPurpose.class);
     private final ThreadLocal<Mac> macThreadLocal = new ThreadLocal<>();
 
-    public RedisKeyBuilder(@Value("${otp.key-builder.pepper:change-me-in-production}") String pepper) {
-        this.pepper = pepper;
+    public record RedisKeys(String windowKey, String cooldownKey) {}
+
+    public RedisKeyBuilder(@Value("${otp.rate-limit.key-hmac-secret:#{null}}") String secret,
+                          @Value("${otp.key-builder.pepper:change-me-in-production}") String pepper) {
+        this.pepper = secret != null ? secret : pepper;
     }
 
     @PostConstruct
@@ -64,6 +68,17 @@ public final class RedisKeyBuilder {
     public String activeSessionKey(OtpPurpose purpose, String email) {
         validateInputs(purpose, email);
         return buildKey(PREFIX_OTP, VERSION, PREFIX_ACTIVE, purposePrefixes.get(purpose), hashEmail(email));
+    }
+
+    public RedisKeys rateLimitKeys(OtpPurpose purpose, String identifier) {
+        validateInputs(purpose, identifier);
+        // stable, non-PII identifier
+        String id = shortHmac(purpose.name() + "|" + identifier);
+        String tag = "{" + id + "}"; // same slot for Redis Cluster
+        return new RedisKeys(
+            PREFIX_OTP + SEPARATOR + PREFIX_RL + SEPARATOR + tag + ":w",
+            PREFIX_OTP + SEPARATOR + PREFIX_RL + SEPARATOR + tag + ":c"
+        );
     }
 
     public String rateLimitAttemptsKey(OtpPurpose purpose, String email) {
@@ -95,6 +110,17 @@ public final class RedisKeyBuilder {
         }
     }
 
+    private String shortHmac(String s) {
+        try {
+            Mac mac = getMac();
+            byte[] h = mac.doFinal(s.getBytes(StandardCharsets.UTF_8));
+            // 12 bytes => 24 hex chars (plenty for entropy, avoids long keys)
+            return HexFormat.of().formatHex(java.util.Arrays.copyOf(h, 12));
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to generate HMAC", e);
+        }
+    }
+
     private Mac getMac() throws NoSuchAlgorithmException, InvalidKeyException {
         Mac mac = macThreadLocal.get();
         if (mac == null) {
@@ -123,7 +149,7 @@ public final class RedisKeyBuilder {
         if (purpose == null) {
             throw new IllegalArgumentException("Purpose cannot be null");
         }
-        validateInput("email", email);
+        validateInput("email/identifier", email);
     }
 
     private void validateInput(String fieldName, String value) {

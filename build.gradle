@@ -63,6 +63,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.thymeleaf:thymeleaf:3.1.2.RELEASE'
 	implementation 'org.thymeleaf:thymeleaf-spring6:3.1.2.RELEASE'
+	implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

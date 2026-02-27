@@ -1,163 +1,170 @@
 package az.fitnest.identity.service.impl;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
 
 import az.fitnest.identity.constants.OtpPurpose;
-import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
+import az.fitnest.identity.service.RedisKeyBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class OtpRateLimiter {
-
     private final StringRedisTemplate redisTemplate;
     private final RedisKeyBuilder redisKeyBuilder;
+    private final OtpRateLimitProperties properties;
+    private final MeterRegistry meterRegistry;
+    private final PhoneNormalizer phoneNormalizer;
 
-    @Value("${otp.rate-limit.max-attempts}")
-    private int maxAttempts;
+    // Local shielding for rapid IP bursts (cost-effective rejection)
+    private final Cache<String, Long> localBurstShield;
 
-    @Value("${otp.rate-limit.window-minutes}")
-    @Getter
-    private int windowMinutes;
+    static final String RATE_LIMIT_SCRIPT_STRING = """
+        -- KEYS[1] = windowKey
+        -- KEYS[2] = cooldownKey
+        -- ARGV[1] = windowMs
+        -- ARGV[2] = cooldownMs
+        -- ARGV[3] = maxAttempts
 
-    @Value("${otp.rate-limit.cooldown-seconds}")
-    private int cooldownSeconds;
+        local windowKey = KEYS[1]
+        local cdKey     = KEYS[2]
+        local windowMs   = tonumber(ARGV[1])
+        local cooldownMs = tonumber(ARGV[2])
+        local maxA       = tonumber(ARGV[3])
 
-    public OtpRateLimiter(StringRedisTemplate redisTemplate, RedisKeyBuilder redisKeyBuilder) {
-        this.redisTemplate = redisTemplate;
-        this.redisKeyBuilder = redisKeyBuilder;
-    }
+        -- 1. Cooldown gate (cheap check)
+        if cooldownMs > 0 then
+            local cdTtl = redis.call('PTTL', cdKey)
+            if cdTtl > 0 then
+                return {0, math.floor((cdTtl + 999) / 1000)} -- denied, waitSec
+            end
+        end
 
-    private static final String RATE_LIMIT_SCRIPT_STRING =
-            "local attempts_key = KEYS[1] " +
-            "local last_attempt_key = KEYS[2] " +
-            "local current_time = tonumber(ARGV[1]) " +
-            "local window_millis = tonumber(ARGV[2]) " +
-            "local cooldown_millis = tonumber(ARGV[3]) " +
-            "local max_attempts = tonumber(ARGV[4]) " +
-            "local window_seconds = tonumber(ARGV[5]) " +
-            "local window_ago = current_time - window_millis " +
-            "local cooldown_ago = current_time - cooldown_millis " +
-            "redis.call('ZREMRANGEBYSCORE', attempts_key, 0, window_ago) " +
-            "redis.call('EXPIRE', attempts_key, window_seconds) " +
-            "local last_attempt = redis.call('GET', last_attempt_key) " +
-            "if last_attempt and tonumber(last_attempt) > cooldown_ago then " +
-            "    local wait_time = math.ceil((tonumber(last_attempt) + cooldown_millis - current_time) / 1000) " +
-            "    return {0, wait_time} " +
-            "end " +
-            "local attempt_count = redis.call('ZCARD', attempts_key) " +
-            "if attempt_count >= max_attempts then " +
-            "    local oldest = redis.call('ZRANGE', attempts_key, 0, 0, 'WITHSCORES') " +
-            "    if oldest and #oldest >= 2 then " +
-            "        local oldest_ts = tonumber(oldest[2]) " +
-            "        local wait_time = math.ceil((oldest_ts + window_millis - current_time) / 1000) " +
-            "        if wait_time < 1 then wait_time = 1 end " +
-            "        return {0, wait_time} " +
-            "    else " +
-            "        return {0, window_seconds} " +
-            "    end " +
-            "end " +
-            "redis.call('ZADD', attempts_key, current_time, tostring(current_time)) " +
-            "redis.call('SETEX', last_attempt_key, window_seconds, tostring(current_time)) " +
-            "return {1, 0}";
+        -- 2. Fixed window counter
+        local n = redis.call('INCR', windowKey)
+        if n == 1 then
+            redis.call('PEXPIRE', windowKey, windowMs)
+        end
 
-    private static final DefaultRedisScript<List> RATE_LIMIT_SCRIPT = new DefaultRedisScript<>(
-            RATE_LIMIT_SCRIPT_STRING,
-            List.class
+        if n > maxA then
+            local wTtl = redis.call('PTTL', windowKey)
+            if wTtl < 0 then wTtl = windowMs end -- safety fallback
+            return {0, math.floor((wTtl + 999) / 1000)} -- denied, waitSec
+        end
+
+        -- 3. Set/update cooldown
+        if cooldownMs > 0 then
+            redis.call('PSETEX', cdKey, cooldownMs, '1')
+        end
+
+        return {1, 0} -- allowed
+    """;
+
+    @SuppressWarnings("rawtypes")
+    static final DefaultRedisScript<java.util.List> RATE_LIMIT_SCRIPT = new DefaultRedisScript<>(
+        RATE_LIMIT_SCRIPT_STRING,
+        java.util.List.class
     );
 
-    public static class RateLimitResult {
-        private final boolean allowed;
-        private final long waitTimeSeconds;
-
-        public RateLimitResult(boolean allowed, long waitTimeSeconds) {
-            this.allowed = allowed;
-            this.waitTimeSeconds = waitTimeSeconds;
-        }
-
-        public boolean isAllowed() {
-            return allowed;
-        }
-
-        public long getWaitTimeSeconds() {
-            return waitTimeSeconds;
-        }
+    public OtpRateLimiter(StringRedisTemplate redisTemplate,
+                          RedisKeyBuilder redisKeyBuilder,
+                          OtpRateLimitProperties properties,
+                          MeterRegistry meterRegistry,
+                          PhoneNormalizer phoneNormalizer) {
+        this.redisTemplate = redisTemplate;
+        this.redisKeyBuilder = redisKeyBuilder;
+        this.properties = properties;
+        this.meterRegistry = meterRegistry;
+        this.phoneNormalizer = phoneNormalizer;
+        this.localBurstShield = Caffeine.newBuilder()
+            .maximumSize(5000)
+            .expireAfterWrite(2, TimeUnit.SECONDS)
+            .build();
     }
 
-    public RateLimitResult checkRateLimit(OtpPurpose purpose, String email) {
-        String attemptsKey = redisKeyBuilder.rateLimitAttemptsKey(purpose, email);
-        String lastAttemptKey = redisKeyBuilder.rateLimitLastAttemptKey(purpose, email);
+    public record RateLimitResult(boolean allowed, long waitTimeSeconds) {}
 
-        long currentTime = System.currentTimeMillis();
-        long windowMillis = windowMinutes * 60L * 1000L;
-        long cooldownMillis = cooldownSeconds * 1000L;
-        long windowSeconds = windowMinutes * 60L;
+    /**
+     * Dual-dimension limit: Phone + IP.
+     */
+    public RateLimitResult checkRateLimit(OtpPurpose purpose, String phoneNumber, String clientIp) {
+        if (purpose == null || phoneNumber == null || phoneNumber.isEmpty()) {
+            meterRegistry.counter("otp.ratelimit.invalid.input").increment();
+            return new RateLimitResult(false, properties.getWindowSeconds());
+        }
 
-        List<String> keys = Arrays.asList(attemptsKey, lastAttemptKey);
-        List<String> args = Arrays.asList(
-                String.valueOf(currentTime),
-                String.valueOf(windowMillis),
-                String.valueOf(cooldownMillis),
-                String.valueOf(maxAttempts),
-                String.valueOf(windowSeconds)
-        );
+        // 1. Local Burst Shield (IP-based, extremely cheap)
+        if (clientIp != null) {
+            String shieldKey = purpose.name() + ":" + clientIp;
+            Long count = localBurstShield.getIfPresent(shieldKey);
+            if (count != null && count > 5) { // Max 5 requests per 2 seconds per IP locally
+                meterRegistry.counter("otp.ratelimit.local.shield.denied").increment();
+                return new RateLimitResult(false, 30); // generic short delay
+            }
+            localBurstShield.put(shieldKey, count == null ? 1L : count + 1);
+        }
 
-        List<?> result;
+        String normalizedPhone = phoneNormalizer.normalizeAzerbaijanPhoneNumber(phoneNumber);
+        if (normalizedPhone == null) {
+            meterRegistry.counter("otp.ratelimit.invalid.phone").increment();
+            return new RateLimitResult(false, properties.getWindowSeconds());
+        }
+
+        // 2. Redis Limiting (Phone-based)
+        RateLimitResult phoneResult = checkRedisRateLimit("phone", purpose, normalizedPhone);
+        if (!phoneResult.allowed()) return phoneResult;
+
+        // 3. Redis Limiting (IP-based, if provided)
+        if (clientIp != null) {
+            RateLimitResult ipResult = checkRedisRateLimit("ip", purpose, clientIp);
+            if (!ipResult.allowed()) return ipResult;
+        }
+
+        return new RateLimitResult(true, 0);
+    }
+
+    public RateLimitResult checkRateLimit(OtpPurpose purpose, String phoneNumber) {
+        return checkRateLimit(purpose, phoneNumber, null);
+    }
+
+    private RateLimitResult checkRedisRateLimit(String dimension, OtpPurpose purpose, String identifier) {
+        RedisKeyBuilder.RedisKeys keys = redisKeyBuilder.rateLimitKeys(purpose, identifier);
+        long start = System.nanoTime();
         try {
-            result = redisTemplate.execute(RATE_LIMIT_SCRIPT, keys, args.toArray());
-        } catch (Exception e) {
-            throw new az.fitnest.identity.exception.InternalServerException(
-                "Failed to execute Redis script for checking OTP rate limit: " + e.getMessage()
+            @SuppressWarnings("unchecked")
+            java.util.List<Long> res = (java.util.List<Long>) redisTemplate.execute(
+                RATE_LIMIT_SCRIPT,
+                java.util.List.of(keys.windowKey(), keys.cooldownKey()),
+                String.valueOf(properties.getWindowMillis()),
+                String.valueOf(properties.getCooldownMillis()),
+                String.valueOf(properties.getMaxAttempts())
             );
-        }
 
-        if (result != null && result.size() >= 2) {
-            long allowed = convertToLong(result.get(0));
-            long waitTime = convertToLong(result.get(1));
-            return new RateLimitResult(allowed == 1L, waitTime);
-        }
+            meterRegistry.timer("otp.ratelimit.redis.latency", "dimension", dimension)
+                .record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
 
-        return new RateLimitResult(false, windowSeconds);
+            if (res == null || res.size() < 2) {
+                meterRegistry.counter("otp.ratelimit.redis.bad_response").increment();
+                return denyDefault();
+            }
+
+            boolean allowed = res.get(0) == 1L;
+            long waitSec = res.get(1);
+            meterRegistry.counter("otp.ratelimit.result", "allowed", Boolean.toString(allowed), "dimension", dimension).increment();
+            return new RateLimitResult(allowed, waitSec);
+
+        } catch (Exception e) {
+            meterRegistry.counter("otp.ratelimit.error", "dimension", dimension).increment();
+            org.slf4j.LoggerFactory.getLogger(OtpRateLimiter.class)
+                .error("Redis error during OTP {} rate limit check: {}", dimension, keys, e);
+            return properties.isFailOpen() ? new RateLimitResult(true, 0) : denyDefault();
+        }
     }
 
-    private long convertToLong(Object value) {
-        if (value == null) {
-            return 0L;
-        }
-
-        if (value instanceof Long) {
-            return (Long) value;
-        }
-
-        if (value instanceof Integer) {
-            return ((Integer) value).longValue();
-        }
-
-        if (value instanceof byte[]) {
-            try {
-                return Long.parseLong(new String((byte[]) value));
-            } catch (NumberFormatException e) {
-                return 0L;
-            }
-        }
-
-        if (value instanceof String) {
-            try {
-                return Long.parseLong((String) value);
-            } catch (NumberFormatException e) {
-                return 0L;
-            }
-        }
-
-        try {
-            return Long.parseLong(value.toString());
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
+    private RateLimitResult denyDefault() {
+        return new RateLimitResult(false, properties.getWindowSeconds());
     }
 }

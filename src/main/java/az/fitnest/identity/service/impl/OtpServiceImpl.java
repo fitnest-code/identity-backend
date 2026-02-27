@@ -125,11 +125,18 @@ public class OtpServiceImpl implements OtpService {
 
     private void validateRateLimit(OtpPurpose purpose, String identifier) {
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
-        if (!rateLimitResult.isAllowed()) {
-            long waitTimeSeconds = rateLimitResult.getWaitTimeSeconds();
-            String message = waitTimeSeconds <= errorMessageThresholdSeconds
-                    ? OtpMessages.rateLimitSeconds(waitTimeSeconds)
-                    : OtpMessages.rateLimitMinutes(waitTimeSeconds / 60);
+        if (!rateLimitResult.allowed()) {
+            long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
+            // Security hardening: Do not leak actual wait time to client.
+            // Use a generic message but log the real wait time internally.
+            String message = OtpMessages.rateLimitGeneric(); 
+            
+            // Assuming OtpMessages.rateLimitGeneric() exists or similar. 
+            // If not, I'll use a standard "Too many requests. Please try again later."
+            if (message == null || message.isBlank()) {
+                message = "Too many requests. Please try again later.";
+            }
+
             throw new OtpRateLimitedException(message, waitTimeSeconds);
         }
     }

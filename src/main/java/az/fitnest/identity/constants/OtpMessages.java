@@ -29,4 +29,8 @@ public final class OtpMessages {
     public static String rateLimitMinutes(long minutes) {
         return "Too many OTP requests. Please try again in " + minutes + " minutes.";
     }
+
+    public static String rateLimitGeneric() {
+        return "Too many requests. Please try again later.";
+    }
 }
