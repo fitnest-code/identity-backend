@@ -21,8 +21,8 @@ RUN ./gradlew clean bootJar --no-build-cache --no-daemon
 FROM eclipse-temurin:17-jre
 
 # Create non-root user
-RUN groupadd -g 1000 fitnest && \
-    useradd -u 1000 -g fitnest -m -s /bin/bash fitnest
+RUN groupadd -g 1001 fitnest && \
+    useradd -u 1001 -g fitnest -m -s /bin/bash fitnest
 
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
