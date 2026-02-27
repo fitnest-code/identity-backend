@@ -1,0 +1,21 @@
+   kubectl -n fitnest-dev get pod -o wide | grep kafka-0
+   dmesg | egrep -i 'conntrack|nf_conntrack|table full|dropp' | tail -n 50
+   sysctl net.netfilter.nf_conntrack_count net.netfilter.nf_conntrack_max
+   kubectl get pods -A
+   kubectl get svc -A
+   NS=fitnest-dev
+   NS=<your-namespace>
+   kubectl get sts,deploy,po,svc,ingress,cm,secret,pvc,pv -n $NS | egrep -i 'identity|idp|keycloak|postgres|mysql|mariadb|mongo|cassandra|redis'
+   kubectl get all -n $NS -l app=identity
+   kubectl get pvc -n $NS -l app=identity
+   NS=fitnest-dev
+   kubectl scale sts/postgresql-identity -n $NS --replicas=0
+   kubectl scale deploy/identity-service -n $NS --replicas=0
+   kubectl delete deploy/identity-service -n $NS
+   kubectl delete svc/identity-service -n $NS
+   kubectl delete sts/postgresql-identity -n $NS
+   kubectl delete svc/postgresql-identity -n $NS
+   kubectl delete secret/postgresql-identity-secret -n $NS
+   kubectl delete pvc/postgresql-identity-data-postgresql-identity-0 -n $NS
+   kubectl delete pv pvc-2d909341-e7d6-4b8a-b953-c7c8b91c4aac
+   kubectl get sts,po,svc,pvc -n $NS | egrep -i 'identity|postgresql-identity'
