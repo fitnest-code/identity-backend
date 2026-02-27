@@ -48,7 +48,7 @@ public class DataInitializer {
     }
 
     private void initAdminUser() {
-        String adminMobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize("0500000000");
+        String adminMobile = az.fitnest.identity.util.MobileNumberUtils.normalize("0500000000");
         Optional<User> adminOptional = userRepository.findFirstByMobile(adminMobile);
 
         if (adminOptional.isEmpty()) {
@@ -73,7 +73,7 @@ public class DataInitializer {
     }
 
     private void initSuperAdminUser() {
-        String superAdminMobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize("0510000000");
+        String superAdminMobile = az.fitnest.identity.util.MobileNumberUtils.normalize("0510000000");
         Optional<User> superAdminOptional = userRepository.findFirstByMobile(superAdminMobile);
 
         if (superAdminOptional.isEmpty()) {

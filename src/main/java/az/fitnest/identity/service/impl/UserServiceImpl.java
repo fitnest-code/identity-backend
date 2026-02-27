@@ -1,6 +1,6 @@
 package az.fitnest.identity.service.impl;
 
-import az.fitnest.identity.criteria.MobileNumberUtils;
+import az.fitnest.identity.util.MobileNumberUtils;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.entity.AuthToken;

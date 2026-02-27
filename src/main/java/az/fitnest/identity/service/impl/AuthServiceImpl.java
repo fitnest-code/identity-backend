@@ -45,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        String mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(request.getMobile());
+        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getMobile());
         AuthenticationResult result = authenticate(mobile, request.getPassword());
 
         if (result.status() == AuthenticationStatus.REACTIVATION_REQUIRED) {

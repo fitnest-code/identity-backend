@@ -34,28 +34,6 @@ public class PhoneNormalizer {
     }
 
     private String doNormalize(String s) {
-        StringBuilder sb = new StringBuilder(s.length());
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c >= '0' && c <= '9') sb.append(c);
-        }
-        String digits = sb.toString();
-
-        String result = null;
-        if (digits.startsWith("994") && digits.length() == 12) {
-            result = "+" + digits;
-        } else if (digits.startsWith("0") && digits.length() == 10) {
-            result = "+994" + digits.substring(1);
-        } else if (digits.length() == 9) {
-            result = "+994" + digits;
-        }
-
-        if (result != null && result.length() == 13) {
-            String operator = result.substring(4, 6);
-            if (VALID_OPERATORS.contains(operator)) {
-                return result;
-            }
-        }
-        return null;
+        return az.fitnest.identity.util.MobileNumberUtils.normalize(s);
     }
 }

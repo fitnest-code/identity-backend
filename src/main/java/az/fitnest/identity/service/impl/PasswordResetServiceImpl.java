@@ -43,7 +43,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             return OtpSendResponse.builder().message("If the number exists, OTP sent").build();
         }
         String rawMobile = request.getMobile();
-        String mobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize(rawMobile);
+        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
         OtpSendRequest otpRequest = OtpSendRequest.builder()
                 .mobile(mobile)
                 .purpose(OtpPurpose.PASSWORD_RESET)

@@ -1,4 +1,4 @@
-package az.fitnest.identity.criteria;
+package az.fitnest.identity.util;
 
 public class MobileNumberUtils {
 
@@ -7,18 +7,28 @@ public class MobileNumberUtils {
     }
 
     public static String normalize(String mobile) {
-        if (mobile == null) {
+        if (mobile == null || mobile.isBlank()) {
             return null;
         }
-        // If already starts with +994, assume it's normalized (legacy support/safety)
-        if (mobile.startsWith("+994")) {
-            return mobile;
+
+        // 1. Remove all non-digit characters
+        String digits = mobile.replaceAll("\\D", "");
+
+        // 2. Handle different cases to normalize to 994XXXXXXXXX
+        String normalizedDigits;
+        if (digits.startsWith("994") && digits.length() == 12) {
+            normalizedDigits = digits;
+        } else if (digits.startsWith("0") && digits.length() == 10) {
+            normalizedDigits = "994" + digits.substring(1);
+        } else if (digits.length() == 9) {
+            normalizedDigits = "994" + digits;
+        } else {
+            // Unrecognized format, return as is or null. 
+            // Better to return null to fail validation if it doesn't match Azerbaijan pattern.
+            return null;
         }
-        // If starts with 0 (e.g., 050...), remove 0 and prepend +994
-        if (mobile.startsWith("0")) {
-            return "+994" + mobile.substring(1);
-        }
-        // Fallback: prepend +994 if it looks like a raw number (50xxxxxxx)
-        return "+994" + mobile;
+
+        // 3. Prepend +
+        return "+" + normalizedDigits;
     }
 }
