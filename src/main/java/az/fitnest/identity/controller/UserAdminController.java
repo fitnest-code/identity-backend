@@ -1,6 +1,5 @@
 package az.fitnest.identity.controller;
 
-import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.dto.PaginatedResponse;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.entity.User;
@@ -58,7 +57,7 @@ public class UserAdminController {
     })
     public ResponseEntity<UserResponse> changeUserRole(
             @PathVariable Long userId,
-            @RequestParam RoleName roleName) {
+            @RequestParam String roleName) {
         User user = userService.updateUserRole(userId, roleName);
         return ResponseEntity.ok(UserResponseMapper.toResponse(user));
     }

@@ -1,6 +1,5 @@
 package az.fitnest.identity.service;
 
-import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
 import az.fitnest.identity.entity.AuthToken;
 import az.fitnest.identity.entity.Role;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface UserService {
-    User updateUserRole(Long userId, RoleName roleName);
+    User updateUserRole(Long userId, String roleName);
     User getUserById(Long userId);
     Page<User> getAllUsers(Pageable pageable);
     User createNewUser(String firstName, String lastName, String passwordHash, String mobile);
@@ -34,4 +33,5 @@ public interface UserService {
     void deactivateAccount(Long userId);
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
     Page<az.fitnest.identity.dto.UserResponse> getAllUsersMapped(int page, int size);
+    void deleteAllUsers();
 }

@@ -1,6 +1,5 @@
 package az.fitnest.identity.entity;
 
-import az.fitnest.identity.constants.RoleName;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,7 +16,6 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
     @Column(length = 20, unique = true)
-    private RoleName name;
+    private String name;
 }

@@ -32,7 +32,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
 
     @Override
     public LoginResponse issueTokens(User user, String deviceType) {
-        String roleName = (user.getRole() != null) ? user.getRole().getName().name() : "ROLE_USER";
+        String roleName = (user.getRole() != null) ? user.getRole().getName() : "ROLE_USER";
         List<String> roles = List.of(roleName);
 
         String accessToken = jwtService.generateAccessToken(user.getId(), roles);

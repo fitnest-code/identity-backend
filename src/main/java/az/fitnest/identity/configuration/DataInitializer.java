@@ -3,7 +3,6 @@ package az.fitnest.identity.configuration;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.entity.Role;
 import az.fitnest.identity.entity.User;
 import org.springframework.boot.CommandLineRunner;
@@ -30,15 +29,17 @@ public class DataInitializer {
         return args -> {
             initRoles();
             initAdminUser();
+            initSuperAdminUser();
         };
     }
 
     private void initRoles() {
-        createRoleIfNotFound(RoleName.ROLE_USER);
-        createRoleIfNotFound(RoleName.ROLE_ADMIN);
+        createRoleIfNotFound("ROLE_USER");
+        createRoleIfNotFound("ROLE_ADMIN");
+        createRoleIfNotFound("ROLE_SUPER_ADMIN");
     }
 
-    private void createRoleIfNotFound(RoleName roleName) {
+    private void createRoleIfNotFound(String roleName) {
         if (roleRepository.findByName(roleName).isEmpty()) {
             Role role = new Role();
             role.setName(roleName);
@@ -51,10 +52,10 @@ public class DataInitializer {
         Optional<User> adminOptional = userRepository.findFirstByMobile(adminMobile);
 
         if (adminOptional.isEmpty()) {
-            Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
+            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
                     .orElseGet(() -> {
                         Role newAdminRole = new Role();
-                        newAdminRole.setName(RoleName.ROLE_ADMIN);
+                        newAdminRole.setName("ROLE_ADMIN");
                         return roleRepository.save(newAdminRole);
                     });
             
@@ -68,6 +69,31 @@ public class DataInitializer {
             admin.setRole(adminRole);
 
             userRepository.save(admin);
+        }
+    }
+
+    private void initSuperAdminUser() {
+        String superAdminMobile = az.fitnest.identity.criteria.MobileNumberUtils.normalize("0510000000");
+        Optional<User> superAdminOptional = userRepository.findFirstByMobile(superAdminMobile);
+
+        if (superAdminOptional.isEmpty()) {
+            Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN")
+                    .orElseGet(() -> {
+                        Role newRole = new Role();
+                        newRole.setName("ROLE_SUPER_ADMIN");
+                        return roleRepository.save(newRole);
+                    });
+
+            User superAdmin = new User();
+            superAdmin.setFirstName("Super");
+            superAdmin.setLastName("Admin");
+            superAdmin.setMobile(superAdminMobile);
+            superAdmin.setPasswordHash(passwordService.hashPassword("SuperAdmin123!"));
+            superAdmin.setHasAccount(true);
+            superAdmin.setSetupRequired(false);
+            superAdmin.setRole(superAdminRole);
+
+            userRepository.save(superAdmin);
         }
     }
 }

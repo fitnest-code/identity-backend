@@ -8,7 +8,6 @@ import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.*;
 import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.criteria.UserContext;
-import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.exception.UnauthorizedException;
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,6 +1,5 @@
 package az.fitnest.identity.service.impl;
 
-import az.fitnest.identity.constants.RoleName;
 import az.fitnest.identity.criteria.MobileNumberUtils;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
 import az.fitnest.identity.dto.UserResponse;
@@ -48,7 +47,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
         @Override
-    public User updateUserRole(Long userId, RoleName roleName) {
+    public User updateUserRole(Long userId, String roleName) {
         User user = getUserById(userId);
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleName));
@@ -99,7 +98,7 @@ public class UserServiceImpl implements UserService {
                 .setupRequired(true)
                 .failedLoginAttempts(0)
                 .status(User.Status.ACTIVE)
-                .role(roleRepository.findByName(RoleName.ROLE_USER).orElse(null))
+                .role(roleRepository.findByName("ROLE_USER").orElse(null))
                 .build();
 
         return userRepository.save(user);
@@ -199,7 +198,18 @@ public class UserServiceImpl implements UserService {
             }
         }
         authTokenRepository.deleteByUserId(userId);
+    }
 
+    @Transactional
+    @Override
+    public void deleteAllUsers() {
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            if (user.getRole() != null && "ROLE_SUPER_ADMIN".equals(user.getRole().getName())) {
+                continue;
+            }
+            deleteUser(user.getId(), "Super Admin Cleanup");
+        }
     }
 
     @Transactional
