@@ -63,7 +63,7 @@ public class RegistrationServiceTest {
         RegisterRequest request = new RegisterRequest();
         request.setMobile("0501234567");
         
-        when(userRepository.findByMobileIncludingDeleted("+994501234567")).thenReturn(Optional.empty());
+        when(userRepository.findFirstByMobile("+994501234567")).thenReturn(Optional.empty());
         
         registrationService.startRegistration(request);
         
@@ -81,7 +81,7 @@ public class RegistrationServiceTest {
         RegisterRequest request = new RegisterRequest();
         request.setMobile("0501234567");
         
-        when(userRepository.findByMobileIncludingDeleted("+994501234567")).thenReturn(Optional.of(new User()));
+        when(userRepository.findFirstByMobile("+994501234567")).thenReturn(Optional.of(new User()));
         
         assertThrows(ConflictException.class, () -> registrationService.startRegistration(request));
     }
@@ -97,7 +97,7 @@ public class RegistrationServiceTest {
         when(registrationTokenService.requireIdentifier("valid-token")).thenReturn("+994501234567");
         when(passwordService.hashPassword("password")).thenReturn("hashedPass");
         when(userService.createNewUser("John", "Doe", "hashedPass", "+994501234567")).thenReturn(new User());
-        when(tokenIssuanceService.issueTokens(any(User.class), anyString())).thenReturn(new LoginResponse());
+        when(tokenIssuanceService.issueTokens(any(User.class), any())).thenReturn(new LoginResponse());
 
         registrationService.completeRegistration(request);
         
