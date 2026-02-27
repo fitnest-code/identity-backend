@@ -65,6 +65,8 @@ dependencies {
 	implementation 'org.thymeleaf:thymeleaf-spring6:3.1.2.RELEASE'
 	implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 	implementation 'org.bouncycastle:bcprov-jdk18on:1.78'
+	implementation 'org.bouncycastle:bcpkix-jdk18on:1.78'
+	implementation 'org.bouncycastle:bcutil-jdk18on:1.78'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
