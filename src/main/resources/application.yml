@@ -273,7 +273,7 @@ management:
     health:
       show-details: ${MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS:when-authorized}
       probes:
-        enabled: ${MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED:true}
+        enabled: ${MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED:false}
     metrics:
       enabled: true
     prometheus:
