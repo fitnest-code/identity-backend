@@ -10,7 +10,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-@Component
 public class RedisKeyBuilder {
 
     private static final String PREFIX = "otp";
