@@ -13,7 +13,7 @@ public class UpdateUserProfileRequest {
     @JsonProperty("last_name")
     private String lastName;
 
-    @Email(message = "Email must be valid")
+    @Email(message = "Email düzgün deyil")
     private String email;
 
 }

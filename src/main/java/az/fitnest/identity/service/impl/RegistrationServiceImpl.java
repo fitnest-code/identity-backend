@@ -34,9 +34,6 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Override
     public OtpSendResponse startRegistration(RegisterRequest request) {
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getMobile());
-        if (userRepository.findFirstByMobile(mobile).isPresent()) {
-            throw new ConflictException("Mobile number already registered");
-        }
         
         OtpSendRequest otpRequest = OtpSendRequest.builder()
                 .mobile(mobile)

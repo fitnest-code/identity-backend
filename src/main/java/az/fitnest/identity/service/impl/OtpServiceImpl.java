@@ -82,7 +82,7 @@ public class OtpServiceImpl implements OtpService {
         String mobileNumber = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
 
         if (mobileNumber == null) {
-            throw new IllegalArgumentException("Mobile number must be provided");
+            throw new IllegalArgumentException("Mobil nömrə təqdim edilməlidir");
         }
 
         OtpPurpose purpose = request.getPurpose();
@@ -271,7 +271,7 @@ public class OtpServiceImpl implements OtpService {
                     .build();
         } else if (verificationResult.getPurpose() == OtpPurpose.REACTIVATION) {
             az.fitnest.identity.entity.User user = userRepository.findFirstByMobile(identifier)
-                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("User not found"));
+                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("İstifadəçi tapılmadı"));
 
             user.setStatus(az.fitnest.identity.entity.User.Status.ACTIVE);
             userRepository.save(user);
@@ -287,7 +287,7 @@ public class OtpServiceImpl implements OtpService {
                     .user(loginResponse.getUser())
                     .build();
         } else {
-            throw new InvalidCredentialsException("Invalid OTP purpose");
+            throw new InvalidCredentialsException("Yanlış OTP təyinatı");
         }
     }
 

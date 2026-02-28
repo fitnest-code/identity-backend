@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
     public User updateUserRole(Long userId, String roleName) {
         User user = getUserById(userId);
         Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleName));
+                .orElseThrow(() -> new ResourceNotFoundException("Rol tapılmadı: " + roleName));
         
         user.setRole(role);
         
@@ -86,7 +86,7 @@ public class UserServiceImpl implements UserService {
     private User createNewUserInternal(String firstName, String lastName, String passwordHash, String mobile) {
         mobile = MobileNumberUtils.normalize(mobile);
         if (mobile != null && userRepository.findFirstByMobile(mobile).isPresent()) {
-            throw new ConflictException("Mobile number already registered");
+            throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
         }
 
         User user = User.builder()
@@ -217,10 +217,10 @@ public class UserServiceImpl implements UserService {
     public void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword) {
         User user = getUserById(userId);
         if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash()).matches()) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("Old password is incorrect");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("Köhnə şifrə yanlışdır");
         }
         if (!newPassword.equals(confirmNewPassword)) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("New passwords do not match");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("Yeni şifrələr uyğun gəlmir");
         }
         user.setPasswordHash(passwordService.hashPassword(newPassword));
         userRepository.save(user);
@@ -228,7 +228,7 @@ public class UserServiceImpl implements UserService {
 
     private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı"));
     }
 
     private NameParts resolveNameParts(String firstName, String lastName, String fullName) {

@@ -103,7 +103,7 @@ public class GlobalExceptionHandler {
 
         ApiResponse body = wrap(
                 "VALIDATION_ERROR",
-                "Validation failed",
+                "Validasiya xətası",
                 HttpStatus.BAD_REQUEST,
                 request.getRequestURI(),
                 details
@@ -130,7 +130,7 @@ public class GlobalExceptionHandler {
 
         ApiResponse body = wrap(
                 "VALIDATION_ERROR",
-                "Validation failed",
+                "Validasiya xətası",
                 HttpStatus.BAD_REQUEST,
                 request.getRequestURI(),
                 details
@@ -147,7 +147,7 @@ public class GlobalExceptionHandler {
     ) {
         ApiResponse body = wrap(
                 "INVALID_ARGUMENT",
-                "Invalid request data",
+                "Yanlış sorğu məlumatı",
                 HttpStatus.BAD_REQUEST,
                 request.getRequestURI(),
                 null
@@ -165,13 +165,13 @@ public class GlobalExceptionHandler {
         // Do NOT leak raw parser message to clients by default.
         // But we can provide a safe hint for common cases.
         String root = rootMessage(exception);
-        String userMessage = "Invalid request format (malformed JSON).";
+        String userMessage = "Yanlış sorğu formatı (JSON xətası).";
 
         Map<String, Object> details = null;
         if (root != null && root.toLowerCase(Locale.ROOT).contains("cannot deserialize")) {
-            userMessage = "Invalid request format (type mismatch).";
+            userMessage = "Yanlış sorğu formatı (tip uyğunsuzluğu).";
         } else if (root != null && root.toLowerCase(Locale.ROOT).contains("unexpected character")) {
-            userMessage = "Invalid request format (malformed JSON).";
+            userMessage = "Yanlış sorğu formatı (JSON xətası).";
         }
 
         // If you *want* a safe detail field, include a generic hint, not raw stack info.
@@ -252,7 +252,7 @@ public class GlobalExceptionHandler {
     ) {
         ApiResponse body = wrap(
                 "INTERNAL_SERVER_ERROR",
-                "Internal server error",
+                "Daxili server xətası",
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 request.getRequestURI(),
                 null
@@ -290,6 +290,6 @@ public class GlobalExceptionHandler {
     }
 
     private String safeMessage(String msg) {
-        return (msg == null || msg.isBlank()) ? "Unexpected error" : msg;
+        return (msg == null || msg.isBlank()) ? "Gözlənilməz xəta" : msg;
     }
 }

@@ -37,10 +37,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public OtpSendResponse forgotPassword(ForgotPasswordRequest request) {
-        // Early validation
         if (request == null || !StringUtils.hasText(request.getMobile())) {
-            // Always respond with generic message to avoid user enumeration
-            return OtpSendResponse.builder().message("If the number exists, OTP sent").build();
+            return OtpSendResponse.builder().message(OtpMessages.OTP_SENT_IF_EXISTS).build();
         }
         String rawMobile = request.getMobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
@@ -48,9 +46,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 .mobile(mobile)
                 .purpose(OtpPurpose.PASSWORD_RESET)
                 .build();
-        // Send OTP, but always return generic response
-        otpService.sendOtp(otpRequest);
-        return OtpSendResponse.builder().message("If the number exists, OTP sent").build();
+        return otpService.sendOtp(otpRequest);
     }
 
     @Override
@@ -59,26 +55,26 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         // Early validation
         if (request == null || !StringUtils.hasText(request.getResetToken()) ||
             !StringUtils.hasText(request.getNewPassword()) || !StringUtils.hasText(request.getConfirmPassword())) {
-            throw new az.fitnest.identity.exception.ValidationException("Invalid request parameters", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("Yanlış sorğu parametrləri", "VALIDATION_ERROR");
         }
         // Password policy: min length, complexity, breached-password check (pseudo-code)
         String newPassword = request.getNewPassword();
         if (newPassword.length() < 8) {
-            throw new az.fitnest.identity.exception.ValidationException("Password must be at least 8 characters", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("Şifrə ən azı 8 simvoldan ibarət olmalıdır", "VALIDATION_ERROR");
         }
         // Add complexity and breached-password checks as needed
         if (!newPassword.equals(request.getConfirmPassword())) {
-            throw new az.fitnest.identity.exception.ValidationException("Passwords do not match", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("Şifrələr uyğun gəlmir", "VALIDATION_ERROR");
         }
         String identifier = resetPasswordTokenService.requireIdentifier(request.getResetToken());
         User user = userRepository.findFirstByMobile(identifier)
-                .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("Yanlış məlumatlar"));
         if (user.isDeleted()) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("Invalid credentials");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("Yanlış məlumatlar");
         }
         // Optional: reject if newPassword equals old password
         if (passwordService.verifyPassword(newPassword, user.getPasswordHash()).matches()) {
-            throw new az.fitnest.identity.exception.ValidationException("New password must differ from old password", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("Yeni şifrə köhnə şifrədən fərqli olmalıdır", "VALIDATION_ERROR");
         }
         // Hash and set password
         String passwordHash = passwordService.hashPassword(newPassword);
@@ -90,7 +86,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         // TransactionSynchronizationManager.registerSynchronization(new RedisRevocationEvent(user.getId()));
         revokeAllUserTokens(user.getId());
         return ResetPasswordResponse.builder()
-                .message("Password has been reset successfully.")
+                .message("Şifrə uğurla sıfırlandı.")
                 .build();
     }
 

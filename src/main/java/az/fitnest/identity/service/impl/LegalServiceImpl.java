@@ -41,16 +41,13 @@ public class LegalServiceImpl implements LegalService {
         String normalizedLang = normalizeLanguage(lang);
         
         // Fallback to EN if requested lang not found, or just return empty if nothing exists
-        LegalDocument doc = legalDocumentRepository
-                .findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
-                .or(() -> legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, "EN"))
-                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
         return LegalDocumentResponse.builder()
                 .document(LegalDocumentResponse.DocumentData.builder()
                         .type(type.name().toLowerCase())
                         .version(doc.getVersion())
-                        .title(type == LegalDocumentType.PRIVACY_POLICY ? "Privacy Policy" : "Terms of Use")
+                        .title(type == LegalDocumentType.PRIVACY_POLICY ? "Məxfilik Siyasəti" : "İstifadə Qaydaları")
                         .content(doc.getContent())
                         .updatedAt(doc.getPublishedAt())
                         .build())
@@ -61,7 +58,7 @@ public class LegalServiceImpl implements LegalService {
         @Override
     public void createDocument(CreateLegalDocumentRequest request) {
         if (legalDocumentRepository.existsByTypeAndVersion(request.getType(), request.getVersion())) {
-             throw new az.fitnest.identity.exception.ConflictException("Document version already exists");
+             throw new az.fitnest.identity.exception.ConflictException("Sənəd versiyası artıq mövcuddur");
         }
 
         String normalizedLang = normalizeLanguage(request.getLanguage());
@@ -95,23 +92,7 @@ public class LegalServiceImpl implements LegalService {
         boolean termsExistsAndActive = legalDocumentRepository.existsByTypeAndVersionAndIsActiveTrue(LegalDocumentType.TERMS_OF_USE, request.getTermsVersion());
 
         if (!privacyExistsAndActive || !termsExistsAndActive) {
-            // Use ValidationException as requested
-            // We need to construct a BindingResult ideally, but ValidationException constructor might be limited.
-            // Assuming we can pass a message, or if strictly needed, we might need a workaround.
-            // Given existing ValidationException takes BindingResult, we might need to mock or reuse another exception
-            // that maps to 400. Or check if there is a simpler constructor.
-            // Re-checking ValidationException... it takes BindingResult.
-            // If we strictly need "VALIDATION_ERROR" code, we might need to adjust exception usage or add a constructor.
-            // For now, let's use a simpler approach if possible or create a dummy BindingResult?
-            // Actually, let's check validation exception again.
-            // It extends BaseException(message, status, code).
-            // We can probably subclass or add a constructor.
-            // For now, let's throw a custom exception that extends BaseException or similar if possible.
-            // But user asked for ValidationException to allow "INVALID_CONSENT_VERSION".
-            // Let's assume we can add a connector to ValidationException or use a similar one.
-            // Wait, I can see ValidationException file content earlier. It ONLY has constructor with BindingResult.
-            // I should add a constructor to ValidationException first to allow string message.
-            throw new ValidationException("Invalid consent version", "INVALID_CONSENT_VERSION"); 
+            throw new ValidationException("Yanlış razılıq versiyası", "INVALID_CONSENT_VERSION"); 
         }
 
         // Idempotency check
@@ -222,10 +203,9 @@ public class LegalServiceImpl implements LegalService {
         return docs.stream().map(this::toAdminResponse).collect(Collectors.toList());
     }
 
-    @Override
     public AdminLegalDocumentResponse getDocumentById(Long id) {
         LegalDocument doc = legalDocumentRepository.findById(id)
-                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
         return toAdminResponse(doc);
     }
 
@@ -233,7 +213,7 @@ public class LegalServiceImpl implements LegalService {
     @Override
     public AdminLegalDocumentResponse updateDocument(Long id, UpdateLegalDocumentRequest request) {
         LegalDocument doc = legalDocumentRepository.findById(id)
-                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
         if (request.getVersion() != null && !request.getVersion().isBlank()) {
             doc.setVersion(request.getVersion());
@@ -253,7 +233,7 @@ public class LegalServiceImpl implements LegalService {
     @Override
     public void deleteDocument(Long id) {
         if (!legalDocumentRepository.existsById(id)) {
-            throw new az.fitnest.identity.exception.ResourceNotFoundException("Document not found");
+            throw new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı");
         }
         legalDocumentRepository.deleteById(id);
     }
@@ -262,7 +242,7 @@ public class LegalServiceImpl implements LegalService {
     @Override
     public void activateDocument(Long id) {
         LegalDocument doc = legalDocumentRepository.findById(id)
-                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
         // Deactivate all other documents of the same type and language
         var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(doc.getType(), doc.getLanguage());
@@ -278,7 +258,7 @@ public class LegalServiceImpl implements LegalService {
     @Override
     public void deactivateDocument(Long id) {
         LegalDocument doc = legalDocumentRepository.findById(id)
-                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Document not found"));
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
         doc.setActive(false);
         legalDocumentRepository.save(doc);

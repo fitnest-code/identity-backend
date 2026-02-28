@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
                     .build();
             az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
             throw new az.fitnest.identity.exception.AccountDeactivatedException(
-                    "Account is deactivated. Please verify with OTP to reactivate.",
+                    "Giriş üçün əlavə təsdiqləmə tələb olunur. Təhlükəsizlik kodunu daxil edin.",
                     otpResponse.getOtpSessionId()
             );
         }
@@ -74,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthenticationResult authenticate(String mobile, String password) {
         User user = userRepository.findFirstByMobile(mobile)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("Yanlış giriş məlumatları"));
 
         Instant now = Instant.now();
 
@@ -82,19 +82,19 @@ public class AuthServiceImpl implements AuthService {
             PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
             if (user.getPasswordHash() == null || !verification.matches()) {
                 userRepository.incrementFailedLoginAttempts(user.getId());
-                throw new InvalidCredentialsException("Invalid credentials");
+                throw new InvalidCredentialsException("Yanlış giriş məlumatları");
             }
             return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
         }
 
         if (isAccountLocked(user, now)) {
-            throw new InvalidCredentialsException("Invalid credentials");
+            throw new InvalidCredentialsException("Yanlış giriş məlumatları");
         }
 
         PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
         if (user.getPasswordHash() == null || !verification.matches()) {
             incrementFailedLoginAttempts(user.getId(), user.getFailedLoginAttempts(), now);
-            throw new InvalidCredentialsException("Invalid credentials");
+            throw new InvalidCredentialsException("Yanlış giriş məlumatları");
         }
 
         // Transparent hash upgrade during login
@@ -131,11 +131,11 @@ public class AuthServiceImpl implements AuthService {
             userId = jwtService.parseUserId(refreshToken, "refresh");
             expiration = jwtService.parseExpiration(refreshToken);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new UnauthorizedException("Invalid credentials");
+            throw new UnauthorizedException("Yanlış giriş məlumatları");
         }
 
         if (expiration.isBefore(Instant.now())) {
-            throw new UnauthorizedException("Invalid credentials");
+            throw new UnauthorizedException("Yanlış giriş məlumatları");
         }
 
         User user = internalRefresh(userId, refreshToken);
@@ -150,18 +150,18 @@ public class AuthServiceImpl implements AuthService {
 
     private User internalRefresh(Long userId, String refreshToken) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException("Yanlış giriş məlumatları"));
 
         Instant now = Instant.now();
         if (user.isDeleted() || user.isAccountLocked()) {
-            throw new UnauthorizedException("Invalid credentials");
+            throw new UnauthorizedException("Yanlış giriş məlumatları");
         }
 
         String refreshTokenHash = tokenHasher.hash(refreshToken);
         int consumed = authTokenRepository.consumeRefreshToken(userId, refreshTokenHash, now);
         
         if (consumed == 0) {
-             throw new UnauthorizedException("Invalid credentials");
+             throw new UnauthorizedException("Yanlış giriş məlumatları");
         }
 
         return user;

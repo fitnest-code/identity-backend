@@ -7,13 +7,13 @@ import lombok.Data;
 @Data
 public class ResetPasswordRequest {
     
-    @NotBlank(message = "Reset token is required")
+    @NotBlank(message = "Sıfırlama tokeni tələb olunur")
     private String resetToken;
     
-    @NotBlank(message = "New password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
+    @NotBlank(message = "Yeni şifrə tələb olunur")
+    @Size(min = 8, message = "Şifrə ən azı 8 simvoldan ibarət olmalıdır")
     private String newPassword;
 
-    @NotBlank(message = "Confirm password is required")
+    @NotBlank(message = "Şifrə təsdiqi tələb olunur")
     private String confirmPassword;
 }

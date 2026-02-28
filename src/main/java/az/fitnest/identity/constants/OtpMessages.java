@@ -5,32 +5,32 @@ public final class OtpMessages {
     private OtpMessages() {}
 
     public static final String OTP_SENT =
-            "OTP code has been sent to your mobile number.";
+            "Əgər qeyd olunan mobil nömrə sistemdə mövcuddursa, təsdiq kodu göndərildi.";
 
     public static final String OTP_SENT_IF_EXISTS =
-            "If an account exists with this mobile number, an OTP code has been sent.";
+            "Əgər qeyd olunan mobil nömrə sistemdə mövcuddursa, təsdiq kodu göndərildi.";
 
     public static final String INVALID_OTP =
-            "Invalid OTP code";
+            "Yanlış OTP kodu";
 
     public static final String OTP_LOCKED =
-            "OTP session is locked due to too many failed attempts. Please request a new code.";
+            "Həddindən artıq sayda uğursuz cəhd səbəbindən OTP sessiyası bloklanıb. Zəhmət olmasa yeni kod sorğulayın.";
 
     public static final String OTP_ALREADY_VERIFIED =
-            "OTP code has already been used. Please request a new one.";
+            "OTP kodu artıq istifadə edilib. Zəhmət olmasa yenisini sorğulayın.";
 
     public static final String OTP_VERIFIED =
-            "OTP successfully verified.";
+            "OTP uğurla təsdiqləndi.";
 
     public static String rateLimitSeconds(long seconds) {
-        return "Please wait " + seconds + " seconds before requesting another OTP.";
+        return "Yenidən OTP sorğulamadan əvvəl " + seconds + " saniyə gözləyin.";
     }
 
     public static String rateLimitMinutes(long minutes) {
-        return "Too many OTP requests. Please try again in " + minutes + " minutes.";
+        return "Həddindən artıq OTP sorğusu. Zəhmət olmasa " + minutes + " dəqiqədən sonra yenidən yoxlayın.";
     }
 
     public static String rateLimitGeneric() {
-        return "Too many requests. Please try again later.";
+        return "Həddindən artıq sorğu. Zəhmət olmasa bir az sonra yenidən yoxlayın.";
     }
 }

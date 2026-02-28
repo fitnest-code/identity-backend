@@ -106,6 +106,10 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     @Operation(summary = "Forgot password")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP sent successfully", content = @Content(schema = @Schema(implementation = OtpSendResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request or validation failed")
+    })
     public ResponseEntity<OtpSendResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         return ResponseEntity.ok(passwordResetService.forgotPassword(request));
     }

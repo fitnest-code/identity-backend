@@ -49,17 +49,17 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
         String payloadJson = redisTemplate.opsForValue().get(key);
         
         if (payloadJson == null) {
-            throw new UnauthorizedException("Registration token invalid or expired");
+            throw new UnauthorizedException("Qeydiyyat tokeni yanlışdır və ya müddəti bitib");
         }
         
         try {
             RegistrationTokenPayload payload = objectMapper.readValue(payloadJson, RegistrationTokenPayload.class);
             if (payload.getPurpose() != OtpPurpose.REGISTRATION) {
-                throw new UnauthorizedException("Invalid registration token purpose");
+                throw new UnauthorizedException("Yanlış qeydiyyat tokeni təyinatı");
             }
             return payload;
         } catch (JsonProcessingException e) {
-            throw new UnauthorizedException("Invalid registration token format");
+            throw new UnauthorizedException("Yanlış qeydiyyat tokeni formatı");
         }
     }
 
