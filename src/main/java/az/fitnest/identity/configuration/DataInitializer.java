@@ -70,6 +70,7 @@ public class DataInitializer {
             admin.setHasAccount(true);
             admin.setSetupRequired(false);
             admin.setRole(adminRole);
+            admin.setProfileImageUrl("https://i.pravatar.cc/150?u=admin");
 
             userRepository.save(admin);
         }
@@ -95,6 +96,7 @@ public class DataInitializer {
             superAdmin.setHasAccount(true);
             superAdmin.setSetupRequired(false);
             superAdmin.setRole(superAdminRole);
+            superAdmin.setProfileImageUrl("https://i.pravatar.cc/150?u=superadmin");
 
             userRepository.save(superAdmin);
         }
@@ -112,6 +114,7 @@ public class DataInitializer {
             user.setHasAccount(true);
             user.setSetupRequired(false);
             user.setRole(userRole);
+            user.setProfileImageUrl("https://i.pravatar.cc/150?u=regular");
             userRepository.save(user);
         }
     }
@@ -128,6 +131,7 @@ public class DataInitializer {
             user.setHasAccount(true);
             user.setSetupRequired(false);
             user.setRole(partnerRole);
+            user.setProfileImageUrl("https://i.pravatar.cc/150?u=partner");
             userRepository.save(user);
         }
     }
