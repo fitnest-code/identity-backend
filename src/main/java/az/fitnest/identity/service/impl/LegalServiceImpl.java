@@ -41,6 +41,7 @@ public class LegalServiceImpl implements LegalService {
         String normalizedLang = normalizeLanguage(lang);
         
         // Fallback to EN if requested lang not found, or just return empty if nothing exists
+        LegalDocument doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
         return LegalDocumentResponse.builder()

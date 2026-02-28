@@ -35,6 +35,10 @@ public class RegistrationServiceImpl implements RegistrationService {
     public OtpSendResponse startRegistration(RegisterRequest request) {
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getMobile());
         
+        if (userRepository.findFirstByMobile(mobile).isPresent()) {
+            throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
+        }
+        
         OtpSendRequest otpRequest = OtpSendRequest.builder()
                 .mobile(mobile)
                 .purpose(OtpPurpose.REGISTRATION)

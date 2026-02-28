@@ -1,5 +1,6 @@
 package az.fitnest.identity.service.impl;
 
+import az.fitnest.identity.constants.OtpMessages;
 import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.dto.ForgotPasswordRequest;
 import az.fitnest.identity.dto.OtpSendRequest;
