@@ -1,4 +1,4 @@
-package az.fitnest.identity.constants;
+package az.fitnest.identity.model.constants;
 import az.fitnest.identity.model.enums.UserStatus;
 
 public final class OtpMessages {

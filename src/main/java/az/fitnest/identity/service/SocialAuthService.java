@@ -1,7 +1,7 @@
 package az.fitnest.identity.service;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.SocialProvider;
+import az.fitnest.identity.model.enums.SocialProvider;
 import az.fitnest.identity.dto.AppleSocialRequest;
 import az.fitnest.identity.dto.GoogleSocialRequest;
 import az.fitnest.identity.dto.LoginResponse;

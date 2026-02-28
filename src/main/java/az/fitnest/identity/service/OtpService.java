@@ -1,8 +1,8 @@
 package az.fitnest.identity.service;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.OtpMessages;
-import az.fitnest.identity.constants.OtpPurpose;
+import az.fitnest.identity.model.constants.OtpMessages;
+import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyRequest;

@@ -1,7 +1,7 @@
 package az.fitnest.identity.repository;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.LegalDocumentType;
+import az.fitnest.identity.model.enums.LegalDocumentType;
 import az.fitnest.identity.model.entity.LegalDocument;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

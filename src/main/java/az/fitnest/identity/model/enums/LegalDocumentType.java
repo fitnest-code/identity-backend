@@ -1,4 +1,4 @@
-package az.fitnest.identity.constants;
+package az.fitnest.identity.model.enums;
 import az.fitnest.identity.model.enums.UserStatus;
 
 public enum LegalDocumentType {

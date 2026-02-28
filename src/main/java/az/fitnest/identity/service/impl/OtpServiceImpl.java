@@ -7,13 +7,13 @@ import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyResponse;
-import az.fitnest.identity.constants.OtpPurpose;
+import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.OtpRateLimitedException;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.SmsService;
 import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.constants.OtpMessages;
+import az.fitnest.identity.model.constants.OtpMessages;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
 import az.fitnest.identity.service.ResetPasswordTokenService;
@@ -282,7 +282,7 @@ public class OtpServiceImpl implements OtpService {
 
             return OtpVerifyResponse.builder()
                     .verified(true)
-                    .message(az.fitnest.identity.constants.OtpMessages.OTP_VERIFIED)
+                    .message(az.fitnest.identity.model.constants.OtpMessages.OTP_VERIFIED)
                     .accessToken(loginResponse.getAccessToken())
                     .refreshToken(loginResponse.getRefreshToken())
                     .user(loginResponse.getUser())

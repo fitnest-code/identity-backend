@@ -1,7 +1,7 @@
 package az.fitnest.identity.service.impl;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.OtpPurpose;
+import az.fitnest.identity.model.enums.OtpPurpose;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

@@ -3,7 +3,7 @@ import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.service.*;
 import az.fitnest.identity.service.*;
 
-import az.fitnest.identity.constants.OtpPurpose;
+import az.fitnest.identity.model.enums.OtpPurpose;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;

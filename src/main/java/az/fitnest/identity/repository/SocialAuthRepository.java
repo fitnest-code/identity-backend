@@ -1,7 +1,7 @@
 package az.fitnest.identity.repository;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.SocialProvider;
+import az.fitnest.identity.model.enums.SocialProvider;
 import az.fitnest.identity.model.entity.SocialAuth;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

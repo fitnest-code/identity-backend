@@ -8,7 +8,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.stereotype.Component;
-import az.fitnest.identity.constants.OtpPurpose;
+import az.fitnest.identity.model.enums.OtpPurpose;
 import io.lettuce.core.RedisException;
 
 import java.time.Duration;

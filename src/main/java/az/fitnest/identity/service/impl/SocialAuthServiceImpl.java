@@ -9,7 +9,7 @@ import az.fitnest.identity.dto.AppleSocialRequest;
 import az.fitnest.identity.dto.GoogleSocialRequest;
 import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.repository.SocialAuthRepository;
-import az.fitnest.identity.constants.SocialProvider;
+import az.fitnest.identity.model.enums.SocialProvider;
 import az.fitnest.identity.model.entity.SocialAuth;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.exception.InvalidCredentialsException;

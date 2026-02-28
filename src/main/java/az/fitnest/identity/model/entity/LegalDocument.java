@@ -1,7 +1,7 @@
 package az.fitnest.identity.model.entity;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.LegalDocumentType;
+import az.fitnest.identity.model.enums.LegalDocumentType;
 import az.fitnest.identity.model.entity.BaseAuditableEntity;
 import jakarta.persistence.*;
 import lombok.*;

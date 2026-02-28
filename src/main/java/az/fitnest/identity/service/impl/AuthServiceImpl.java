@@ -53,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
         if (result.status() == AuthenticationStatus.REACTIVATION_REQUIRED) {
             az.fitnest.identity.dto.OtpSendRequest otpRequest = az.fitnest.identity.dto.OtpSendRequest.builder()
                     .mobile(result.user().getMobile())
-                    .purpose(az.fitnest.identity.constants.OtpPurpose.REACTIVATION)
+                    .purpose(az.fitnest.identity.model.enums.OtpPurpose.REACTIVATION)
                     .build();
             az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
             throw new az.fitnest.identity.exception.AccountDeactivatedException(

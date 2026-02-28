@@ -1,7 +1,7 @@
 package az.fitnest.identity.controller;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.LegalDocumentType;
+import az.fitnest.identity.model.enums.LegalDocumentType;
 import az.fitnest.identity.dto.*;
 import az.fitnest.identity.service.LegalService;
 import io.swagger.v3.oas.annotations.Operation;

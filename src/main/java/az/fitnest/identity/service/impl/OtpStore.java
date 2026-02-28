@@ -5,8 +5,8 @@ import az.fitnest.identity.service.*;
 import az.fitnest.identity.service.*;
 
 import az.fitnest.identity.model.entity.OtpSessionPayload;
-import az.fitnest.identity.constants.OtpPurpose;
-import az.fitnest.identity.constants.OtpVerificationStatus;
+import az.fitnest.identity.model.enums.OtpPurpose;
+import az.fitnest.identity.model.enums.OtpVerificationStatus;
 import az.fitnest.identity.exception.BadRequestException;
 import az.fitnest.identity.exception.InternalServerException;
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -1,7 +1,7 @@
 package az.fitnest.identity.dto;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.LegalDocumentType;
+import az.fitnest.identity.model.enums.LegalDocumentType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

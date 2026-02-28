@@ -1,7 +1,7 @@
 package az.fitnest.identity.service.impl;
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.constants.OtpPurpose;
+import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.service.RedisKeyBuilder;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
