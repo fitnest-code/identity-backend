@@ -1,5 +1,6 @@
 package az.fitnest.identity.repository;
 
+import az.fitnest.identity.entity.SessionStatus;
 import az.fitnest.identity.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -36,11 +37,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Transactional
     @Query("""
         UPDATE User u
-        SET u.status = :status
+        SET u.sessionStatus = :status
         WHERE u.id = :userId
           AND NOT EXISTS (SELECT 1 FROM AuthToken t WHERE t.userId = :userId)
     """)
-    int markNoSessionsIfNone(@Param("userId") Long userId, @Param("status") User.Status status);
+    int markNoSessionsIfNone(@Param("userId") Long userId, @Param("status") SessionStatus status);
 
     /**
      * Finds a user by mobile number, including deleted users.

@@ -15,6 +15,7 @@ service UserService {
   rpc UpdateSetupRequired(UpdateSetupRequiredRequest) returns (UserResponse);
   rpc UpdateLanguage(UpdateLanguageRequest) returns (UserResponse);
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+  rpc UpdateSessionStatus(UpdateSessionStatusRequest) returns (UserResponse);
 }
 
 message GetUserByIdRequest {
@@ -33,6 +34,7 @@ message UserResponse {
   string created_at = 9;
   string status = 10;
   bool account_locked = 11;
+  string session_status = 12;
 }
 
 message UpdateUserProfileRequest {
@@ -60,4 +62,9 @@ message UpdateLanguageRequest {
 message DeleteUserRequest {
   int64 user_id = 1;
   string reason = 2;
+}
+
+message UpdateSessionStatusRequest {
+  int64 user_id = 1;
+  string session_status = 2;
 }

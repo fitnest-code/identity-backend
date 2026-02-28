@@ -125,6 +125,23 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         }
     }
 
+    @Override
+    public void updateSessionStatus(UpdateSessionStatusRequest request, StreamObserver<UserResponse> responseObserver) {
+        try {
+            az.fitnest.identity.entity.SessionStatus sessionStatus = az.fitnest.identity.entity.SessionStatus.valueOf(request.getSessionStatus());
+            User user = userService.updateSessionStatus(request.getUserId(), sessionStatus);
+            UserResponse response = buildUserResponse(user);
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to update session status: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
     private UserResponse buildUserResponse(User user) {
         String createdAt = user.getCreatedDate() != null ? user.getCreatedDate().toString() : "";
         return UserResponse.newBuilder()
@@ -138,6 +155,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                 .setLanguage(user.getLanguage() != null ? user.getLanguage() : "")
                 .setStatus(user.getStatus() != null ? user.getStatus().name() : "")
                 .setAccountLocked(user.isAccountLocked())
+                .setSessionStatus(user.getSessionStatus() != null ? user.getSessionStatus().name() : "")
                 .setCreatedAt(createdAt)
                 .build();
     }

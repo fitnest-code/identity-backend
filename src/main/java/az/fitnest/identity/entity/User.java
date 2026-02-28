@@ -101,6 +101,11 @@ public class User extends BaseAuditableEntity {
     @Column(name = "status")
     private Status status = Status.ACTIVE;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "session_status")
+    private SessionStatus sessionStatus = SessionStatus.NO_SESSIONS;
+
     public boolean hasAccount() { return hasAccount; }
     public boolean isSetupRequired() { return setupRequired; }
     public boolean isAccountLocked() {

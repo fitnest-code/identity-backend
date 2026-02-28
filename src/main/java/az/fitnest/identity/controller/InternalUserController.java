@@ -1,5 +1,6 @@
 package az.fitnest.identity.controller;
 
+import az.fitnest.identity.dto.UpdateSessionStatusRequest;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
 import az.fitnest.identity.dto.UpdateProfileImageRequest;
@@ -61,6 +62,14 @@ public class InternalUserController {
             @PathVariable Long userId,
             @RequestBody @Valid az.fitnest.identity.dto.UpdateLanguageRequest request) {
         User user = userService.updateLanguage(userId, request.getCode());
+        return ResponseEntity.ok(toUserResponse(user));
+    }
+
+    @PutMapping("/{userId}/session-status")
+    public ResponseEntity<UserResponse> updateSessionStatus(
+            @PathVariable Long userId,
+            @RequestBody @Valid UpdateSessionStatusRequest request) {
+        User user = userService.updateSessionStatus(userId, request.getSessionStatus());
         return ResponseEntity.ok(toUserResponse(user));
     }
 

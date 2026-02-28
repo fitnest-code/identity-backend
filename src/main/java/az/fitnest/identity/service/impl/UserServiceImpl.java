@@ -286,4 +286,12 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll(PageRequest.of(page - 1, size))
                 .map(UserResponseMapper::toResponse);
     }
+
+    @Transactional
+    @Override
+    public User updateSessionStatus(Long userId, az.fitnest.identity.entity.SessionStatus sessionStatus) {
+        User user = getUserById(userId);
+        user.setSessionStatus(sessionStatus);
+        return userRepository.save(user);
+    }
 }

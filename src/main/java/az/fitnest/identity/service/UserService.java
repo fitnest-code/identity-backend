@@ -34,4 +34,5 @@ public interface UserService {
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
     Page<az.fitnest.identity.dto.UserResponse> getAllUsersMapped(int page, int size);
     void deleteAllUsers();
+    User updateSessionStatus(Long userId, az.fitnest.identity.entity.SessionStatus sessionStatus);
 }

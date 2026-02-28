@@ -11,6 +11,7 @@ import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.identity.entity.SessionStatus;
 import az.fitnest.identity.entity.User;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
@@ -68,7 +69,13 @@ public class AuthServiceImpl implements AuthService {
             redisTokenService.removeActiveSession(result.user().getId());
         }
 
-        return tokenIssuanceService.issueTokens(result.user(), DeviceDetector.detectDeviceType());
+        User user = result.user();
+        if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
+            user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
+            userRepository.save(user);
+        }
+
+        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
     }
 
     @Transactional
@@ -104,8 +111,8 @@ public class AuthServiceImpl implements AuthService {
             userRepository.save(user);
         }
 
-        if (user.getStatus() == User.Status.NO_SESSIONS) {
-            user.setStatus(User.Status.ACTIVE);
+        if (user.getSessionStatus() == SessionStatus.NO_SESSIONS) {
+            user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
             userRepository.save(user);
         }
 
@@ -141,6 +148,11 @@ public class AuthServiceImpl implements AuthService {
         User user = internalRefresh(userId, refreshToken);
         
         LoginResponse tokens = tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
+
+        if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
+            user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
+            userRepository.save(user);
+        }
         
         return RefreshResponse.builder()
                 .accessToken(tokens.getAccessToken())
@@ -194,7 +206,7 @@ public class AuthServiceImpl implements AuthService {
              // Ignore if hash fails
         }
         
-        userRepository.markNoSessionsIfNone(userId, User.Status.NO_SESSIONS);
+        userRepository.markNoSessionsIfNone(userId, SessionStatus.NO_SESSIONS);
     }
 
 
