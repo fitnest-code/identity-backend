@@ -20,43 +20,43 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth/otp")
 @RequiredArgsConstructor
-@Tag(name = "OTP", description = "Endpoints for sending and verifying OTP codes")
+@Tag(name = "OTP", description = "OTP kodlarının göndərilməsi və doğrulanması üçün ucluqlar")
 public class OtpController {
 
     private final OtpService otpService;
 
     @Operation(
-            summary = "Send OTP",
-            description = "Sends a 4-digit OTP code to the specified mobile number. " +
-                    "Supports REGISTRATION and LOGIN purposes. " +
-                    "Rate limiting is applied to prevent abuse. " +
-                    "For REGISTRATION: mobile number must not be already registered. " +
-                    "For LOGIN: mobile number must be registered."
+            summary = "OTP göndərin",
+            description = "Göstərilən mobil nömrəyə 4 rəqəmli OTP kodu göndərir. " +
+                    "QEYDİYYAT və GİRİŞ məqsədlərini dəstəkləyir. " +
+                    "Sui-istifadənin qarşısını almaq üçün limit tətbiq edilir. " +
+                    "QEYDİYYAT üçün: mobil nömrə artıq qeydiyyatdan keçmiş olmamalıdır. " +
+                    "GİRİŞ üçün: mobil nömrə qeydiyyatdan keçmiş olmalıdır."
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "OTP sent successfully",
+                    description = "OTP uğurla göndərildi",
                     content = @Content(schema = @Schema(implementation = OtpSendResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Invalid request data or validation failed",
+                    description = "Yanlış sorğu məlumatı və ya doğrulama uğursuz oldu",
                     content = @Content
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Mobile number not found (for LOGIN purpose)",
+                    description = "Mobil nömrə tapılmadı (GİRİŞ məqsədi üçün)",
                     content = @Content
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "Mobile number already registered (for REGISTRATION purpose)",
+                    description = "Mobil nömrə artıq qeydiyyatdan keçib (QEYDİYYAT məqsədi üçün)",
                     content = @Content
             ),
             @ApiResponse(
                     responseCode = "429",
-                    description = "OTP rate limited - too many requests",
+                    description = "OTP limiti keçilib - çox sayda sorğu",
                     content = @Content
             )
     })
@@ -69,33 +69,33 @@ public class OtpController {
     }
 
     @Operation(
-            summary = "Verify OTP",
-            description = "Verifies the OTP code provided by the user. " +
-                    "On successful verification, depending on the purpose: " +
-                    "- REGISTRATION: issues a registration token. " +
-                    "- PASSWORD_RESET: issues a reset token. " +
-                    "- REACTIVATION: reactivates the account and issues login tokens (access and refresh). " +
-                    "Maximum 5 verification attempts allowed before session is locked."
+            summary = "OTP-ni doğrulayın",
+            description = "İstifadəçi tərəfindən təqdim olunan OTP kodunu doğrulayır. " +
+                    "Uğurlu doğrulamadan sonra məqsəddən asılı olaraq: " +
+                    "- QEYDİYYAT: qeydiyyat tokeni verir. " +
+                    "- ŞİFRƏ_SIFIRLAMA: sıfırlama tokeni verir. " +
+                    "- REAKTİVASİYA: hesabı yenidən aktivləşdirir və giriş tokenlərini verir. " +
+                    "Sessiya bloklanmazdan əvvəl maksimum 5 doğrulama cəhdinə icazə verilir."
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "OTP verified successfully",
+                    description = "OTP uğurla doğrulandı",
                     content = @Content(schema = @Schema(implementation = OtpVerifyResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Invalid request data, OTP session locked, OTP already verified, or too many attempts",
+                    description = "Yanlış sorğu məlumatı, OTP sessiyası bloklanıb, OTP artıq doğrulanıb və ya çox sayda cəhd edilib",
                     content = @Content
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Invalid OTP code",
+                    description = "Yanlış OTP kodu",
                     content = @Content
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "OTP session not found or expired",
+                    description = "OTP sessiyası tapılmadı və ya vaxtı keçib",
                     content = @Content
             )
     })

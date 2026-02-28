@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/super-admin")
 @RequiredArgsConstructor
-@Tag(name = "Super Admin", description = "Endpoints for super-administrative tasks")
+@Tag(name = "Super Admin", description = "Super-administrativ tapşırıqlar üçün ucluqlar")
 @SecurityRequirement(name = "bearerAuth")
 @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
 public class SuperAdminController {
@@ -25,10 +25,10 @@ public class SuperAdminController {
     private final UserService userService;
 
     @DeleteMapping("/users/all")
-    @Operation(summary = "Delete all users", description = "Permanently deletes all non-super-admin users. Requires SUPER_ADMIN role.")
+    @Operation(summary = "Bütün istifadəçiləri silin", description = "Bütün qeyri-super-admin istifadəçiləri həmişəlik silir. SUPER_ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "All users deleted successfully"),
-            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+            @ApiResponse(responseCode = "204", description = "Bütün istifadəçilər uğurla silindi"),
+            @ApiResponse(responseCode = "403", description = "Kifayət qədər icazə yoxdur")
     })
     public ResponseEntity<Void> deleteAllUsers() {
         userService.deleteAllUsers();

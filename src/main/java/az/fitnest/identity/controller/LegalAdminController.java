@@ -22,7 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/legal")
 @RequiredArgsConstructor
-@Tag(name = "Legal & Consents Admin", description = "Administrative endpoints for managing legal documents and user consents")
+@Tag(name = "Legal & Consents Admin", description = "Hüquqi sənədləri və istifadəçi razılıqlarını idarə etmək üçün administrativ ucluqlar")
 @SecurityRequirement(name = "bearerAuth")
 @PreAuthorize("hasRole('ROLE_ADMIN')")
 public class LegalAdminController {
@@ -30,33 +30,33 @@ public class LegalAdminController {
     private final LegalService legalService;
 
     @GetMapping("/documents")
-    @Operation(summary = "List all documents (Admin)", description = "Lists all versions of legal documents with filtering options. Requires ADMIN role.")
+    @Operation(summary = "Bütün sənədlərin siyahısı (Admin)", description = "Filtrləmə seçimləri ilə bütün hüquqi sənəd versiyalarını sadalayır. ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Documents retrieved successfully"),
-            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+            @ApiResponse(responseCode = "200", description = "Sənədlər uğurla əldə edildi"),
+            @ApiResponse(responseCode = "403", description = "Kifayət qədər icazə yoxdur")
     })
     public ResponseEntity<List<AdminLegalDocumentResponse>> getAllDocuments(
-            @Parameter(description = "Filter by document type") @RequestParam(required = false) LegalDocumentType type,
-            @Parameter(description = "Filter by language") @RequestParam(required = false) String language,
-            @Parameter(description = "Filter by active status") @RequestParam(required = false) Boolean active) {
+            @Parameter(description = "Sənəd növünə görə filtrləyin") @RequestParam(required = false) LegalDocumentType type,
+            @Parameter(description = "Dilə görə filtrləyin") @RequestParam(required = false) String language,
+            @Parameter(description = "Aktiv statusa görə filtrləyin") @RequestParam(required = false) Boolean active) {
         return ResponseEntity.ok(legalService.getAllDocuments(type, language, active));
     }
 
     @GetMapping("/documents/{id}")
-    @Operation(summary = "Get document by ID (Admin)", description = "Retrieves details of a specific legal document version. Requires ADMIN role.")
+    @Operation(summary = "Sənədi ID vasitəsilə əldə edin (Admin)", description = "Xüsusi hüquqi sənəd versiyasının təfərrüatlarını əldə edir. ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Document found"),
-            @ApiResponse(responseCode = "404", description = "Document not found")
+            @ApiResponse(responseCode = "200", description = "Sənəd tapıldı"),
+            @ApiResponse(responseCode = "404", description = "Sənəd tapılmadı")
     })
     public ResponseEntity<AdminLegalDocumentResponse> getDocumentById(@PathVariable Long id) {
         return ResponseEntity.ok(legalService.getDocumentById(id));
     }
 
     @PostMapping("/documents")
-    @Operation(summary = "Create document (Admin)", description = "Publishes a new legal document version. Requires ADMIN role.")
+    @Operation(summary = "Sənəd yaradın (Admin)", description = "Yeni hüquqi sənəd versiyasını dərc edir. ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Document created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid document data")
+            @ApiResponse(responseCode = "200", description = "Sənəd uğurla yaradıldı"),
+            @ApiResponse(responseCode = "400", description = "Yanlış sənəd məlumatı")
     })
     public ResponseEntity<Void> createDocument(@Valid @RequestBody CreateLegalDocumentRequest request) {
         legalService.createDocument(request);
@@ -64,10 +64,10 @@ public class LegalAdminController {
     }
 
     @PutMapping("/documents/{id}")
-    @Operation(summary = "Update document (Admin)", description = "Updates content or metadata of an existing legal document version. Requires ADMIN role.")
+    @Operation(summary = "Sənədi yeniləyin (Admin)", description = "Mövcud hüquqi sənəd versiyasının məzmununu və ya metasını yeniləyir. ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Document updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Document not found")
+            @ApiResponse(responseCode = "200", description = "Sənəd uğurla yeniləndi"),
+            @ApiResponse(responseCode = "404", description = "Sənəd tapılmadı")
     })
     public ResponseEntity<AdminLegalDocumentResponse> updateDocument(
             @PathVariable Long id,
@@ -76,10 +76,10 @@ public class LegalAdminController {
     }
 
     @DeleteMapping("/documents/{id}")
-    @Operation(summary = "Delete document (Admin)", description = "Deletes a legal document version. Requires ADMIN role.")
+    @Operation(summary = "Sənədi silin (Admin)", description = "Hüquqi sənəd versiyasını silir. ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Document deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Document not found")
+            @ApiResponse(responseCode = "200", description = "Sənəd uğurla silindi"),
+            @ApiResponse(responseCode = "404", description = "Sənəd tapılmadı")
     })
     public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
         legalService.deleteDocument(id);
@@ -87,28 +87,28 @@ public class LegalAdminController {
     }
 
     @PatchMapping("/documents/{id}/activate")
-    @Operation(summary = "Activate document (Admin)", description = "Sets a document version as active. Only one version per type/language can be active. Requires ADMIN role.")
+    @Operation(summary = "Sənədi aktivləşdirin (Admin)", description = "Sənəd versiyasını aktivləşdirir. Hər növ/dil üçün yalnız bir versiya aktiv ola bilər. ADMIN rolu tələb olunur.")
     public ResponseEntity<Void> activateDocument(@PathVariable Long id) {
         legalService.activateDocument(id);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/documents/{id}/deactivate")
-    @Operation(summary = "Deactivate document (Admin)", description = "Sets a document version as inactive. Requires ADMIN role.")
+    @Operation(summary = "Sənədi deaktiv edin (Admin)", description = "Sənəd versiyasını deaktiv edir. ADMIN rolu tələb olunur.")
     public ResponseEntity<Void> deactivateDocument(@PathVariable Long id) {
         legalService.deactivateDocument(id);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/consents")
-    @Operation(summary = "List user consents (Admin)", description = "Lists user consent records with pagination support. Requires ADMIN role.")
+    @Operation(summary = "İstifadəçi razılıqlarının siyahısı (Admin)", description = "Səhifələmə dəstəyi ilə istifadəçi razılıq yazılarını sadalayır. ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Consents retrieved successfully")
+            @ApiResponse(responseCode = "200", description = "Razılıqlar uğurla əldə edildi")
     })
     public ResponseEntity<PaginatedResponse<AdminConsentResponse>> getConsents(
-            @Parameter(description = "Filter by User ID") @RequestParam(required = false) Long userId,
-            @Parameter(description = "Page index (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "İstifadəçi ID-sinə görə filtrləyin") @RequestParam(required = false) Long userId,
+            @Parameter(description = "Səhifə indeksi (0-dan başlayaraq)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Səhifə ölçüsü") @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(PaginatedResponse.of(legalService.getConsents(userId, PageRequest.of(page, size))));
     }
 }

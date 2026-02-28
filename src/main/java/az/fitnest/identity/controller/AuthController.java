@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Endpoints for user authentication, registration, and password management")
+@Tag(name = "Authentication", description = "İstifadəçi autentifikasiyası, qeydiyyatı və şifrə idarəolunması üçün ucluqlar")
 public class AuthController {
 
     private final AuthService authService;
@@ -41,29 +41,29 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/login")
-    @Operation(summary = "User login", description = "Authenticates a user with mobile number and password.")
+    @Operation(summary = "İstifadəçi girişi", description = "İstifadəçini mobil nömrə və şifrə ilə autentifikasiya edir.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"INVALID_CREDENTIALS\",\n    \"message\": \"Invalid credentials\",\n    \"status\": 401,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}"))),
-            @ApiResponse(responseCode = "400", description = "Invalid request format", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Validation failed\",\n    \"status\": 400,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}"))),
-            @ApiResponse(responseCode = "429", description = "Too many login attempts (rate limit exceeded)", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"LOGIN_RATE_LIMIT\",\n    \"message\": \"Too many login attempts. Please try again later.\",\n    \"status\": 429,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}")))
+            @ApiResponse(responseCode = "200", description = "Giriş uğurludur", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Yanlış məlumatlar", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"INVALID_CREDENTIALS\",\n    \"message\": \"Invalid credentials\",\n    \"status\": 401,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}"))),
+            @ApiResponse(responseCode = "400", description = "Yanlış sorğu formatı", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Validation failed\",\n    \"status\": 400,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}"))),
+            @ApiResponse(responseCode = "429", description = "Çox sayda giriş cəhdi (limit keçilib)", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"LOGIN_RATE_LIMIT\",\n    \"message\": \"Too many login attempts. Please try again later.\",\n    \"status\": 429,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}")))
     })
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/refresh")
-    @Operation(summary = "Refresh access token")
+    @Operation(summary = "Giriş tokenini yeniləyin")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Token refreshed successfully", content = @Content(schema = @Schema(implementation = RefreshResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
+            @ApiResponse(responseCode = "200", description = "Token uğurla yeniləndi", content = @Content(schema = @Schema(implementation = RefreshResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Yanlış və ya vaxtı keçmiş yeniləmə tokeni")
     })
     public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
         return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "User logout")
+    @Operation(summary = "İstifadəçi çıxışı")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader) {
         if (authHeader.startsWith("Bearer ")) {
@@ -78,19 +78,19 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    @Operation(summary = "Initiate registration")
+    @Operation(summary = "Qeydiyyatı başladın")
     public ResponseEntity<OtpSendResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(registrationService.startRegistration(request));
     }
 
     @PostMapping("/register/complete")
-    @Operation(summary = "Complete registration")
+    @Operation(summary = "Qeydiyyatı tamamlayın")
     public ResponseEntity<LoginResponse> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(registrationService.completeRegistration(request));
     }
 
     @PostMapping("/social/apple")
-    @Operation(summary = "Apple social login")
+    @Operation(summary = "Apple ilə sosial giriş")
     public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginApple(request);
         HttpStatus status = response.getUser().isSetupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
@@ -98,7 +98,7 @@ public class AuthController {
     }
 
     @PostMapping("/social/google")
-    @Operation(summary = "Google social login")
+    @Operation(summary = "Google ilə sosial giriş")
     public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
         HttpStatus status = response.getUser().isSetupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
@@ -106,23 +106,23 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    @Operation(summary = "Forgot password")
+    @Operation(summary = "Şifrəni unutmuşam")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP sent successfully", content = @Content(schema = @Schema(implementation = OtpSendResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request or validation failed")
+            @ApiResponse(responseCode = "200", description = "OTP uğurla göndərildi", content = @Content(schema = @Schema(implementation = OtpSendResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Yanlış sorğu və ya doğrulama uğursuz oldu")
     })
     public ResponseEntity<OtpSendResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         return ResponseEntity.ok(passwordResetService.forgotPassword(request));
     }
 
     @PostMapping("/reset-password")
-    @Operation(summary = "Reset password")
+    @Operation(summary = "Şifrəni sıfırlayın")
     public ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         return ResponseEntity.ok(passwordResetService.resetPassword(request));
     }
 
     @PostMapping("/change-password")
-    @Operation(summary = "Change password")
+    @Operation(summary = "Şifrəni dəyişdirin")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         Long userId = UserContext.getRequiredUserId();
@@ -131,11 +131,11 @@ public class AuthController {
     }
 
     @PostMapping("/deactivate")
-    @Operation(summary = "Deactivate account", description = "Disables the authenticated user's account. This is a soft deletion (status becomes INACTIVE).")
+    @Operation(summary = "Hesabı deaktiv edin", description = "Autentifikasiya olunmuş istifadəçinin hesabını deaktiv edir. Bu, yumşaq silinmədir (status INACTIVE olur).")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Account deactivated successfully"),
-            @ApiResponse(responseCode = "401", description = "Not authenticated")
+            @ApiResponse(responseCode = "204", description = "Hesab uğurla deaktiv edildi"),
+            @ApiResponse(responseCode = "401", description = "Autentifikasiya olunmayıb")
     })
     public ResponseEntity<Void> deactivateAccount() {
         Long userId = UserContext.getRequiredUserId();

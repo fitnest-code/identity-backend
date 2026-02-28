@@ -29,41 +29,41 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/legal")
 @RequiredArgsConstructor
-@Tag(name = "Legal & Consents", description = "Endpoints for viewing legal documents and managing user consents")
+@Tag(name = "Legal & Consents", description = "Hüquqi sənədlərə baxmaq və istifadəçi razılıqlarını idarə etmək üçün ucluqlar")
 public class LegalController {
 
     private final LegalService legalService;
 
     @GetMapping("/privacy-policy")
-    @Operation(summary = "Get Privacy Policy", description = "Retrieves the active privacy policy content.")
+    @Operation(summary = "Məxfilik Siyasətini əldə edin", description = "Aktiv məxfilik siyasəti məzmununu əldə edir.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Privacy policy retrieved successfully", content = @Content(schema = @Schema(implementation = LegalDocumentResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Active privacy policy not found")
+            @ApiResponse(responseCode = "200", description = "Məxfilik siyasəti uğurla əldə edildi", content = @Content(schema = @Schema(implementation = LegalDocumentResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Aktiv məxfilik siyasəti tapılmadı")
     })
     public ResponseEntity<LegalDocumentResponse> getPrivacyPolicy(
-            @Parameter(description = "Language code (e.g., AZ, EN, RU)") @RequestParam(defaultValue = "AZ") String lang,
-            @Parameter(description = "Response format (e.g., html, plain)") @RequestParam(defaultValue = "html") String format) {
+            @Parameter(description = "Dil kodu (məsələn, AZ, EN, RU)") @RequestParam(defaultValue = "AZ") String lang,
+            @Parameter(description = "Cavab formatı (məsələn, html, plain)") @RequestParam(defaultValue = "html") String format) {
         return ResponseEntity.ok(legalService.getPrivacyPolicy(lang, format));
     }
 
     @GetMapping("/terms-of-use")
-    @Operation(summary = "Get Terms of Use", description = "Retrieves the active terms of use content.")
+    @Operation(summary = "İstifadə Şərtlərini əldə edin", description = "Aktiv istifadə şərtləri məzmununu əldə edir.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Terms of use retrieved successfully", content = @Content(schema = @Schema(implementation = LegalDocumentResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Active terms of use not found")
+            @ApiResponse(responseCode = "200", description = "İstifadə şərtləri uğurla əldə edildi", content = @Content(schema = @Schema(implementation = LegalDocumentResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Aktiv istifadə şərtləri tapılmadı")
     })
     public ResponseEntity<LegalDocumentResponse> getTermsOfUse(
-            @Parameter(description = "Language code (e.g., AZ, EN, RU)") @RequestParam(defaultValue = "AZ") String lang,
-            @Parameter(description = "Response format (e.g., html, plain)") @RequestParam(defaultValue = "html") String format) {
+            @Parameter(description = "Dil kodu (məsələn, AZ, EN, RU)") @RequestParam(defaultValue = "AZ") String lang,
+            @Parameter(description = "Cavab formatı (məsələn, html, plain)") @RequestParam(defaultValue = "html") String format) {
         return ResponseEntity.ok(legalService.getTermsOfUse(lang, format));
     }
 
     @PostMapping("/consents/accept")
-    @Operation(summary = "Accept Consents", description = "Records the user's acceptance of current legal documents.")
+    @Operation(summary = "Razılıqları qəbul edin", description = "İstifadəçinin cari hüquqi sənədləri qəbul etməsini qeyd edir.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Consents recorded successfully"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
+            @ApiResponse(responseCode = "200", description = "Razılıqlar uğurla qeyd edildi"),
+            @ApiResponse(responseCode = "401", description = "İstifadəçi autentifikasiya olunmayıb")
     })
     public ResponseEntity<Void> acceptConsents(
             @Valid @RequestBody ConsentAcceptRequest request,
@@ -76,11 +76,11 @@ public class LegalController {
     }
 
     @GetMapping("/consents/me")
-    @Operation(summary = "Get My Consents", description = "Checks the consent status for the currently authenticated user.")
+    @Operation(summary = "Razılıqlarımı əldə edin", description = "Cari autentifikasiya olunmuş istifadəçi üçün razılıq statusunu yoxlayır.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Consent status retrieved", content = @Content(schema = @Schema(implementation = UserConsentStatusResponse.class))),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
+            @ApiResponse(responseCode = "200", description = "Razılıq statusu əldə edildi", content = @Content(schema = @Schema(implementation = UserConsentStatusResponse.class))),
+            @ApiResponse(responseCode = "401", description = "İstifadəçi autentifikasiya olunmayıb")
     })
     public ResponseEntity<UserConsentStatusResponse> getUserConsents() {
         Long userId = getCurrentUserId();

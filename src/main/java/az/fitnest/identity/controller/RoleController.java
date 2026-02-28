@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/roles")
 @RequiredArgsConstructor
-@Tag(name = "Role Management", description = "Endpoints for managing roles")
+@Tag(name = "Role Management", description = "Rolları idarə etmək üçün ucluqlar")
 @SecurityRequirement(name = "bearerAuth")
 @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
 public class RoleController {
@@ -27,16 +27,16 @@ public class RoleController {
     private final RoleRepository roleRepository;
 
     @GetMapping
-    @Operation(summary = "Get all roles", description = "Returns a list of all roles. Requires SUPER_ADMIN role.")
+    @Operation(summary = "Bütün rolları əldə edin", description = "Bütün rolların siyahısını qaytarır. SUPER_ADMIN rolu tələb olunur.")
     public ResponseEntity<List<Role>> getAllRoles() {
         return ResponseEntity.ok(roleRepository.findAll());
     }
 
     @PostMapping
-    @Operation(summary = "Create role", description = "Creates a new role. Requires SUPER_ADMIN role.")
+    @Operation(summary = "Rol yaradın", description = "Yeni rol yaradır. SUPER_ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Role created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid role name")
+            @ApiResponse(responseCode = "201", description = "Rol uğurla yaradıldı"),
+            @ApiResponse(responseCode = "400", description = "Yanlış rol adı")
     })
     public ResponseEntity<Role> createRole(@RequestBody String roleName) {
         if (roleRepository.findByName(roleName).isPresent()) {
@@ -48,10 +48,10 @@ public class RoleController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete role", description = "Deletes a role by ID. Requires SUPER_ADMIN role.")
+    @Operation(summary = "Rolu silin", description = "ID vasitəsilə rolu silir. SUPER_ADMIN rolu tələb olunur.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Role deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Role not found")
+            @ApiResponse(responseCode = "204", description = "Rol uğurla silindi"),
+            @ApiResponse(responseCode = "404", description = "Rol tapılmadı")
     })
     public ResponseEntity<Void> deleteRole(@PathVariable Long id) {
         if (!roleRepository.existsById(id)) {
