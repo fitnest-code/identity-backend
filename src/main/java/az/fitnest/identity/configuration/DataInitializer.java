@@ -30,6 +30,8 @@ public class DataInitializer {
             initRoles();
             initAdminUser();
             initSuperAdminUser();
+            initRegularUser();
+            initPartnerUser();
         };
     }
 
@@ -37,6 +39,7 @@ public class DataInitializer {
         createRoleIfNotFound("ROLE_USER");
         createRoleIfNotFound("ROLE_ADMIN");
         createRoleIfNotFound("ROLE_SUPER_ADMIN");
+        createRoleIfNotFound("ROLE_PARTNER");
     }
 
     private void createRoleIfNotFound(String roleName) {
@@ -94,6 +97,38 @@ public class DataInitializer {
             superAdmin.setRole(superAdminRole);
 
             userRepository.save(superAdmin);
+        }
+    }
+
+    private void initRegularUser() {
+        String userMobile = az.fitnest.identity.util.MobileNumberUtils.normalize("0550000000");
+        if (userRepository.findFirstByMobile(userMobile).isEmpty()) {
+            Role userRole = roleRepository.findByName("ROLE_USER").orElse(null);
+            User user = new User();
+            user.setFirstName("Regular");
+            user.setLastName("User");
+            user.setMobile(userMobile);
+            user.setPasswordHash(passwordService.hashPassword("User123!"));
+            user.setHasAccount(true);
+            user.setSetupRequired(false);
+            user.setRole(userRole);
+            userRepository.save(user);
+        }
+    }
+
+    private void initPartnerUser() {
+        String partnerMobile = az.fitnest.identity.util.MobileNumberUtils.normalize("0700000000");
+        if (userRepository.findFirstByMobile(partnerMobile).isEmpty()) {
+            Role partnerRole = roleRepository.findByName("ROLE_PARTNER").orElse(null);
+            User user = new User();
+            user.setFirstName("Partner");
+            user.setLastName("User");
+            user.setMobile(partnerMobile);
+            user.setPasswordHash(passwordService.hashPassword("Partner123!"));
+            user.setHasAccount(true);
+            user.setSetupRequired(false);
+            user.setRole(partnerRole);
+            userRepository.save(user);
         }
     }
 }
