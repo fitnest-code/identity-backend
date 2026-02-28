@@ -1,9 +1,10 @@
 package az.fitnest.identity.service.impl;
+import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.service.RedisKeyBuilder;
 import az.fitnest.identity.service.*;
 import az.fitnest.identity.service.*;
 
-import az.fitnest.identity.entity.OtpSessionPayload;
+import az.fitnest.identity.model.entity.OtpSessionPayload;
 import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.constants.OtpVerificationStatus;
 import az.fitnest.identity.exception.BadRequestException;

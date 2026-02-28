@@ -1,4 +1,5 @@
 package az.fitnest.identity.dto;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.PasswordVerificationResult;
 import az.fitnest.identity.service.*;
@@ -11,8 +12,8 @@ import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.entity.SessionStatus;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.enums.SessionStatus;
+import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.util.DeviceDetector;
@@ -119,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
         resetFailedLoginAttempts(user.getId());
         // No need for userRepository.save(user) if only status was changed, 
         // but let's be safe if it was NO_SESSIONS -> ACTIVE
-        if (user.getStatus() == User.Status.ACTIVE && user.getFailedLoginAttempts() > 0) {
+        if (user.getStatus() == UserStatus.ACTIVE && user.getFailedLoginAttempts() > 0) {
              // already handled by resetFailedLoginAttempts(userId) which is atomic
         }
         
@@ -218,7 +219,7 @@ public class AuthServiceImpl implements AuthService {
                 userId, 
                 attempts, 
                 now.plus(java.time.Duration.ofMinutes(accountLockDurationMinutes)), 
-                User.Status.LOCKED
+                UserStatus.LOCKED
             );
         } else {
             userRepository.incrementFailedLoginAttempts(userId);
@@ -226,7 +227,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void resetFailedLoginAttempts(Long userId) {
-        userRepository.updateLockStatus(userId, 0, null, User.Status.ACTIVE);
+        userRepository.updateLockStatus(userId, 0, null, UserStatus.ACTIVE);
     }
 
     private boolean isAccountLocked(User user, Instant now) {

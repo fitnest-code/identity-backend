@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;

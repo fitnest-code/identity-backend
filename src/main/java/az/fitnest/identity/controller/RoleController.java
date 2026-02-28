@@ -1,6 +1,7 @@
 package az.fitnest.identity.controller;
+import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.entity.Role;
+import az.fitnest.identity.model.entity.Role;
 import az.fitnest.identity.repository.RoleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

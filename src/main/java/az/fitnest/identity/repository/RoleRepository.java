@@ -1,6 +1,7 @@
 package az.fitnest.identity.repository;
+import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.entity.Role;
+import az.fitnest.identity.model.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

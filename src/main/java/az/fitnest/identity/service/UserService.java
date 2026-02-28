@@ -1,9 +1,10 @@
 package az.fitnest.identity.service;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
-import az.fitnest.identity.entity.AuthToken;
-import az.fitnest.identity.entity.Role;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.entity.AuthToken;
+import az.fitnest.identity.model.entity.Role;
+import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.exception.ResourceNotFoundException;
 import az.fitnest.identity.repository.AuthTokenRepository;
@@ -34,5 +35,5 @@ public interface UserService {
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
     Page<az.fitnest.identity.dto.UserResponse> getAllUsersMapped(int page, int size);
     void deleteAllUsers();
-    User updateSessionStatus(Long userId, az.fitnest.identity.entity.SessionStatus sessionStatus);
+    User updateSessionStatus(Long userId, az.fitnest.identity.model.enums.SessionStatus sessionStatus);
 }

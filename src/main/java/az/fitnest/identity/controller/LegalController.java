@@ -1,4 +1,5 @@
 package az.fitnest.identity.controller;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.constants.LegalDocumentType;
 import az.fitnest.identity.dto.*;

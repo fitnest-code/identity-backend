@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springdoc.core.properties.SpringDocConfigProperties;
 import org.springdoc.webmvc.api.OpenApiWebMvcResource;

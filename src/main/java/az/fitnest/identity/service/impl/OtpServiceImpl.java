@@ -1,7 +1,8 @@
 package az.fitnest.identity.service.impl;
+import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.entity.OtpSessionPayload;
-import az.fitnest.identity.entity.OtpVerificationResult;
+import az.fitnest.identity.model.entity.OtpSessionPayload;
+import az.fitnest.identity.model.entity.OtpVerificationResult;
 import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.dto.OtpSendResponse;
@@ -270,10 +271,10 @@ public class OtpServiceImpl implements OtpService {
                     .message(OtpMessages.OTP_VERIFIED)
                     .build();
         } else if (verificationResult.getPurpose() == OtpPurpose.REACTIVATION) {
-            az.fitnest.identity.entity.User user = userRepository.findFirstByMobile(identifier)
+            az.fitnest.identity.model.entity.User user = userRepository.findFirstByMobile(identifier)
                     .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("İstifadəçi tapılmadı"));
 
-            user.setStatus(az.fitnest.identity.entity.User.Status.ACTIVE);
+            user.setStatus(az.fitnest.identity.model.enums.UserStatus.ACTIVE);
             userRepository.save(user);
 
             String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();

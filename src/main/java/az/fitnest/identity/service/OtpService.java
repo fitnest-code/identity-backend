@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.constants.OtpMessages;
 import az.fitnest.identity.constants.OtpPurpose;
@@ -6,8 +7,8 @@ import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.dto.OtpVerifyResponse;
-import az.fitnest.identity.entity.OtpSessionPayload;
-import az.fitnest.identity.entity.OtpVerificationResult;
+import az.fitnest.identity.model.entity.OtpSessionPayload;
+import az.fitnest.identity.model.entity.OtpVerificationResult;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.OtpRateLimitedException;
 import az.fitnest.identity.repository.UserRepository;

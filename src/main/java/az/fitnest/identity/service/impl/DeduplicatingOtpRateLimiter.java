@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.constants.OtpPurpose;
 import com.github.benmanes.caffeine.cache.Cache;

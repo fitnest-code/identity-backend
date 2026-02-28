@@ -1,4 +1,5 @@
 package az.fitnest.identity.security;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;

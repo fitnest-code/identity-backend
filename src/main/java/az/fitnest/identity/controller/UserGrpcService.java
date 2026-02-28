@@ -1,8 +1,9 @@
 package az.fitnest.identity.controller;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.entity.User;
 import az.fitnest.user.grpc.*;
 import com.google.protobuf.Empty;
 import io.grpc.Status;
@@ -128,7 +129,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void updateSessionStatus(UpdateSessionStatusRequest request, StreamObserver<UserResponse> responseObserver) {
         try {
-            az.fitnest.identity.entity.SessionStatus sessionStatus = az.fitnest.identity.entity.SessionStatus.valueOf(request.getSessionStatus());
+            az.fitnest.identity.model.enums.SessionStatus sessionStatus = az.fitnest.identity.model.enums.SessionStatus.valueOf(request.getSessionStatus());
             User user = userService.updateSessionStatus(request.getUserId(), sessionStatus);
             UserResponse response = buildUserResponse(user);
 

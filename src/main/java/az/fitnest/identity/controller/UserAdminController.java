@@ -1,8 +1,9 @@
 package az.fitnest.identity.controller;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.PaginatedResponse;
 import az.fitnest.identity.dto.UserResponse;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;

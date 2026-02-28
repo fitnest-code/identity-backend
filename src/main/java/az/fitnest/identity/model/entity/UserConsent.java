@@ -1,6 +1,7 @@
-package az.fitnest.identity.entity;
+package az.fitnest.identity.model.entity;
+import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.entity.BaseAuditableEntity;
+import az.fitnest.identity.model.entity.BaseAuditableEntity;
 import jakarta.persistence.*;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;

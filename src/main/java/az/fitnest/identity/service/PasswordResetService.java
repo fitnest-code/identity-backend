@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.constants.OtpPurpose;
 import az.fitnest.identity.dto.ForgotPasswordRequest;
@@ -7,8 +8,8 @@ import az.fitnest.identity.dto.OtpSendResponse;
 import az.fitnest.identity.dto.OtpVerifyRequest;
 import az.fitnest.identity.dto.ResetPasswordRequest;
 import az.fitnest.identity.dto.ResetPasswordResponse;
-import az.fitnest.identity.entity.AuthToken;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.entity.AuthToken;
+import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.UserRepository;

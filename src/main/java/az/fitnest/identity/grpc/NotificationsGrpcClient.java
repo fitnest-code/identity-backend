@@ -1,4 +1,5 @@
 package az.fitnest.identity.grpc;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.notifications.grpc.NotificationsServiceGrpc;
 import az.fitnest.notifications.grpc.SendEmailResponse;

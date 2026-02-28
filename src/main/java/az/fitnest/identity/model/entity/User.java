@@ -1,33 +1,14 @@
-package az.fitnest.identity.entity;
+package az.fitnest.identity.model.entity;
+import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.entity.BaseAuditableEntity;
+import az.fitnest.identity.model.enums.SessionStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 /**
  * Entity representing a user in the identity system.
- * Manages user authentication, authorization, and account status.
- *
- * <p>Key Features:
- * <ul>
- *   <li>Soft deletion by using a status field (ACTIVE / INACTIVE) instead of physical removal</li>
- *   <li>Account locking mechanism to prevent brute-force attacks</li>
- *   <li>Multi-language support</li>
- *   <li>Profile setup tracking</li>
- * </ul>
- *
- * <p>Security Features:
- * <ul>
- *   <li>Failed login attempt tracking</li>
- *   <li>Temporary account locking after multiple failed attempts</li>
- *   <li>Password hash storage (never plain text)</li>
- * </ul>
- *
- * @see Role
- * @see Language
  */
 @Entity
 @Table(
@@ -44,13 +25,6 @@ import java.time.LocalDateTime;
 @Builder
 public class User extends BaseAuditableEntity {
 
-    public enum Status {
-        ACTIVE,
-        INACTIVE,
-        LOCKED,
-        NO_SESSIONS
-    }
-
     @Column(name = "first_name")
     private String firstName;
 
@@ -66,8 +40,6 @@ public class User extends BaseAuditableEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Role role;
-
-
 
     @JsonIgnore
     @ToString.Exclude
@@ -89,7 +61,6 @@ public class User extends BaseAuditableEntity {
     @Column(name = "failed_login_attempts", nullable = false)
     private int failedLoginAttempts = 0;
 
-
     @Column(name = "locked_until")
     private Instant lockedUntil;
 
@@ -99,7 +70,7 @@ public class User extends BaseAuditableEntity {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Status status = Status.ACTIVE;
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -109,9 +80,8 @@ public class User extends BaseAuditableEntity {
     public boolean hasAccount() { return hasAccount; }
     public boolean isSetupRequired() { return setupRequired; }
     public boolean isAccountLocked() {
-        return status == Status.LOCKED && lockedUntil != null && lockedUntil.isAfter(Instant.now());
+        return status == UserStatus.LOCKED && lockedUntil != null && lockedUntil.isAfter(Instant.now());
     }
 
-    public boolean isDeleted() { return this.status == Status.INACTIVE; }
-
+    public boolean isDeleted() { return this.status == UserStatus.INACTIVE; }
 }

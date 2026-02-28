@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.service.AppleTokenVerifier;
 import az.fitnest.identity.service.GoogleTokenVerifier;
 import az.fitnest.identity.service.SocialAuthService;
@@ -9,12 +10,12 @@ import az.fitnest.identity.dto.GoogleSocialRequest;
 import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.repository.SocialAuthRepository;
 import az.fitnest.identity.constants.SocialProvider;
-import az.fitnest.identity.entity.SocialAuth;
+import az.fitnest.identity.model.entity.SocialAuth;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.repository.RoleRepository;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.util.DeviceDetector;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -137,7 +138,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .hasAccount(true)
                 .setupRequired(true)
                 .failedLoginAttempts(0)
-                .status(User.Status.ACTIVE)
+                .status(UserStatus.ACTIVE)
                 .role(roleRepository.findByName("ROLE_USER").orElse(null))
                 .build();
         return userRepository.save(user);

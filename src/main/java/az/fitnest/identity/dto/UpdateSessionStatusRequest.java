@@ -1,6 +1,7 @@
 package az.fitnest.identity.dto;
+import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.entity.SessionStatus;
+import az.fitnest.identity.model.enums.SessionStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

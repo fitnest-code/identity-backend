@@ -1,7 +1,8 @@
 package az.fitnest.identity.repository;
+import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.entity.SessionStatus;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.enums.SessionStatus;
+import az.fitnest.identity.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,9 +16,9 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findFirstByMobileAndStatus(String mobile, User.Status status);
+    Optional<User> findFirstByMobileAndStatus(String mobile, UserStatus status);
 
-    boolean existsByMobileAndStatus(String mobile, User.Status status);
+    boolean existsByMobileAndStatus(String mobile, UserStatus status);
 
     Optional<User> findFirstByMobile(String mobile);
 
@@ -31,7 +32,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.failedLoginAttempts = :attempts, u.lockedUntil = :lockedUntil, u.status = :status WHERE u.id = :userId")
-    int updateLockStatus(@Param("userId") Long userId, @Param("attempts") int attempts, @Param("lockedUntil") Instant lockedUntil, @Param("status") User.Status status);
+    int updateLockStatus(@Param("userId") Long userId, @Param("attempts") int attempts, @Param("lockedUntil") Instant lockedUntil, @Param("status") UserStatus status);
 
     @Modifying
     @Transactional

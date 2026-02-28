@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+import az.fitnest.identity.model.enums.UserStatus;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.context.annotation.Bean;

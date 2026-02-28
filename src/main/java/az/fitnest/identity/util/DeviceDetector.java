@@ -1,4 +1,5 @@
 package az.fitnest.identity.util;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;

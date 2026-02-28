@@ -1,11 +1,12 @@
 package az.fitnest.identity.service.impl;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.util.MobileNumberUtils;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
 import az.fitnest.identity.dto.UserResponse;
-import az.fitnest.identity.entity.AuthToken;
-import az.fitnest.identity.entity.Role;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.entity.AuthToken;
+import az.fitnest.identity.model.entity.Role;
+import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.exception.ResourceNotFoundException;
 import az.fitnest.identity.mapper.UserResponseMapper;
@@ -97,7 +98,7 @@ public class UserServiceImpl implements UserService {
                 .hasAccount(true)
                 .setupRequired(true)
                 .failedLoginAttempts(0)
-                .status(User.Status.ACTIVE)
+                .status(UserStatus.ACTIVE)
                 .role(roleRepository.findByName("ROLE_USER").orElse(null))
                 .build();
 
@@ -188,7 +189,7 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Long userId, String reason) {
         User user = getUserOrThrow(userId);
         // Soft-delete: set status to INACTIVE and persist
-        user.setStatus(User.Status.INACTIVE);
+        user.setStatus(UserStatus.INACTIVE);
         userRepository.save(user);
 
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
@@ -289,7 +290,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public User updateSessionStatus(Long userId, az.fitnest.identity.entity.SessionStatus sessionStatus) {
+    public User updateSessionStatus(Long userId, az.fitnest.identity.model.enums.SessionStatus sessionStatus) {
         User user = getUserById(userId);
         user.setSessionStatus(sessionStatus);
         return userRepository.save(user);

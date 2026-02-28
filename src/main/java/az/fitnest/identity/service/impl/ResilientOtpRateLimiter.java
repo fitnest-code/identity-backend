@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.service.OtpRateLimiter;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;

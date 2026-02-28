@@ -1,4 +1,5 @@
 package az.fitnest.identity.dto;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.constants.LegalDocumentType;
 import com.fasterxml.jackson.annotation.JsonProperty;

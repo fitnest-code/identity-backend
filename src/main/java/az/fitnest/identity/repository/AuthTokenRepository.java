@@ -1,6 +1,7 @@
 package az.fitnest.identity.repository;
+import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.entity.AuthToken;
+import az.fitnest.identity.model.entity.AuthToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

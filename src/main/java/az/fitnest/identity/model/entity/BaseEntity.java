@@ -1,4 +1,5 @@
-package az.fitnest.identity.entity;
+package az.fitnest.identity.model.entity;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import jakarta.persistence.*;
 import lombok.Getter;

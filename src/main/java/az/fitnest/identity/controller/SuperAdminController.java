@@ -1,4 +1,5 @@
 package az.fitnest.identity.controller;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;

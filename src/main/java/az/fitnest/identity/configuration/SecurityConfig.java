@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.security.FitnestSecurityFilter;
 import lombok.RequiredArgsConstructor;

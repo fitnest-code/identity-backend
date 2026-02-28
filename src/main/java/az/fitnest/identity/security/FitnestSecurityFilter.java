@@ -1,4 +1,5 @@
 package az.fitnest.identity.security;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

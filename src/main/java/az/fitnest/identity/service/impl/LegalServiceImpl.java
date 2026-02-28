@@ -1,11 +1,12 @@
 package az.fitnest.identity.service.impl;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.repository.UserConsentRepository;
 import az.fitnest.identity.repository.LegalDocumentRepository;
 import az.fitnest.identity.dto.*;
 import az.fitnest.identity.constants.LegalDocumentType;
-import az.fitnest.identity.entity.LegalDocument;
-import az.fitnest.identity.entity.UserConsent;
+import az.fitnest.identity.model.entity.LegalDocument;
+import az.fitnest.identity.model.entity.UserConsent;
 import az.fitnest.identity.exception.ValidationException;
 import az.fitnest.identity.service.LegalService;
 import lombok.RequiredArgsConstructor;

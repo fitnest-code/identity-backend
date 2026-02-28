@@ -1,4 +1,5 @@
 package az.fitnest.identity.security;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;

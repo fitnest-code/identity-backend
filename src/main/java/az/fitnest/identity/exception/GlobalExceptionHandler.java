@@ -1,4 +1,5 @@
 package az.fitnest.identity.exception;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.ApiError;
 import az.fitnest.identity.dto.ApiResponse;

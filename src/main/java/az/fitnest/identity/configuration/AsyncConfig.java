@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
