@@ -49,6 +49,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                     .firstName(request.getFirstName())
                     .lastName(request.getLastName())
                     .email(request.getEmail())
+                    .mobile(request.getMobile())
                     .build();
 
             User user = userService.updateUserProfile(request.getUserId(), command);

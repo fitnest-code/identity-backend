@@ -125,6 +125,10 @@ public class UserServiceImpl implements UserService {
             user.setEmail(command.email());
         }
 
+        if (command.mobile() != null && !command.mobile().isEmpty()) {
+            user.setMobile(MobileNumberUtils.normalize(command.mobile()));
+        }
+
         User saved = userRepository.save(user);
         publishUserEvent("USER_UPDATED", userId);
         return saved;

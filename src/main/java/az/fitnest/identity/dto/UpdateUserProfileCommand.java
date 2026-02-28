@@ -7,8 +7,8 @@ import lombok.Builder;
 public record UpdateUserProfileCommand(
         String firstName,
         String lastName,
-        String email
-
+        String email,
+        String mobile
 ) {
 }
 
