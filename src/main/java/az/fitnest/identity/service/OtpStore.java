@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.entity.OtpSessionPayload;
@@ -20,68 +21,64 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class OtpStore {
 
-    private final RedisKeyBuilder redisKeyBuilder;
-    private final StringRedisTemplate redisTemplate;
-    private final ObjectMapper objectMapper;
-
     private static final String SAVE_OTP_SESSION_SCRIPT_STRING =
             "local active_pointer_key = KEYS[1] " +
-            "local new_session_key = KEYS[2] " +
-            "local session_key_prefix = ARGV[1] " +
-            "local session_json = ARGV[2] " +
-            "local ttl_seconds = tonumber(ARGV[3]) " +
-            "local new_session_id = ARGV[4] " +
-            "local old_session_id = redis.call('GET', active_pointer_key) " +
-            "if old_session_id and old_session_id ~= '' and old_session_id ~= new_session_id then " +
-            "    local old_session_key = session_key_prefix .. old_session_id " +
-            "    redis.call('DEL', old_session_key) " +
-            "end " +
-            "redis.call('SETEX', new_session_key, ttl_seconds, session_json) " +
-            "redis.call('SETEX', active_pointer_key, ttl_seconds, new_session_id) " +
-            "return 1";
-
+                    "local new_session_key = KEYS[2] " +
+                    "local session_key_prefix = ARGV[1] " +
+                    "local session_json = ARGV[2] " +
+                    "local ttl_seconds = tonumber(ARGV[3]) " +
+                    "local new_session_id = ARGV[4] " +
+                    "local old_session_id = redis.call('GET', active_pointer_key) " +
+                    "if old_session_id and old_session_id ~= '' and old_session_id ~= new_session_id then " +
+                    "    local old_session_key = session_key_prefix .. old_session_id " +
+                    "    redis.call('DEL', old_session_key) " +
+                    "end " +
+                    "redis.call('SETEX', new_session_key, ttl_seconds, session_json) " +
+                    "redis.call('SETEX', active_pointer_key, ttl_seconds, new_session_id) " +
+                    "return 1";
     private static final String VERIFY_OTP_SCRIPT_STRING =
             "local session_key = KEYS[1] " +
-            "local max_attempts = tonumber(ARGV[1]) " +
-            "local is_valid = tonumber(ARGV[2]) " +
-            "local session_json = redis.call('GET', session_key) " +
-            "if not session_json then " +
-            "    return {0, '', ''} " +
-            "end " +
-            "local session = cjson.decode(session_json) " +
-            "if session.locked == true then " +
-            "    return {1, session_json, 'LOCKED'} " +
-            "end " +
-            "if session.verified == true then " +
-            "    return {1, session_json, 'ALREADY_VERIFIED'} " +
-            "end " +
-            "if is_valid == 0 then " +
-            "    local attempts = (session.attempts or 0) + 1 " +
-            "    session.attempts = attempts " +
-            "    if attempts >= max_attempts then " +
-            "        session.locked = true " +
-            "    end " +
-            "end " +
-            "if is_valid == 1 then " +
-            "    session.verified = true " +
-            "end " +
-            "local updated_json = cjson.encode(session) " +
-            "local ttl = redis.call('TTL', session_key) " +
-            "if ttl <= 0 then " +
-            "    return {1, session_json, 'EXPIRED'} " +
-            "end " +
-            "redis.call('SETEX', session_key, ttl, updated_json) " +
-            "return {1, updated_json, 'SUCCESS'}";
-
+                    "local max_attempts = tonumber(ARGV[1]) " +
+                    "local is_valid = tonumber(ARGV[2]) " +
+                    "local session_json = redis.call('GET', session_key) " +
+                    "if not session_json then " +
+                    "    return {0, '', ''} " +
+                    "end " +
+                    "local session = cjson.decode(session_json) " +
+                    "if session.locked == true then " +
+                    "    return {1, session_json, 'LOCKED'} " +
+                    "end " +
+                    "if session.verified == true then " +
+                    "    return {1, session_json, 'ALREADY_VERIFIED'} " +
+                    "end " +
+                    "if is_valid == 0 then " +
+                    "    local attempts = (session.attempts or 0) + 1 " +
+                    "    session.attempts = attempts " +
+                    "    if attempts >= max_attempts then " +
+                    "        session.locked = true " +
+                    "    end " +
+                    "end " +
+                    "if is_valid == 1 then " +
+                    "    session.verified = true " +
+                    "end " +
+                    "local updated_json = cjson.encode(session) " +
+                    "local ttl = redis.call('TTL', session_key) " +
+                    "if ttl <= 0 then " +
+                    "    return {1, session_json, 'EXPIRED'} " +
+                    "end " +
+                    "redis.call('SETEX', session_key, ttl, updated_json) " +
+                    "return {1, updated_json, 'SUCCESS'}";
     private static final DefaultRedisScript<Long> SAVE_OTP_SESSION_SCRIPT = new DefaultRedisScript<>(
             SAVE_OTP_SESSION_SCRIPT_STRING,
             Long.class
     );
-
     private static final DefaultRedisScript<List> VERIFY_OTP_SCRIPT = new DefaultRedisScript<>(
             VERIFY_OTP_SCRIPT_STRING,
             List.class
     );
+    private final RedisKeyBuilder redisKeyBuilder;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     public void saveOtpSession(String sessionId, OtpSessionPayload payload, long ttlSeconds) {
         try {
@@ -161,15 +158,15 @@ public class OtpStore {
         redisTemplate.delete(redisKeyBuilder.sessionKey(sessionId));
     }
 
-    public void saveOtpSessionAtomically(OtpPurpose purpose, String email, String sessionId, 
-                                        OtpSessionPayload payload, long ttlSeconds) {
+    public void saveOtpSessionAtomically(OtpPurpose purpose, String email, String sessionId,
+                                         OtpSessionPayload payload, long ttlSeconds) {
         String activePointerKey = redisKeyBuilder.activeSessionKey(purpose, email);
         String sessionKey = redisKeyBuilder.sessionKey(sessionId);
         String sessionKeyPrefix = redisKeyBuilder.getSessionKeyPrefix();
-        
+
         try {
             String sessionJson = objectMapper.writeValueAsString(payload);
-            
+
             List<String> keys = Arrays.asList(activePointerKey, sessionKey);
             List<String> args = Arrays.asList(sessionKeyPrefix, sessionJson, String.valueOf(ttlSeconds), sessionId);
 
@@ -189,7 +186,7 @@ public class OtpStore {
 
     public VerifyOtpResult verifyOtpAndUpdate(String sessionId, int maxAttempts, boolean isValid) {
         String sessionKey = redisKeyBuilder.sessionKey(sessionId);
-        
+
         List<String> keys = Arrays.asList(sessionKey);
         List<String> args = Arrays.asList(String.valueOf(maxAttempts), isValid ? "1" : "0");
 
@@ -209,11 +206,11 @@ public class OtpStore {
             if (found == 0) {
                 return VerifyOtpResult.notFound();
             }
-            
+
             String sessionJson = extractString(list.get(1));
             String statusString = extractString(list.get(2));
             OtpVerificationStatus status = parseStatus(statusString);
-            
+
             try {
                 OtpSessionPayload payload = objectMapper.readValue(sessionJson, OtpSessionPayload.class);
                 return new VerifyOtpResult(true, payload, status);
@@ -221,7 +218,7 @@ public class OtpStore {
                 return VerifyOtpResult.notFound();
             }
         }
-        
+
         return VerifyOtpResult.notFound();
     }
 
@@ -234,30 +231,6 @@ public class OtpStore {
         } catch (IllegalArgumentException e) {
             return OtpVerificationStatus.NOT_FOUND;
         }
-    }
-
-    public static class VerifyOtpResult {
-        private final boolean found;
-        private final OtpSessionPayload session;
-        private final OtpVerificationStatus status;
-
-        private VerifyOtpResult(boolean found, OtpSessionPayload session, OtpVerificationStatus status) {
-            this.found = found;
-            this.session = session;
-            this.status = status;
-        }
-
-        public static VerifyOtpResult notFound() {
-            return new VerifyOtpResult(false, null, OtpVerificationStatus.NOT_FOUND);
-        }
-
-        public boolean isFound() { return found; }
-        public OtpSessionPayload getSession() { return session; }
-        public OtpVerificationStatus getStatus() { return status; }
-        public boolean isLocked() { return status == OtpVerificationStatus.LOCKED; }
-        public boolean isAlreadyVerified() { return status == OtpVerificationStatus.ALREADY_VERIFIED; }
-        public boolean isExpired() { return status == OtpVerificationStatus.EXPIRED; }
-        public boolean isSuccess() { return status == OtpVerificationStatus.SUCCESS; }
     }
 
     private String extractString(Object value) {
@@ -301,6 +274,50 @@ public class OtpStore {
             return Long.parseLong(value.toString());
         } catch (NumberFormatException e) {
             return 0L;
+        }
+    }
+
+    public static class VerifyOtpResult {
+        private final boolean found;
+        private final OtpSessionPayload session;
+        private final OtpVerificationStatus status;
+
+        private VerifyOtpResult(boolean found, OtpSessionPayload session, OtpVerificationStatus status) {
+            this.found = found;
+            this.session = session;
+            this.status = status;
+        }
+
+        public static VerifyOtpResult notFound() {
+            return new VerifyOtpResult(false, null, OtpVerificationStatus.NOT_FOUND);
+        }
+
+        public boolean isFound() {
+            return found;
+        }
+
+        public OtpSessionPayload getSession() {
+            return session;
+        }
+
+        public OtpVerificationStatus getStatus() {
+            return status;
+        }
+
+        public boolean isLocked() {
+            return status == OtpVerificationStatus.LOCKED;
+        }
+
+        public boolean isAlreadyVerified() {
+            return status == OtpVerificationStatus.ALREADY_VERIFIED;
+        }
+
+        public boolean isExpired() {
+            return status == OtpVerificationStatus.EXPIRED;
+        }
+
+        public boolean isSuccess() {
+            return status == OtpVerificationStatus.SUCCESS;
         }
     }
 

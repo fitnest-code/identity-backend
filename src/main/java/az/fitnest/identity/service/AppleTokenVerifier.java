@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.exception.UnauthorizedException;
@@ -27,15 +28,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AppleTokenVerifier {
 
-    @Value("${auth.apple.client-id:}")
-    private String appleClientId;
-
-    @Value("${auth.apple.team-id:}")
-    private String appleTeamId;
-
     private static final String APPLE_ISSUER = "https://appleid.apple.com";
     private static final String APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    @Value("${auth.apple.client-id:}")
+    private String appleClientId;
+    @Value("${auth.apple.team-id:}")
+    private String appleTeamId;
 
     public AppleTokenClaims verify(String identityToken) {
         if (appleClientId == null || appleClientId.isEmpty()) {
@@ -117,5 +116,6 @@ public class AppleTokenVerifier {
         }
     }
 
-    public record AppleTokenClaims(String userId, String email, boolean emailVerified) {}
+    public record AppleTokenClaims(String userId, String email, boolean emailVerified) {
+    }
 }

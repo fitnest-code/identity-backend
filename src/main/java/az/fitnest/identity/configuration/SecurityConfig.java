@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.security.FitnestSecurityFilter;
@@ -35,49 +36,49 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .httpBasic(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> 
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/login")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/refresh")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register/complete")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/otp/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/social/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/forgot-password/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/reset-password")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/legal/privacy-policy")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/v1/legal/terms-of-use")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
-                .anyRequest().authenticated()
-            )
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType("application/json");
-                    String path = request.getRequestURI();
-                    String timestamp = java.time.OffsetDateTime.now().toString();
-                    String json = String.format("{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Unauthorized\",\"status\":401,\"path\":\"%s\",\"timestamp\":\"%s\"}}", path, timestamp);
-                    response.getWriter().write(json);
-                })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    response.setContentType("application/json");
-                    String path = request.getRequestURI();
-                    String timestamp = java.time.OffsetDateTime.now().toString();
-                    String json = String.format("{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Forbidden\",\"status\":403,\"path\":\"%s\",\"timestamp\":\"%s\"}}", path, timestamp);
-                    response.getWriter().write(json);
-                })
-            )
-            .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/login")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/refresh")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register/complete")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/otp/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/social/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/forgot-password/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/reset-password")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/legal/privacy-policy")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/v1/legal/terms-of-use")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            String path = request.getRequestURI();
+                            String timestamp = java.time.OffsetDateTime.now().toString();
+                            String json = String.format("{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Unauthorized\",\"status\":401,\"path\":\"%s\",\"timestamp\":\"%s\"}}", path, timestamp);
+                            response.getWriter().write(json);
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            String path = request.getRequestURI();
+                            String timestamp = java.time.OffsetDateTime.now().toString();
+                            String json = String.format("{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Forbidden\",\"status\":403,\"path\":\"%s\",\"timestamp\":\"%s\"}}", path, timestamp);
+                            response.getWriter().write(json);
+                        })
+                )
+                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -104,7 +105,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("*"));
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

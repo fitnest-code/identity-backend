@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.service.*;
 import az.fitnest.identity.service.*;
@@ -18,14 +19,14 @@ import java.util.concurrent.TimeUnit;
 public class ResetPasswordTokenServiceImpl implements ResetPasswordTokenService {
 
     private final StringRedisTemplate redisTemplate;
-    
+
     @Value("${auth.reset-password-token.prefix:auth:reset-password:}")
     private String tokenPrefix;
-    
+
     @Value("${auth.reset-password-token.ttl-hours:1}")
     private long ttlHours;
 
-        @Override
+    @Override
     public String issueForIdentifier(String identifier) {
         String token = UUID.randomUUID().toString();
         String key = resetPasswordKey(token);
@@ -33,19 +34,19 @@ public class ResetPasswordTokenServiceImpl implements ResetPasswordTokenService 
         return token;
     }
 
-        @Override
+    @Override
     public String requireIdentifier(String token) {
         String key = resetPasswordKey(token);
         String identifier = redisTemplate.opsForValue().get(key);
-        
+
         if (identifier == null) {
             throw new UnauthorizedException("Reset password token invalid or expired");
         }
-        
+
         return identifier;
     }
 
-        @Override
+    @Override
     public void consume(String token) {
         String key = resetPasswordKey(token);
         redisTemplate.delete(key);

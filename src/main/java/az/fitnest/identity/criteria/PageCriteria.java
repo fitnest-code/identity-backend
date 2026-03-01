@@ -1,4 +1,5 @@
 package az.fitnest.identity.criteria;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import lombok.AllArgsConstructor;
@@ -23,11 +24,11 @@ public class PageCriteria {
     @Builder.Default
     private SortDirection direction = SortDirection.ASC;
 
-    public enum SortDirection {
-        ASC, DESC
-    }
-
     public Integer getPage() {
         return page != null && page > 0 ? page - 1 : 0;
+    }
+
+    public enum SortDirection {
+        ASC, DESC
     }
 }

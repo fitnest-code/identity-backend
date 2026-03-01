@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.PasswordVerificationResult;
@@ -7,7 +8,7 @@ import az.fitnest.identity.dto.PasswordVerificationResult;
  * Service for secure password hashing and verification.
  */
 public interface PasswordService {
-    
+
     /**
      * Hashes a raw password using the current default secure algorithm.
      */

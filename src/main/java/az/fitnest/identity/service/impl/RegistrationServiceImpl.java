@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -35,21 +36,21 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Override
     public OtpSendResponse startRegistration(RegisterRequest request) {
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getMobile());
-        
+
         if (userRepository.findFirstByMobile(mobile).isPresent()) {
             throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
         }
-        
+
         OtpSendRequest otpRequest = OtpSendRequest.builder()
                 .mobile(mobile)
                 .purpose(OtpPurpose.REGISTRATION)
                 .build();
-        
+
         return otpService.sendOtp(
-                otpRequest, 
-                null, 
-                null, 
-                null, 
+                otpRequest,
+                null,
+                null,
+                null,
                 mobile
         );
     }
@@ -59,15 +60,15 @@ public class RegistrationServiceImpl implements RegistrationService {
     public LoginResponse completeRegistration(RegisterCompleteRequest request) {
         String registrationToken = request.getRegistrationToken();
         String identifier = registrationTokenService.requireIdentifier(registrationToken);
-        
+
         // Identifier is always mobile now
         String mobile = identifier;
-        
+
         // Consume the token so it cannot be used again
         registrationTokenService.consume(registrationToken);
-        
+
         String passwordHash = passwordService.hashPassword(request.getPassword());
-        
+
         User user = userService.createNewUser(
                 request.getFirstName(),
                 request.getLastName(),

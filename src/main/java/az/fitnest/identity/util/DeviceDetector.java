@@ -1,4 +1,5 @@
 package az.fitnest.identity.util;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +25,7 @@ public class DeviceDetector {
         } else if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("ios")) {
             return "iOS";
         }
-        
+
         return null;
     }
 

@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.SocialProvider;
@@ -13,12 +14,15 @@ import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.SocialAuthRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.service.*;
+
 import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface SocialAuthService {
     LoginResponse socialLoginApple(AppleSocialRequest request);
+
     LoginResponse socialLoginGoogle(GoogleSocialRequest request);
 }

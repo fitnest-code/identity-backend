@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.model.enums.SessionStatus;
 
@@ -57,7 +58,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
         // Early validation
         if (request == null || !StringUtils.hasText(request.getResetToken()) ||
-            !StringUtils.hasText(request.getNewPassword()) || !StringUtils.hasText(request.getConfirmPassword())) {
+                !StringUtils.hasText(request.getNewPassword()) || !StringUtils.hasText(request.getConfirmPassword())) {
             throw new az.fitnest.identity.exception.ValidationException("Yanlış sorğu parametrləri", "VALIDATION_ERROR");
         }
         // Password policy: min length, complexity, breached-password check (pseudo-code)

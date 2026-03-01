@@ -1,4 +1,5 @@
 package az.fitnest.identity.exception;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.ApiError;
@@ -47,7 +48,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         Map<String, Object> details = Map.of("otp_session_id", exception.getOtpSessionId());
-        
+
         ApiResponse body = wrap(
                 "ACCOUNT_DEACTIVATED",
                 exception.getMessage(),

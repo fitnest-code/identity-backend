@@ -1,4 +1,5 @@
 package az.fitnest.identity.repository;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.entity.UserConsent;
@@ -14,7 +15,10 @@ import java.util.Optional;
 @Repository
 public interface UserConsentRepository extends JpaRepository<UserConsent, Long> {
     Optional<UserConsent> findTopByUserIdOrderByAcceptedAtDesc(Long userId);
+
     List<UserConsent> findAllByUserId(Long userId);
+
     Page<UserConsent> findAllByUserIdOrderByAcceptedAtDesc(Long userId, Pageable pageable);
+
     Page<UserConsent> findAllByOrderByAcceptedAtDesc(Pageable pageable);
 }

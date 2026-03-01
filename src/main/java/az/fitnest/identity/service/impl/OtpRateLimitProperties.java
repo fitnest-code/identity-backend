@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import lombok.Getter;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.Min;
+
 import javax.annotation.PostConstruct;
 
 @Validated
@@ -46,7 +48,7 @@ public class OtpRateLimitProperties {
     public void validate() {
         if (cooldownSeconds > 0 && cooldownSeconds >= windowMinutes * 60) {
             throw new IllegalStateException(
-                "Cooldown period cannot be longer than window duration"
+                    "Cooldown period cannot be longer than window duration"
             );
         }
     }

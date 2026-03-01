@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.PasswordVerificationResult;
@@ -49,7 +50,7 @@ public class PasswordServiceImpl implements PasswordService {
         try {
             // matches() typically uses constant-time comparisons internally
             boolean matches = passwordEncoder.matches(rawPassword, passwordHash);
-            
+
             // Check if the current hash uses a suboptimal algorithm or parameters
             boolean upgradeRecommended = matches && passwordEncoder.upgradeEncoding(passwordHash);
 
@@ -66,7 +67,7 @@ public class PasswordServiceImpl implements PasswordService {
             throw new IllegalArgumentException("Password cannot be null or empty");
         }
         if (rawPassword.length() > MAX_PASSWORD_LENGTH) {
-            log.warn("Password hash attempt blocked: length {} exceeds limit {}", 
+            log.warn("Password hash attempt blocked: length {} exceeds limit {}",
                     rawPassword.length(), MAX_PASSWORD_LENGTH);
             throw new IllegalArgumentException("Password exceeds maximum allowed length");
         }

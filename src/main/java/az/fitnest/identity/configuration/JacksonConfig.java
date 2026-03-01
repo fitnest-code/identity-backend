@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import com.fasterxml.jackson.annotation.JsonInclude;

@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.service.*;
 import az.fitnest.identity.service.*;
@@ -11,7 +12,7 @@ import java.util.Locale;
 @Service
 public class EmailNormalizationServiceImpl implements EmailNormalizationService {
 
-        @Override
+    @Override
     public String normalize(String email) {
         if (email == null) {
             return null;

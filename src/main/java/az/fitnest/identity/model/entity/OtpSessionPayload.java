@@ -1,4 +1,5 @@
 package az.fitnest.identity.model.entity;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -18,7 +19,6 @@ import java.time.Instant;
 public class OtpSessionPayload {
 
 
-
     private OtpPurpose purpose;
 
     private String otpHash;
@@ -30,7 +30,6 @@ public class OtpSessionPayload {
     private Boolean verified;
 
     private Instant createdAt;
-
 
 
     // Temporary registration data

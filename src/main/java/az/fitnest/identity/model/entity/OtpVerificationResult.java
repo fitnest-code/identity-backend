@@ -1,4 +1,5 @@
 package az.fitnest.identity.model.entity;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;

@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.service.OtpRateLimiter;
@@ -23,17 +24,17 @@ public class ResilientOtpRateLimiter {
         this.delegate = delegate;
         this.meterRegistry = meterRegistry;
         CircuitBreakerConfig config = CircuitBreakerConfig.custom()
-            .failureRateThreshold(50)
-            .waitDurationInOpenState(Duration.ofSeconds(30))
-            .permittedNumberOfCallsInHalfOpenState(10)
-            .slidingWindowSize(100)
-            .recordExceptions(
-                RedisConnectionFailureException.class,
-                RedisException.class,
-                DataAccessResourceFailureException.class,
-                org.springframework.data.redis.RedisSystemException.class
-            )
-            .build();
+                .failureRateThreshold(50)
+                .waitDurationInOpenState(Duration.ofSeconds(30))
+                .permittedNumberOfCallsInHalfOpenState(10)
+                .slidingWindowSize(100)
+                .recordExceptions(
+                        RedisConnectionFailureException.class,
+                        RedisException.class,
+                        DataAccessResourceFailureException.class,
+                        org.springframework.data.redis.RedisSystemException.class
+                )
+                .build();
         this.circuitBreaker = CircuitBreaker.of("otpRateLimiter", config);
     }
 

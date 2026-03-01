@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -20,15 +21,13 @@ import java.util.Map;
 @Component
 public final class RedisKeyBuilder {
 
-    private static final String VERSION = "v1";
-    private static final String SEPARATOR = ":";
-
     public static final String PREFIX_OTP = "otp";
     public static final String PREFIX_SESSION = "session";
     public static final String PREFIX_COOLDOWN = "cooldown";
     public static final String PREFIX_ACTIVE = "active";
     public static final String PREFIX_RL = "rl";
-
+    private static final String VERSION = "v1";
+    private static final String SEPARATOR = ":";
     private static final String HMAC_ALGO = "HmacSHA256";
     private static final Base64.Encoder BASE64_URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
 
@@ -36,10 +35,8 @@ public final class RedisKeyBuilder {
     private final Map<OtpPurpose, String> purposePrefixes = new EnumMap<>(OtpPurpose.class);
     private final ThreadLocal<Mac> macThreadLocal = new ThreadLocal<>();
 
-    public record RedisKeys(String windowKey, String cooldownKey) {}
-
     public RedisKeyBuilder(@Value("${otp.rate-limit.key-hmac-secret:#{null}}") String secret,
-                          @Value("${otp.key-builder.pepper:change-me-in-production}") String pepper) {
+                           @Value("${otp.key-builder.pepper:change-me-in-production}") String pepper) {
         this.pepper = secret != null ? secret : pepper;
     }
 
@@ -77,8 +74,8 @@ public final class RedisKeyBuilder {
         String id = shortHmac(purpose.name() + "|" + identifier);
         String tag = "{" + id + "}"; // same slot for Redis Cluster
         return new RedisKeys(
-            PREFIX_OTP + SEPARATOR + PREFIX_RL + SEPARATOR + tag + ":w",
-            PREFIX_OTP + SEPARATOR + PREFIX_RL + SEPARATOR + tag + ":c"
+                PREFIX_OTP + SEPARATOR + PREFIX_RL + SEPARATOR + tag + ":w",
+                PREFIX_OTP + SEPARATOR + PREFIX_RL + SEPARATOR + tag + ":c"
         );
     }
 
@@ -157,5 +154,8 @@ public final class RedisKeyBuilder {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " cannot be null or blank");
         }
+    }
+
+    public record RedisKeys(String windowKey, String cooldownKey) {
     }
 }

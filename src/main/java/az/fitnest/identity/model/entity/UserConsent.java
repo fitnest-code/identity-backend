@@ -1,4 +1,5 @@
 package az.fitnest.identity.model.entity;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.entity.BaseAuditableEntity;
@@ -29,7 +30,7 @@ public class UserConsent extends BaseAuditableEntity {
 
     @Column(name = "terms_of_use_version", nullable = false)
     private String termsOfUseVersion;
-    
+
     @Column(name = "accepted_at", nullable = false)
     private LocalDateTime acceptedAt;
 

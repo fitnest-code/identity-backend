@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -11,14 +12,14 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class PhoneNormalizer {
     private static final Set<String> VALID_OPERATORS =
-        Set.of("50", "51", "10", "55", "99", "70", "77", "60");
+            Set.of("50", "51", "10", "55", "99", "70", "77", "60");
     private final Cache<String, String> normalizationCache;
 
     public PhoneNormalizer() {
         this.normalizationCache = Caffeine.newBuilder()
-            .maximumSize(10000)
-            .expireAfterWrite(1, TimeUnit.HOURS)
-            .build();
+                .maximumSize(10000)
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .build();
     }
 
     public String normalizeAzerbaijanPhoneNumber(String phoneNumber) {

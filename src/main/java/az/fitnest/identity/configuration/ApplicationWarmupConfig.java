@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -25,14 +26,13 @@ public class ApplicationWarmupConfig {
 
     @Value("${app.warmup.enabled:true}")
     private boolean warmupEnabled;
+    @Value("${app.warmup.db:true}")
+    private boolean warmupDb;
 
     public ApplicationWarmupConfig(DataSource dataSource, RedisTemplate<String, Object> redisTemplate) {
         this.dataSource = dataSource;
         this.redisTemplate = redisTemplate;
     }
-
-    @Value("${app.warmup.db:true}")
-    private boolean warmupDb;
 
     /**
      * Warm up application resources after startup.

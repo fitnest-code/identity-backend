@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.repository.AuthTokenRepository;
@@ -45,7 +46,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         Duration accessTtl = Duration.between(Instant.now(), accessExpiresAt);
         String jti = jwtService.parseJti(accessToken);
         redisTokenService.activateAccessToken(jti, accessTtl);
-        
+
         redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
 
         // Do NOT remove all previous tokens for this user. Allow multiple sessions/devices.

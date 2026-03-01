@@ -1,4 +1,5 @@
 package az.fitnest.identity.dto;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,7 +20,7 @@ public class LegalDocumentResponse {
         private String version;
         private String title;
         private String content;
-        
+
         @JsonProperty("updated_at")
         private LocalDateTime updatedAt;
     }

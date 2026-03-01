@@ -1,4 +1,5 @@
 package az.fitnest.identity;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springframework.boot.SpringApplication;
@@ -17,8 +18,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableKafka
 public class IdentityServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(IdentityServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(IdentityServiceApplication.class, args);
+    }
 
 }

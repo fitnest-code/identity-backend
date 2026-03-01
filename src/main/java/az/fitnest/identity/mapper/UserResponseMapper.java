@@ -1,4 +1,5 @@
 package az.fitnest.identity.mapper;
+
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.dto.*;
 
@@ -7,7 +8,8 @@ import az.fitnest.identity.model.entity.User;
 
 public final class UserResponseMapper {
 
-    private UserResponseMapper() {}
+    private UserResponseMapper() {
+    }
 
     public static UserResponse toResponse(User user) {
         return toResponse(user, false);

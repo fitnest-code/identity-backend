@@ -1,12 +1,13 @@
 package az.fitnest.identity.exception;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springframework.http.HttpStatus;
 
 public class UnauthorizedException extends BaseException {
-    
+
     private static final long serialVersionUID = 1L;
-    
+
     public UnauthorizedException(String message) {
         super(message, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
     }

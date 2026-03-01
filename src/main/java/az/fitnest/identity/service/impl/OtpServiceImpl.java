@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.entity.OtpSessionPayload;
@@ -66,8 +67,8 @@ public class OtpServiceImpl implements OtpService {
     private void validateConfiguration() {
         if (resendCooldownSeconds < minCooldownSeconds) {
             throw new IllegalStateException(
-                    "Configuration error: otp.resend-cooldown-seconds (" + resendCooldownSeconds + 
-                    ") must be >= otp.rate-limit.min-cooldown-seconds (" + minCooldownSeconds + ")"
+                    "Configuration error: otp.resend-cooldown-seconds (" + resendCooldownSeconds +
+                            ") must be >= otp.rate-limit.min-cooldown-seconds (" + minCooldownSeconds + ")"
             );
         }
     }
@@ -87,7 +88,7 @@ public class OtpServiceImpl implements OtpService {
         }
 
         OtpPurpose purpose = request.getPurpose();
-        
+
         validateRateLimit(purpose, mobileNumber);
 
         boolean exists = userRepository.findFirstByMobile(mobileNumber).isPresent();
@@ -130,8 +131,8 @@ public class OtpServiceImpl implements OtpService {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
             // Security hardening: Do not leak actual wait time to client.
             // Use a generic message but log the real wait time internally.
-            String message = OtpMessages.rateLimitGeneric(); 
-            
+            String message = OtpMessages.rateLimitGeneric();
+
             // Assuming OtpMessages.rateLimitGeneric() exists or similar. 
             // If not, I'll use a standard "Too many requests. Please try again later."
             if (message == null || message.isBlank()) {
@@ -186,7 +187,7 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResult verifyOtp(String sessionId, String otpCode) {
         Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
-        
+
         if (sessionOpt.isEmpty()) {
             throw new InvalidCredentialsException(OtpMessages.INVALID_OTP);
         }
@@ -200,7 +201,7 @@ public class OtpServiceImpl implements OtpService {
         if (session.getVerified()) {
             throw new InvalidCredentialsException(OtpMessages.OTP_ALREADY_VERIFIED);
         }
-        
+
         // We no longer check emailExistsAtCreation because removing it from payload means we trust
         // doesPurposeMatchExistence ran at creation time.
         // Or we should assume existence was checked at creation.
@@ -246,14 +247,14 @@ public class OtpServiceImpl implements OtpService {
     public OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, identifier)
                 .orElseThrow(() -> new InvalidCredentialsException(OtpMessages.INVALID_OTP));
-        
+
         return verifyOtp(sessionId, otpCode);
     }
 
     @Override
     public OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request) {
         OtpVerificationResult verificationResult = verifyOtp(request.getOtpSessionId(), request.getOtpCode());
-        
+
         String identifier = verificationResult.getMobile();
 
         if (verificationResult.getPurpose() == OtpPurpose.REGISTRATION) {

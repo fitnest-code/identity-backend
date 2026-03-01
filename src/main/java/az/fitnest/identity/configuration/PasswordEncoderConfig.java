@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import lombok.RequiredArgsConstructor;
@@ -25,10 +26,10 @@ public class PasswordEncoderConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         Map<String, PasswordEncoder> encoders = new HashMap<>();
-        
+
         // BCrypt support for legacy hashes or simple use cases
         encoders.put("bcrypt", new BCryptPasswordEncoder(properties.getBcrypt().getLogRounds()));
-        
+
         // Argon2 support for modern, high-security requirements
         encoders.put("argon2", new Argon2PasswordEncoder(
                 properties.getArgon2().getSaltLength(),
@@ -39,9 +40,9 @@ public class PasswordEncoderConfig {
         ));
 
         // Create the delegating encoder with the configured default ID
-        DelegatingPasswordEncoder delegatingPasswordEncoder = 
-            new DelegatingPasswordEncoder(properties.getDefaultId(), encoders);
-        
+        DelegatingPasswordEncoder delegatingPasswordEncoder =
+                new DelegatingPasswordEncoder(properties.getDefaultId(), encoders);
+
         // Special case: if no prefix is found, it can be configured to use a default.
         // However, production systems should enforce prefixed hashes for clarity.
         delegatingPasswordEncoder.setDefaultPasswordEncoderForMatches(encoders.get("argon2"));

@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
@@ -12,7 +13,9 @@ import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.impl.IdentityEventPublisher;
+
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,18 +25,32 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface UserService {
     User updateUserRole(Long userId, String roleName);
+
     User getUserById(Long userId);
+
     Page<User> getAllUsers(Pageable pageable);
+
     User createNewUser(String firstName, String lastName, String passwordHash, String mobile);
+
     User createNewUserWithFullName(String fullName, String passwordHash, String mobile);
+
     User updateUserProfile(Long userId, UpdateUserProfileCommand command);
+
     User updateProfileImageUrl(Long userId, String profileImageUrl);
+
     User updateSetupRequired(Long userId, boolean setupRequired);
+
     User updateLanguage(Long userId, String language);
+
     void deleteUser(Long userId, String reason);
+
     void deactivateAccount(Long userId);
+
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
+
     Page<az.fitnest.identity.dto.UserResponse> getAllUsersMapped(int page, int size);
+
     void deleteAllUsers();
+
     User updateSessionStatus(Long userId, az.fitnest.identity.model.enums.SessionStatus sessionStatus);
 }

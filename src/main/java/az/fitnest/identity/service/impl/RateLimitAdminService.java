@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -38,9 +39,9 @@ public class RateLimitAdminService {
         Long cdTtl = redisTemplate.getExpire(keys.cooldownKey(), TimeUnit.SECONDS);
 
         return new RateLimitStatus(
-            parseLongSafely(windowVal),
-            cdTtl != null && cdTtl > 0 ? cdTtl : 0,
-            windowTtl != null && windowTtl > 0 ? windowTtl : 0
+                parseLongSafely(windowVal),
+                cdTtl != null && cdTtl > 0 ? cdTtl : 0,
+                windowTtl != null && windowTtl > 0 ? windowTtl : 0
         );
     }
 
@@ -53,5 +54,6 @@ public class RateLimitAdminService {
         }
     }
 
-    public record RateLimitStatus(long attempts, long cooldownTtlSec, long windowTtlSec) {}
+    public record RateLimitStatus(long attempts, long cooldownTtlSec, long windowTtlSec) {
+    }
 }

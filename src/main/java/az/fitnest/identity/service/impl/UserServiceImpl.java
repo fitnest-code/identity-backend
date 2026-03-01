@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.util.MobileNumberUtils;
@@ -47,26 +48,26 @@ public class UserServiceImpl implements UserService {
     private final PasswordService passwordService;
 
     @Transactional
-        @Override
+    @Override
     public User updateUserRole(Long userId, String roleName) {
         User user = getUserById(userId);
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new ResourceNotFoundException("Rol tapılmadı: " + roleName));
-        
+
         user.setRole(role);
-        
+
         return userRepository.save(user);
     }
 
     @Cacheable(value = "users", key = "#userId")
     @Transactional(readOnly = true)
-        @Override
+    @Override
     public User getUserById(Long userId) {
         return getUserOrThrow(userId);
     }
 
     @Transactional(readOnly = true)
-        @Override
+    @Override
     public Page<User> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
     }
@@ -107,18 +108,18 @@ public class UserServiceImpl implements UserService {
 
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
-	    @Override
+    @Override
     public User updateUserProfile(Long userId, UpdateUserProfileCommand command) {
         User user = getUserOrThrow(userId);
 
-		String firstName = command.firstName();
-		String lastName = command.lastName();
+        String firstName = command.firstName();
+        String lastName = command.lastName();
 
-		boolean namePartsProvided = firstName != null || lastName != null;
+        boolean namePartsProvided = firstName != null || lastName != null;
         if (namePartsProvided) {
-			NameParts parts = resolveNameParts(firstName, lastName, null);
-			user.setFirstName(parts.firstName());
-			user.setLastName(parts.lastName());
+            NameParts parts = resolveNameParts(firstName, lastName, null);
+            user.setFirstName(parts.firstName());
+            user.setLastName(parts.lastName());
         }
 
         if (command.email() != null && !command.email().isEmpty()) {
@@ -136,7 +137,7 @@ public class UserServiceImpl implements UserService {
 
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
-        @Override
+    @Override
     public User updateProfileImageUrl(Long userId, String profileImageUrl) {
         User user = getUserOrThrow(userId);
 
@@ -149,7 +150,7 @@ public class UserServiceImpl implements UserService {
 
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
-        @Override
+    @Override
     public User updateSetupRequired(Long userId, boolean setupRequired) {
         User user = getUserById(userId);
         user.setSetupRequired(setupRequired);
@@ -169,11 +170,9 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private record UserSetupCompletedEventLocal(Long userId) {}
-
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
-        @Override
+    @Override
     public User updateLanguage(Long userId, String language) {
         User user = getUserOrThrow(userId);
         user.setLanguage(language);
@@ -189,7 +188,7 @@ public class UserServiceImpl implements UserService {
 
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
-        @Override
+    @Override
     public void deleteUser(Long userId, String reason) {
         User user = getUserOrThrow(userId);
         // Soft-delete: set status to INACTIVE and persist
@@ -270,14 +269,11 @@ public class UserServiceImpl implements UserService {
         return v.isEmpty() ? null : v;
     }
 
-    private record NameParts(String firstName, String lastName) {
-    }
-
     private void publishUserEvent(String eventType, Long userId) {
         Map<String, Object> event = Map.of(
-            "eventType", eventType,
-            "userId", userId,
-            "timestamp", System.currentTimeMillis()
+                "eventType", eventType,
+                "userId", userId,
+                "timestamp", System.currentTimeMillis()
         );
         try {
             kafkaTemplate.send("user-events", event);
@@ -285,6 +281,7 @@ public class UserServiceImpl implements UserService {
             // Silently ignore or handle via other means as requested (no logging)
         }
     }
+
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponse> getAllUsersMapped(int page, int size) {
@@ -298,5 +295,11 @@ public class UserServiceImpl implements UserService {
         User user = getUserById(userId);
         user.setSessionStatus(sessionStatus);
         return userRepository.save(user);
+    }
+
+    private record UserSetupCompletedEventLocal(Long userId) {
+    }
+
+    private record NameParts(String firstName, String lastName) {
     }
 }

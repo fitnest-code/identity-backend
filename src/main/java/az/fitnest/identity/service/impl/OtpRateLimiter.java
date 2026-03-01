@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -14,61 +15,58 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class OtpRateLimiter {
+    static final String RATE_LIMIT_SCRIPT_STRING = """
+                -- KEYS[1] = windowKey
+                -- KEYS[2] = cooldownKey
+                -- ARGV[1] = windowMs
+                -- ARGV[2] = cooldownMs
+                -- ARGV[3] = maxAttempts
+            
+                local windowKey = KEYS[1]
+                local cdKey     = KEYS[2]
+                local windowMs   = tonumber(ARGV[1])
+                local cooldownMs = tonumber(ARGV[2])
+                local maxA       = tonumber(ARGV[3])
+            
+                -- 1. Cooldown gate (cheap check)
+                if cooldownMs > 0 then
+                    local cdTtl = redis.call('PTTL', cdKey)
+                    if cdTtl > 0 then
+                        return {0, math.floor((cdTtl + 999) / 1000)} -- denied, waitSec
+                    end
+                end
+            
+                -- 2. Fixed window counter
+                local n = redis.call('INCR', windowKey)
+                if n == 1 then
+                    redis.call('PEXPIRE', windowKey, windowMs)
+                end
+            
+                if n > maxA then
+                    local wTtl = redis.call('PTTL', windowKey)
+                    if wTtl < 0 then wTtl = windowMs end -- safety fallback
+                    return {0, math.floor((wTtl + 999) / 1000)} -- denied, waitSec
+                end
+            
+                -- 3. Set/update cooldown
+                if cooldownMs > 0 then
+                    redis.call('PSETEX', cdKey, cooldownMs, '1')
+                end
+            
+                return {1, 0} -- allowed
+            """;
+    @SuppressWarnings("rawtypes")
+    static final DefaultRedisScript<java.util.List> RATE_LIMIT_SCRIPT = new DefaultRedisScript<>(
+            RATE_LIMIT_SCRIPT_STRING,
+            java.util.List.class
+    );
     private final StringRedisTemplate redisTemplate;
     private final RedisKeyBuilder redisKeyBuilder;
     private final OtpRateLimitProperties properties;
     private final MeterRegistry meterRegistry;
     private final PhoneNormalizer phoneNormalizer;
-
     // Local shielding for rapid IP bursts (cost-effective rejection)
     private final Cache<String, Long> localBurstShield;
-
-    static final String RATE_LIMIT_SCRIPT_STRING = """
-        -- KEYS[1] = windowKey
-        -- KEYS[2] = cooldownKey
-        -- ARGV[1] = windowMs
-        -- ARGV[2] = cooldownMs
-        -- ARGV[3] = maxAttempts
-
-        local windowKey = KEYS[1]
-        local cdKey     = KEYS[2]
-        local windowMs   = tonumber(ARGV[1])
-        local cooldownMs = tonumber(ARGV[2])
-        local maxA       = tonumber(ARGV[3])
-
-        -- 1. Cooldown gate (cheap check)
-        if cooldownMs > 0 then
-            local cdTtl = redis.call('PTTL', cdKey)
-            if cdTtl > 0 then
-                return {0, math.floor((cdTtl + 999) / 1000)} -- denied, waitSec
-            end
-        end
-
-        -- 2. Fixed window counter
-        local n = redis.call('INCR', windowKey)
-        if n == 1 then
-            redis.call('PEXPIRE', windowKey, windowMs)
-        end
-
-        if n > maxA then
-            local wTtl = redis.call('PTTL', windowKey)
-            if wTtl < 0 then wTtl = windowMs end -- safety fallback
-            return {0, math.floor((wTtl + 999) / 1000)} -- denied, waitSec
-        end
-
-        -- 3. Set/update cooldown
-        if cooldownMs > 0 then
-            redis.call('PSETEX', cdKey, cooldownMs, '1')
-        end
-
-        return {1, 0} -- allowed
-    """;
-
-    @SuppressWarnings("rawtypes")
-    static final DefaultRedisScript<java.util.List> RATE_LIMIT_SCRIPT = new DefaultRedisScript<>(
-        RATE_LIMIT_SCRIPT_STRING,
-        java.util.List.class
-    );
 
     public OtpRateLimiter(StringRedisTemplate redisTemplate,
                           RedisKeyBuilder redisKeyBuilder,
@@ -81,12 +79,10 @@ public class OtpRateLimiter {
         this.meterRegistry = meterRegistry;
         this.phoneNormalizer = phoneNormalizer;
         this.localBurstShield = Caffeine.newBuilder()
-            .maximumSize(5000)
-            .expireAfterWrite(2, TimeUnit.SECONDS)
-            .build();
+                .maximumSize(5000)
+                .expireAfterWrite(2, TimeUnit.SECONDS)
+                .build();
     }
-
-    public record RateLimitResult(boolean allowed, long waitTimeSeconds) {}
 
     /**
      * Dual-dimension limit: Phone + IP.
@@ -137,15 +133,15 @@ public class OtpRateLimiter {
         try {
             @SuppressWarnings("unchecked")
             java.util.List<Long> res = (java.util.List<Long>) redisTemplate.execute(
-                RATE_LIMIT_SCRIPT,
-                java.util.List.of(keys.windowKey(), keys.cooldownKey()),
-                String.valueOf(properties.getWindowMillis()),
-                String.valueOf(properties.getCooldownMillis()),
-                String.valueOf(properties.getMaxAttempts())
+                    RATE_LIMIT_SCRIPT,
+                    java.util.List.of(keys.windowKey(), keys.cooldownKey()),
+                    String.valueOf(properties.getWindowMillis()),
+                    String.valueOf(properties.getCooldownMillis()),
+                    String.valueOf(properties.getMaxAttempts())
             );
 
             meterRegistry.timer("otp.ratelimit.redis.latency", "dimension", dimension)
-                .record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+                    .record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
 
             if (res == null || res.size() < 2) {
                 meterRegistry.counter("otp.ratelimit.redis.bad_response").increment();
@@ -160,12 +156,15 @@ public class OtpRateLimiter {
         } catch (Exception e) {
             meterRegistry.counter("otp.ratelimit.error", "dimension", dimension).increment();
             org.slf4j.LoggerFactory.getLogger(OtpRateLimiter.class)
-                .error("Redis error during OTP {} rate limit check: {}", dimension, keys, e);
+                    .error("Redis error during OTP {} rate limit check: {}", dimension, keys, e);
             return properties.isFailOpen() ? new RateLimitResult(true, 0) : denyDefault();
         }
     }
 
     private RateLimitResult denyDefault() {
         return new RateLimitResult(false, properties.getWindowSeconds());
+    }
+
+    public record RateLimitResult(boolean allowed, long waitTimeSeconds) {
     }
 }

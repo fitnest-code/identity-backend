@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -22,19 +23,19 @@ public class DeduplicatingOtpRateLimiter {
     public DeduplicatingOtpRateLimiter(OtpRateLimiter delegate) {
         this.delegate = delegate;
         this.rlExecutor = Executors.newFixedThreadPool(16,
-            new ThreadFactoryBuilder().setNameFormat("otp-rl-%d").build());
+                new ThreadFactoryBuilder().setNameFormat("otp-rl-%d").build());
         this.requestCache = Caffeine.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(200, TimeUnit.MILLISECONDS)
-            .build();
+                .maximumSize(1000)
+                .expireAfterWrite(200, TimeUnit.MILLISECONDS)
+                .build();
     }
 
     public CompletableFuture<OtpRateLimiter.RateLimitResult> checkRateLimitAsync(
             OtpPurpose purpose, String phoneNumber, String clientIp) {
         String cacheKey = (purpose.name() + ":" + phoneNumber + ":" + (clientIp != null ? clientIp : "none"));
         return requestCache.get(cacheKey, k ->
-            CompletableFuture.supplyAsync(() ->
-                delegate.checkRateLimit(purpose, phoneNumber, clientIp), rlExecutor)
+                CompletableFuture.supplyAsync(() ->
+                        delegate.checkRateLimit(purpose, phoneNumber, clientIp), rlExecutor)
         );
     }
 

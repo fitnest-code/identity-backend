@@ -1,4 +1,5 @@
 package az.fitnest.identity.repository;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.SessionStatus;
@@ -37,11 +38,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Transactional
     @Query("""
-        UPDATE User u
-        SET u.sessionStatus = :status
-        WHERE u.id = :userId
-          AND NOT EXISTS (SELECT 1 FROM AuthToken t WHERE t.userId = :userId)
-    """)
+                UPDATE User u
+                SET u.sessionStatus = :status
+                WHERE u.id = :userId
+                  AND NOT EXISTS (SELECT 1 FROM AuthToken t WHERE t.userId = :userId)
+            """)
     int markNoSessionsIfNone(@Param("userId") Long userId, @Param("status") SessionStatus status);
 
     /**

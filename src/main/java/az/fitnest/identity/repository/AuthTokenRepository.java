@@ -1,4 +1,5 @@
 package az.fitnest.identity.repository;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.entity.AuthToken;
@@ -16,7 +17,7 @@ import java.util.List;
 public interface AuthTokenRepository extends JpaRepository<AuthToken, Long> {
 
     long deleteByUserId(Long userId);
-    
+
     List<AuthToken> findByUserId(Long userId);
 
     boolean existsByUserId(Long userId);
@@ -24,18 +25,21 @@ public interface AuthTokenRepository extends JpaRepository<AuthToken, Long> {
     long deleteByAccessTokenHash(String accessTokenHash);
 
     AuthToken findByRefreshTokenHash(String refreshTokenHash);
+
     AuthToken findByJti(String jti);
+
     long deleteByRefreshTokenHash(String refreshTokenHash);
+
     long deleteByJti(String jti);
 
     @Modifying
     @Transactional
     @Query("""
-        DELETE FROM AuthToken t
-        WHERE t.userId = :userId
-          AND t.refreshTokenHash = :hash
-          AND t.revoked = false
-          AND (t.refreshExpiresAt IS NULL OR t.refreshExpiresAt > :now)
-    """)
+                DELETE FROM AuthToken t
+                WHERE t.userId = :userId
+                  AND t.refreshTokenHash = :hash
+                  AND t.revoked = false
+                  AND (t.refreshExpiresAt IS NULL OR t.refreshExpiresAt > :now)
+            """)
     int consumeRefreshToken(@Param("userId") Long userId, @Param("hash") String hash, @Param("now") Instant now);
 }

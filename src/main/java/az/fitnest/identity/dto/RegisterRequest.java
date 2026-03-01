@@ -1,4 +1,5 @@
 package az.fitnest.identity.dto;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -15,7 +16,6 @@ import lombok.ToString;
 @ToString
 @Schema(description = "Request to initiate registration by collecting user data and sending OTP")
 public class RegisterRequest {
-
 
 
     @NotBlank(message = "Mobil nömrə tələb olunur")

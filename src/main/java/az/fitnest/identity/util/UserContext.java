@@ -1,4 +1,5 @@
 package az.fitnest.identity.criteria;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 
@@ -29,7 +30,7 @@ public class UserContext {
         String roleName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) return false;
-        
+
         return auth.getAuthorities().contains(new SimpleGrantedAuthority(roleName));
     }
 
@@ -43,7 +44,7 @@ public class UserContext {
         if (principal instanceof Long id) {
             return Optional.of(id);
         }
-        
+
         if (principal instanceof String str) {
             try {
                 return Optional.of(Long.parseLong(str));

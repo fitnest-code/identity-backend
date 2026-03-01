@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.LoginResponse;
@@ -10,9 +11,11 @@ import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.*;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

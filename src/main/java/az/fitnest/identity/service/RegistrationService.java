@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -21,5 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface RegistrationService {
     OtpSendResponse startRegistration(RegisterRequest request);
+
     LoginResponse completeRegistration(RegisterCompleteRequest request);
 }

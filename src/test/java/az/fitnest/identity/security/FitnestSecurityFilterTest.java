@@ -55,7 +55,7 @@ public class FitnestSecurityFilterTest {
         assertEquals("INTERNAL_SERVICE", auth.getPrincipal());
         assertTrue(auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_INTERNAL")));
-        
+
         verify(filterChain).doFilter(request, response);
     }
 
@@ -77,7 +77,7 @@ public class FitnestSecurityFilterTest {
         assertEquals(123L, auth.getPrincipal());
         assertTrue(auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_USER")));
-        
+
         verify(filterChain).doFilter(request, response);
     }
 
@@ -99,7 +99,7 @@ public class FitnestSecurityFilterTest {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
         // Verify ROLE_INTERNAL is also granted for internal endpoints
         assertTrue(auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_INTERNAL")),
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_INTERNAL")),
                 "ROLE_INTERNAL should be granted for internal endpoint requests");
 
         verify(filterChain).doFilter(request, response);
@@ -124,7 +124,7 @@ public class FitnestSecurityFilterTest {
         assertEquals(3L, auth.getPrincipal());
         // Must have ROLE_INTERNAL for internal endpoints
         assertTrue(auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_INTERNAL")),
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_INTERNAL")),
                 "ROLE_INTERNAL must be granted when calling internal endpoints");
         assertTrue(auth.isAuthenticated(), "User should be authenticated");
 
@@ -145,7 +145,7 @@ public class FitnestSecurityFilterTest {
         assertNotNull(auth, "Authentication should be set even with invalid X-User-Id");
         assertEquals("INTERNAL_SERVICE", auth.getPrincipal());
         assertTrue(auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_INTERNAL")),
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_INTERNAL")),
                 "ROLE_INTERNAL should be granted via fallback");
 
         verify(filterChain).doFilter(request, response);

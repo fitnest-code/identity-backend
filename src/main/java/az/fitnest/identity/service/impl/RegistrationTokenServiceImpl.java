@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -21,10 +22,10 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
-    
+
     @Value("${auth.registration-token.prefix:auth:registration:}")
     private String tokenPrefix;
-    
+
     @Value("${auth.registration-token.ttl-hours:24}")
     private long ttlHours;
 
@@ -32,7 +33,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
     public String issueForIdentifier(String identifier) {
         String token = UUID.randomUUID().toString();
         String key = registrationKey(token);
-        
+
         RegistrationTokenPayload payload = new RegistrationTokenPayload(identifier, OtpPurpose.REGISTRATION);
         try {
             String payloadJson = objectMapper.writeValueAsString(payload);
@@ -40,7 +41,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize registration token payload", e);
         }
-        
+
         return token;
     }
 
@@ -48,11 +49,11 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
     public RegistrationTokenPayload requirePayload(String token) {
         String key = registrationKey(token);
         String payloadJson = redisTemplate.opsForValue().get(key);
-        
+
         if (payloadJson == null) {
             throw new UnauthorizedException("Qeydiyyat tokeni yanlışdır və ya müddəti bitib");
         }
-        
+
         try {
             RegistrationTokenPayload payload = objectMapper.readValue(payloadJson, RegistrationTokenPayload.class);
             if (payload.getPurpose() != OtpPurpose.REGISTRATION) {

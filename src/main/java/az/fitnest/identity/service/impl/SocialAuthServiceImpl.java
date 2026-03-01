@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.service.AppleTokenVerifier;
 import az.fitnest.identity.service.GoogleTokenVerifier;
@@ -35,14 +36,14 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final az.fitnest.identity.repository.RoleRepository roleRepository;
 
     @Transactional
-        @Override
+    @Override
     public LoginResponse socialLoginApple(AppleSocialRequest request) {
         AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.getIdentityToken());
         String providerId = claims.userId();
-        
+
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
                 SocialProvider.APPLE, providerId);
-        
+
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
             User user = userRepository.findById(socialAuth.getUserId())
@@ -62,34 +63,34 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
             return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
-        
+
         // No email linking anymore. Create new user.
-        
+
         User newUser = createUserForSocialLogin(
                 request.getFirstName(),
                 request.getLastName(),
                 request.getFullName() != null ? request.getFullName() : "User",
                 null);
-        
+
         SocialAuth socialAuth = SocialAuth.builder()
                 .userId(newUser.getId())
                 .provider(SocialProvider.APPLE)
                 .providerId(providerId)
                 .build();
         socialAuthRepository.save(socialAuth);
-        
+
         return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
     }
 
     @Transactional
-        @Override
+    @Override
     public LoginResponse socialLoginGoogle(GoogleSocialRequest request) {
         GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.getIdToken());
         String providerId = claims.userId();
-        
+
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
                 SocialProvider.GOOGLE, providerId);
-        
+
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
             User user = userRepository.findById(socialAuth.getUserId())
@@ -109,22 +110,22 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
             return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
-        
+
         // No email linking anymore. Create new user.
-        
+
         User newUser = createUserForSocialLogin(
                 request.getFirstName(),
                 request.getLastName(),
                 request.getFullName() != null ? request.getFullName() : "User",
                 null);
-        
+
         SocialAuth socialAuth = SocialAuth.builder()
                 .userId(newUser.getId())
                 .provider(SocialProvider.GOOGLE)
                 .providerId(providerId)
                 .build();
         socialAuthRepository.save(socialAuth);
-        
+
         return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
     }
 

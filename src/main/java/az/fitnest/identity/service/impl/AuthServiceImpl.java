@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.PasswordVerificationResult;
@@ -121,14 +122,11 @@ public class AuthServiceImpl implements AuthService {
         // No need for userRepository.save(user) if only status was changed, 
         // but let's be safe if it was NO_SESSIONS -> ACTIVE
         if (user.getStatus() == UserStatus.ACTIVE && user.getFailedLoginAttempts() > 0) {
-             // already handled by resetFailedLoginAttempts(userId) which is atomic
+            // already handled by resetFailedLoginAttempts(userId) which is atomic
         }
-        
+
         return new AuthenticationResult(user, AuthenticationStatus.SUCCESS);
     }
-
-    private record AuthenticationResult(User user, AuthenticationStatus status) {}
-    private enum AuthenticationStatus { SUCCESS, REACTIVATION_REQUIRED }
 
     @Override
     @Transactional
@@ -147,14 +145,14 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = internalRefresh(userId, refreshToken);
-        
+
         LoginResponse tokens = tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
 
         if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
             userRepository.save(user);
         }
-        
+
         return RefreshResponse.builder()
                 .accessToken(tokens.getAccessToken())
                 .refreshToken(tokens.getRefreshToken())
@@ -172,9 +170,9 @@ public class AuthServiceImpl implements AuthService {
 
         String refreshTokenHash = tokenHasher.hash(refreshToken);
         int consumed = authTokenRepository.consumeRefreshToken(userId, refreshTokenHash, now);
-        
+
         if (consumed == 0) {
-             throw new UnauthorizedException("Yanlış giriş məlumatları");
+            throw new UnauthorizedException("Yanlış giriş məlumatları");
         }
 
         return user;
@@ -185,13 +183,13 @@ public class AuthServiceImpl implements AuthService {
         try {
             Long userId = jwtService.parseUserId(accessToken);
             String jti = jwtService.parseJti(accessToken);
-            
+
             redisTokenService.revokeAccessToken(jti);
             String activeJti = redisTokenService.getActiveSession(userId);
             if (jti.equals(activeJti)) {
                 redisTokenService.removeActiveSession(userId);
             }
-            
+
             internalLogout(userId, accessToken);
         } catch (Exception e) {
             // Handle parsing errors gracefully (token might be malformed or expired already)
@@ -204,22 +202,21 @@ public class AuthServiceImpl implements AuthService {
         try {
             authTokenRepository.deleteByAccessTokenHash(tokenHasher.hash(accessToken));
         } catch (Exception e) {
-             // Ignore if hash fails
+            // Ignore if hash fails
         }
-        
+
         userRepository.markNoSessionsIfNone(userId, SessionStatus.NO_SESSIONS);
     }
 
-
     private void incrementFailedLoginAttempts(Long userId, int currentAttempts, Instant now) {
         int attempts = currentAttempts + 1;
-        
+
         if (attempts >= maxFailedLoginAttempts) {
             userRepository.updateLockStatus(
-                userId, 
-                attempts, 
-                now.plus(java.time.Duration.ofMinutes(accountLockDurationMinutes)), 
-                UserStatus.LOCKED
+                    userId,
+                    attempts,
+                    now.plus(java.time.Duration.ofMinutes(accountLockDurationMinutes)),
+                    UserStatus.LOCKED
             );
         } else {
             userRepository.incrementFailedLoginAttempts(userId);
@@ -232,6 +229,11 @@ public class AuthServiceImpl implements AuthService {
 
     private boolean isAccountLocked(User user, Instant now) {
         return user.isAccountLocked();
+    }
+
+    private enum AuthenticationStatus {SUCCESS, REACTIVATION_REQUIRED}
+
+    private record AuthenticationResult(User user, AuthenticationStatus status) {
     }
 
 }

@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import jakarta.mail.MessagingException;
@@ -29,17 +30,17 @@ public class EmailServiceImpl implements EmailService {
         try {
             Context context = new Context();
             context.setVariables(variables);
-            
+
             String htmlContent = templateEngine.process("email/" + templateName, context);
-            
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
+
             helper.setFrom(fromAddress);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
-            
+
             mailSender.send(message);
         } catch (Exception e) {
             // Error handling could be improved here (e.g. throwing custom exception or alerting monitoring system)
@@ -55,7 +56,7 @@ public class EmailServiceImpl implements EmailService {
             message.setTo(to);
             message.setSubject(subject);
             message.setText(content);
-            
+
             mailSender.send(message);
         } catch (Exception e) {
             // Error handling could be improved here

@@ -1,4 +1,5 @@
 package az.fitnest.identity.controller;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.service.AuthService;
@@ -74,7 +75,6 @@ public class AuthController {
         }
         return ResponseEntity.ok().build();
     }
-    
 
 
     @PostMapping("/register")

@@ -1,4 +1,5 @@
 package az.fitnest.identity.security;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import io.jsonwebtoken.Claims;
@@ -49,7 +50,7 @@ public class JwtService {
 
     public Long parseUserId(String token, String expectedType) {
         Claims claims = parseClaims(token);
-        
+
         String actualType = claims.get("typ", String.class);
         if (expectedType != null && !expectedType.equals(actualType)) {
             throw new IllegalArgumentException("Invalid JWT token type. Expected: " + expectedType + ", Got: " + actualType);

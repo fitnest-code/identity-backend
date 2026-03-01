@@ -1,4 +1,5 @@
 package az.fitnest.identity.repository;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.entity.Role;

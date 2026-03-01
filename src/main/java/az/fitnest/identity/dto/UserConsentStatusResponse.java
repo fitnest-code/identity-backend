@@ -1,4 +1,5 @@
 package az.fitnest.identity.dto;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,15 +21,15 @@ public class UserConsentStatusResponse {
          * True if the user has accepted ANY version of this document.
          */
         private boolean accepted;
-        
+
         /**
          * True if the user has accepted the LATEST active version of this document.
          */
         @JsonProperty("up_to_date")
         private boolean upToDate;
-        
+
         private String version;
-        
+
         @JsonProperty("accepted_at")
         private LocalDateTime acceptedAt;
     }

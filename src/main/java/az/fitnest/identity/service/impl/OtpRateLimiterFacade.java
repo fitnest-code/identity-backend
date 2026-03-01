@@ -1,4 +1,5 @@
 package az.fitnest.identity.service.impl;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
@@ -14,10 +15,10 @@ public class OtpRateLimiterFacade {
     private final boolean useAsync;
 
     public OtpRateLimiterFacade(
-        ResilientOtpRateLimiter resilientRateLimiter,
-        DeduplicatingOtpRateLimiter deduplicatingRateLimiter,
-        MeterRegistry meterRegistry,
-        @Value("${otp.ratelimiter.async:false}") boolean useAsync) {
+            ResilientOtpRateLimiter resilientRateLimiter,
+            DeduplicatingOtpRateLimiter deduplicatingRateLimiter,
+            MeterRegistry meterRegistry,
+            @Value("${otp.ratelimiter.async:false}") boolean useAsync) {
         this.resilientRateLimiter = resilientRateLimiter;
         this.deduplicatingRateLimiter = deduplicatingRateLimiter;
         this.meterRegistry = meterRegistry;
@@ -28,7 +29,7 @@ public class OtpRateLimiterFacade {
         if (useAsync) {
             try {
                 return deduplicatingRateLimiter.checkRateLimitAsync(purpose, phoneNumber, clientIp)
-                    .get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
+                        .get(500, java.util.concurrent.TimeUnit.MILLISECONDS);
             } catch (Exception e) {
                 meterRegistry.counter("otp.ratelimit.async.timeout").increment();
                 return resilientRateLimiter.checkRateLimit(purpose, phoneNumber, clientIp);

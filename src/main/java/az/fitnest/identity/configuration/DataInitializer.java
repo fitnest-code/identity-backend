@@ -1,4 +1,5 @@
 package az.fitnest.identity.configuration;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.LegalDocumentType;
@@ -66,7 +67,7 @@ public class DataInitializer {
                         newAdminRole.setName("ROLE_ADMIN");
                         return roleRepository.save(newAdminRole);
                     });
-            
+
             User admin = new User();
             admin.setFirstName("Admin");
             admin.setLastName("User");

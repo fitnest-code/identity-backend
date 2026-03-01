@@ -1,4 +1,5 @@
 package az.fitnest.identity.dto;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,28 +21,6 @@ public class ErrorWrapper {
 
     @JsonProperty("error")
     private ErrorDetail error;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ErrorDetail {
-        private String code;
-        private String message;
-        private int status;
-        private String path;
-        private LocalDateTime timestamp;
-        private Map<String, Object> details;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FieldIssue {
-        private String field;
-        private String issue;
-    }
 
     public static ErrorWrapper fromErrorResponse(ErrorResponse errorResponse, int status) {
         Map<String, Object> details = null;
@@ -69,5 +48,27 @@ public class ErrorWrapper {
                         .details(details)
                         .build())
                 .build();
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ErrorDetail {
+        private String code;
+        private String message;
+        private int status;
+        private String path;
+        private LocalDateTime timestamp;
+        private Map<String, Object> details;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FieldIssue {
+        private String field;
+        private String issue;
     }
 }

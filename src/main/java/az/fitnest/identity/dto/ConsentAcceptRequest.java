@@ -1,4 +1,5 @@
 package az.fitnest.identity.dto;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,7 +30,7 @@ public class ConsentAcceptRequest {
     private Boolean accepted;
 
     private String channel;
-    
+
     @NotBlank
     @jakarta.validation.constraints.Pattern(regexp = "^(ios|android)$", flags = jakarta.validation.constraints.Pattern.Flag.CASE_INSENSITIVE, message = "Platform must be ios or android")
     private String platform;

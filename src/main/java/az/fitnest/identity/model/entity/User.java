@@ -1,10 +1,12 @@
 package az.fitnest.identity.model.entity;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.SessionStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.Instant;
 
 /**
@@ -77,11 +79,19 @@ public class User extends BaseAuditableEntity {
     @Column(name = "session_status")
     private SessionStatus sessionStatus = SessionStatus.NO_SESSIONS;
 
-    public boolean hasAccount() { return hasAccount; }
-    public boolean isSetupRequired() { return setupRequired; }
+    public boolean hasAccount() {
+        return hasAccount;
+    }
+
+    public boolean isSetupRequired() {
+        return setupRequired;
+    }
+
     public boolean isAccountLocked() {
         return status == UserStatus.LOCKED && lockedUntil != null && lockedUntil.isAfter(Instant.now());
     }
 
-    public boolean isDeleted() { return this.status == UserStatus.INACTIVE; }
+    public boolean isDeleted() {
+        return this.status == UserStatus.INACTIVE;
+    }
 }

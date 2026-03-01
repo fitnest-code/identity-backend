@@ -1,4 +1,5 @@
 package az.fitnest.identity.repository;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.SocialProvider;
@@ -15,7 +16,6 @@ public interface SocialAuthRepository extends JpaRepository<SocialAuth, Long> {
             SocialProvider provider,
             String providerId
     );
-
 
 
     boolean existsByProviderAndProviderId(

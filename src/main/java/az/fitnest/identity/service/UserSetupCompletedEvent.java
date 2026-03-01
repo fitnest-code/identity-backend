@@ -1,4 +1,5 @@
 package az.fitnest.identity.service;
+
 import az.fitnest.identity.model.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
