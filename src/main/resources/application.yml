@@ -1,9 +1,4 @@
-logging:
-  level:
-    root: INFO
-    az.fitnest: DEBUG
-    org.springframework.kafka: DEBUG
-    org.springframework.mail: DEBUG
+
 
 server:
   port: 8080
@@ -288,11 +283,14 @@ management:
 logging:
   level:
     root: ${LOGGING_LEVEL_ROOT:INFO}
+    az.fitnest: DEBUG
     az.fitnest.identity: ${LOGGING_LEVEL_AZ_FITNEST_IDENTITY:INFO}
     org.springframework.security: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY:INFO}
     org.springdoc: ${LOGGING_LEVEL_SPRINGDOC:INFO}
     org.hibernate.SQL: ${LOGGING_LEVEL_HIBERNATE_SQL:DEBUG}
     org.hibernate.type.descriptor.sql.BasicBinder: ${LOGGING_LEVEL_HIBERNATE_PARAM:TRACE}
+    org.springframework.kafka: DEBUG
+    org.springframework.mail: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
