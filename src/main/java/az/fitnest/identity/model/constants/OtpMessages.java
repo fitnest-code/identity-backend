@@ -5,7 +5,7 @@ import az.fitnest.identity.model.enums.UserStatus;
 public final class OtpMessages {
 
     public static final String OTP_SENT =
-            "Əgər qeyd olunan mobil nömrə sistemdə mövcuddursa, təsdiq kodu göndərildi.";
+            "Təsdiq kodu göndərildi.";
     public static final String OTP_SENT_IF_EXISTS =
             "Əgər qeyd olunan mobil nömrə sistemdə mövcuddursa, təsdiq kodu göndərildi.";
     public static final String INVALID_OTP =

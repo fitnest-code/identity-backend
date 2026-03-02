@@ -104,15 +104,20 @@ public class OtpRateLimiter {
             localBurstShield.put(shieldKey, count == null ? 1L : count + 1);
         }
 
-        String normalizedPhone = phoneNormalizer.normalizeAzerbaijanPhoneNumber(phoneNumber);
-        if (normalizedPhone == null) {
-            meterRegistry.counter("otp.ratelimit.invalid.phone").increment();
-            return new RateLimitResult(false, properties.getWindowSeconds());
+        // 2. Redis Limiting (Identifier-based: Phone or Email)
+        String finalIdentifier;
+        if (purpose == OtpPurpose.EMAIL_CHANGE) {
+            finalIdentifier = phoneNumber.toLowerCase().trim();
+        } else {
+            finalIdentifier = phoneNormalizer.normalizeAzerbaijanPhoneNumber(phoneNumber);
+            if (finalIdentifier == null) {
+                meterRegistry.counter("otp.ratelimit.invalid.identifier").increment();
+                return denyDefault();
+            }
         }
 
-        // 2. Redis Limiting (Phone-based)
-        RateLimitResult phoneResult = checkRedisRateLimit("phone", purpose, normalizedPhone);
-        if (!phoneResult.allowed()) return phoneResult;
+        RateLimitResult identifierResult = checkRedisRateLimit("identifier", purpose, finalIdentifier);
+        if (!identifierResult.allowed()) return identifierResult;
 
         // 3. Redis Limiting (IP-based, if provided)
         if (clientIp != null) {
