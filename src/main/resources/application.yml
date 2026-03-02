@@ -107,10 +107,10 @@ spring:
 
   # Jackson
   jackson:
-    serialization:
-      write-dates-as-timestamps: false
     default-property-inclusion: NON_NULL
     time-zone: UTC
+    serialization:
+      indent-output: false
 
   # Mail
   mail:
