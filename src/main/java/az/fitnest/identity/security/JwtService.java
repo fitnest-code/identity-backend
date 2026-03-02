@@ -100,23 +100,23 @@ public class JwtService {
         String jti = UUID.randomUUID().toString().replace("-", "");
 
         return Jwts.builder()
-                .setIssuer(issuer)
-                .setSubject(String.valueOf(userId))
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .setId(jti)
-                .addClaims(extraClaims)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .issuer(issuer)
+                .subject(String.valueOf(userId))
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(exp))
+                .id(jti)
+                .claims(extraClaims)
+                .signWith(key)
                 .compact();
     }
 
     private Claims parseClaims(String token) {
-        Jws<Claims> jws = Jwts.parserBuilder()
-                .setSigningKey(key)
+        Jws<Claims> jws = Jwts.parser()
+                .verifyWith(key)
                 .requireIssuer(issuer)
                 .build()
-                .parseClaimsJws(token);
+                .parseSignedClaims(token);
 
-        return jws.getBody();
+        return jws.getPayload();
     }
 }
