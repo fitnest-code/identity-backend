@@ -8,7 +8,9 @@ public enum OtpPurpose {
     REGISTRATION,
     LOGIN,
     PASSWORD_RESET,
-    REACTIVATION;
+    REACTIVATION,
+    EMAIL_CHANGE,
+    MOBILE_CHANGE;
 
     @JsonCreator
     public static OtpPurpose from(String value) {

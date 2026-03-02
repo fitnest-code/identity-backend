@@ -18,6 +18,7 @@ import az.fitnest.identity.model.constants.OtpMessages;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
 import az.fitnest.identity.service.ResetPasswordTokenService;
+import az.fitnest.identity.service.EmailService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class OtpServiceImpl implements OtpService {
     private final RegistrationTokenService registrationTokenService;
     private final ResetPasswordTokenService resetPasswordTokenService;
     private final TokenIssuanceService tokenIssuanceService;
+    private final EmailService emailService;
     private final Clock clock;
 
     @Value("${otp.ttl-seconds}")
@@ -81,17 +83,22 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile) {
         String rawMobile = request.mobile() != null ? request.mobile() : mobile;
-        String mobileNumber = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
-
-        if (mobileNumber == null) {
-            throw new IllegalArgumentException("Mobil nömrə təqdim edilməlidir");
-        }
+        String rawEmail = request.email();
+        String mobileNumber = rawMobile != null ? az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile) : null;
+        String email = rawEmail != null ? rawEmail.toLowerCase().trim() : null;
 
         OtpPurpose purpose = request.purpose();
+        String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobileNumber;
 
-        validateRateLimit(purpose, mobileNumber);
+        if (identifier == null) {
+            throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? "E-poçt təqdim edilməlidir" : "Mobil nömrə təqdim edilməlidir");
+        }
 
-        boolean exists = userRepository.findFirstByMobile(mobileNumber).isPresent();
+        validateRateLimit(purpose, identifier);
+
+        boolean exists = (purpose == OtpPurpose.EMAIL_CHANGE) 
+                ? userRepository.findFirstByEmail(email).isPresent()
+                : userRepository.findFirstByMobile(mobileNumber).isPresent();
 
         boolean shouldSendOtp = doesPurposeMatchExistence(purpose, exists);
 
@@ -99,18 +106,22 @@ public class OtpServiceImpl implements OtpService {
             return createFakeSessionResponse();
         }
 
-        invalidateActiveSession(purpose, mobileNumber);
+        invalidateActiveSession(purpose, identifier);
 
         String otp = otpGenerator.generateOtp();
-        String sessionId = createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber);
+        String sessionId = createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email);
 
-        smsService.sendSms(mobileNumber, "Your Fitnest verification code: " + otp);
+        if (purpose == OtpPurpose.EMAIL_CHANGE) {
+            emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
+        } else {
+            smsService.sendSms(mobileNumber, "Your Fitnest verification code: " + otp);
+        }
 
         return createSuccessResponse(sessionId);
     }
 
     private boolean doesPurposeMatchExistence(OtpPurpose purpose, boolean exists) {
-        if (purpose == OtpPurpose.REGISTRATION) {
+        if (purpose == OtpPurpose.REGISTRATION || purpose == OtpPurpose.EMAIL_CHANGE || purpose == OtpPurpose.MOBILE_CHANGE) {
             return !exists;
         } else if (purpose == OtpPurpose.LOGIN || purpose == OtpPurpose.PASSWORD_RESET || purpose == OtpPurpose.REACTIVATION) {
             return exists;
@@ -148,7 +159,7 @@ public class OtpServiceImpl implements OtpService {
         return new OtpSendResponse(fakeSessionId, otpTtlSeconds, resendCooldownSeconds, OtpMessages.OTP_SENT_IF_EXISTS);
     }
 
-    private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile) {
+    private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile, String email) {
         String otpHash = hashOtp(otp);
         String sessionId = otpSessionIdGenerator.generateSessionId();
 
@@ -163,9 +174,11 @@ public class OtpServiceImpl implements OtpService {
                 .lastName(lastName)
                 .userPasswordHash(userPasswordHash)
                 .mobile(mobile)
+                .email(email)
                 .build();
 
-        otpStore.saveOtpSessionAtomically(purpose, mobile, sessionId, payload, otpTtlSeconds);
+        String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobile;
+        otpStore.saveOtpSessionAtomically(purpose, identifier, sessionId, payload, otpTtlSeconds);
 
         return sessionId;
     }
@@ -230,6 +243,7 @@ public class OtpServiceImpl implements OtpService {
                 .lastName(verifiedSession.lastName())
                 .passwordHash(verifiedSession.userPasswordHash())
                 .mobile(verifiedSession.mobile())
+                .email(verifiedSession.email())
                 .build();
     }
 
@@ -287,6 +301,16 @@ public class OtpServiceImpl implements OtpService {
                     loginResponse.accessToken(),
                     loginResponse.refreshToken(),
                     loginResponse.user()
+            );
+        } else if (verificationResult.purpose() == OtpPurpose.EMAIL_CHANGE || verificationResult.purpose() == OtpPurpose.MOBILE_CHANGE) {
+            return new OtpVerifyResponse(
+                    true,
+                    null,
+                    OtpMessages.OTP_VERIFIED,
+                    null,
+                    null,
+                    null,
+                    null
             );
         } else {
             throw new InvalidCredentialsException("Yanlış OTP təyinatı");

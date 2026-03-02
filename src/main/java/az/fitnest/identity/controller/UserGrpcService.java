@@ -18,6 +18,10 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
+import az.fitnest.user.grpc.RequestEmailChangeRequest;
+import az.fitnest.user.grpc.ConfirmEmailChangeRequest;
+import az.fitnest.user.grpc.RequestMobileChangeRequest;
+import az.fitnest.user.grpc.ConfirmMobileChangeRequest;
 
 @GrpcService
 @RequiredArgsConstructor
@@ -147,6 +151,64 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         } catch (Exception e) {
             responseObserver.onError(Status.INTERNAL
                     .withDescription("Failed to update session status: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
+    @Override
+    public void requestEmailChange(RequestEmailChangeRequest request, StreamObserver<com.google.protobuf.Empty> responseObserver) {
+        try {
+            userService.requestEmailChange(request.getUserId(), request.getNewEmail());
+            responseObserver.onNext(com.google.protobuf.Empty.getDefaultInstance());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to request email change: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
+    @Override
+    public void confirmEmailChange(ConfirmEmailChangeRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
+        try {
+            User user = userService.confirmEmailChange(request.getUserId(), request.getNewEmail(), request.getOtpCode());
+            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to confirm email change: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
+    @Override
+    public void requestMobileChange(RequestMobileChangeRequest request, StreamObserver<com.google.protobuf.Empty> responseObserver) {
+        try {
+            userService.requestMobileChange(request.getUserId(), request.getNewMobile());
+            responseObserver.onNext(com.google.protobuf.Empty.getDefaultInstance());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to request mobile change: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
+    @Override
+    public void confirmMobileChange(ConfirmMobileChangeRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
+        try {
+            User user = userService.confirmMobileChange(request.getUserId(), request.getNewMobile(), request.getOtpCode());
+            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to confirm mobile change: " + e.getMessage())
                     .withCause(e)
                     .asException());
         }

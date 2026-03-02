@@ -17,6 +17,9 @@ import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.dto.OtpSendRequest;
+import az.fitnest.identity.model.enums.OtpPurpose;
+import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.util.TokenHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -46,6 +49,7 @@ public class UserServiceImpl implements UserService {
     private final IdentityEventPublisher eventPublisher;
     private final ApplicationEventPublisher localEventPublisher;
     private final PasswordService passwordService;
+    private final OtpService otpService;
 
     @Transactional
     @Override
@@ -122,14 +126,62 @@ public class UserServiceImpl implements UserService {
             user.setLastName(parts.lastName());
         }
 
-        if (command.email() != null && !command.email().isEmpty()) {
-            user.setEmail(command.email());
+        User saved = userRepository.save(user);
+        publishUserEvent("USER_UPDATED", userId);
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public void requestEmailChange(Long userId, String newEmail) {
+        User user = getUserOrThrow(userId);
+        if (newEmail.equalsIgnoreCase(user.getEmail())) {
+            throw new ConflictException("Yeni e-poçt köhnə ilə eynidir");
+        }
+        if (userRepository.findFirstByEmail(newEmail.toLowerCase()).isPresent()) {
+            throw new ConflictException("Bu e-poçt artıq qeydiyyatdan keçib");
         }
 
-        if (command.mobile() != null && !command.mobile().isEmpty()) {
-            user.setMobile(MobileNumberUtils.normalize(command.mobile()));
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail);
+        otpService.sendOtp(otpRequest);
+    }
+
+    @Override
+    @Transactional
+    public User confirmEmailChange(Long userId, String newEmail, String otpCode) {
+        User user = getUserOrThrow(userId);
+        otpService.verifyOtpByIdentifier(newEmail.toLowerCase(), OtpPurpose.EMAIL_CHANGE, otpCode);
+
+        user.setEmail(newEmail.toLowerCase());
+        User saved = userRepository.save(user);
+        publishUserEvent("USER_UPDATED", userId);
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public void requestMobileChange(Long userId, String newMobile) {
+        User user = getUserOrThrow(userId);
+        String normalizedMobile = MobileNumberUtils.normalize(newMobile);
+        if (normalizedMobile.equals(user.getMobile())) {
+            throw new ConflictException("Yeni mobil nömrə köhnə ilə eynidir");
+        }
+        if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
+            throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
         }
 
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null);
+        otpService.sendOtp(otpRequest);
+    }
+
+    @Override
+    @Transactional
+    public User confirmMobileChange(Long userId, String newMobile, String otpCode) {
+        User user = getUserOrThrow(userId);
+        String normalizedMobile = MobileNumberUtils.normalize(newMobile);
+        otpService.verifyOtpByIdentifier(normalizedMobile, OtpPurpose.MOBILE_CHANGE, otpCode);
+
+        user.setMobile(normalizedMobile);
         User saved = userRepository.save(user);
         publishUserEvent("USER_UPDATED", userId);
         return saved;
