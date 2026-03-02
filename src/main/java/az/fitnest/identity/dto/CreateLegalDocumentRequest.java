@@ -1,35 +1,24 @@
 package az.fitnest.identity.dto;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import az.fitnest.identity.model.enums.LegalDocumentType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CreateLegalDocumentRequest {
-
+public record CreateLegalDocumentRequest(
     @NotNull
-    private LegalDocumentType type;
+    LegalDocumentType type,
 
     @NotBlank
-    private String version;
+    String version,
 
     @NotBlank
-    private String language;
+    String language,
 
     @NotBlank
-    private String content;
+    String content,
 
-    @NotNull
     @JsonProperty("is_active")
-    private Boolean isActive;
-}
+    @NotNull
+    Boolean isActive
+) {}

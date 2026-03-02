@@ -1,28 +1,17 @@
 package az.fitnest.identity.dto;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class OtpSendResponse {
-
+public record OtpSendResponse(
     @JsonProperty("otp_session_id")
-    private String otpSessionId;
+    String otpSessionId,
 
     @JsonProperty("expires_in_seconds")
-    private Integer expiresInSeconds;
+    Integer expiresInSeconds,
 
     @JsonProperty("resend_available_in_seconds")
-    private Integer resendAvailableInSeconds;
+    Integer resendAvailableInSeconds,
 
     @JsonProperty("message")
-    private String message;
-}
+    String message
+) {}

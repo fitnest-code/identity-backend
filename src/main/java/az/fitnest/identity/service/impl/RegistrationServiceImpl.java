@@ -35,16 +35,13 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     public OtpSendResponse startRegistration(RegisterRequest request) {
-        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getMobile());
+        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
 
         if (userRepository.findFirstByMobile(mobile).isPresent()) {
             throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
         }
 
-        OtpSendRequest otpRequest = OtpSendRequest.builder()
-                .mobile(mobile)
-                .purpose(OtpPurpose.REGISTRATION)
-                .build();
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, mobile);
 
         return otpService.sendOtp(
                 otpRequest,
@@ -58,7 +55,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Transactional
     @Override
     public LoginResponse completeRegistration(RegisterCompleteRequest request) {
-        String registrationToken = request.getRegistrationToken();
+        String registrationToken = request.registrationToken();
         String identifier = registrationTokenService.requireIdentifier(registrationToken);
 
         // Identifier is always mobile now
@@ -67,11 +64,11 @@ public class RegistrationServiceImpl implements RegistrationService {
         // Consume the token so it cannot be used again
         registrationTokenService.consume(registrationToken);
 
-        String passwordHash = passwordService.hashPassword(request.getPassword());
+        String passwordHash = passwordService.hashPassword(request.password());
 
         User user = userService.createNewUser(
-                request.getFirstName(),
-                request.getLastName(),
+                request.firstName(),
+                request.lastName(),
                 passwordHash,
                 mobile
         );

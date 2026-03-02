@@ -5,7 +5,6 @@ import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.dto.PasswordVerificationResult;
 import az.fitnest.identity.service.PasswordService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -20,7 +19,6 @@ import org.springframework.util.StringUtils;
  * - Constant-time verification behavior.
  * - Transparent hash upgrade detection.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PasswordServiceImpl implements PasswordService {
@@ -43,7 +41,6 @@ public class PasswordServiceImpl implements PasswordService {
     public PasswordVerificationResult verifyPassword(String rawPassword, String passwordHash) {
         // Uniform failure for blank inputs to mitigate enumeration and timing leakage
         if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(passwordHash)) {
-            log.debug("Verification failed due to blank input");
             return new PasswordVerificationResult(false, false);
         }
 
@@ -57,7 +54,6 @@ public class PasswordServiceImpl implements PasswordService {
             return new PasswordVerificationResult(matches, upgradeRecommended);
         } catch (Exception e) {
             // Catch unexpected hashing failures (e.g. malformed hash) to prevent stack trace leaks
-            log.error("Error during password verification: {}", e.getMessage());
             return new PasswordVerificationResult(false, false);
         }
     }
@@ -67,8 +63,6 @@ public class PasswordServiceImpl implements PasswordService {
             throw new IllegalArgumentException("Password cannot be null or empty");
         }
         if (rawPassword.length() > MAX_PASSWORD_LENGTH) {
-            log.warn("Password hash attempt blocked: length {} exceeds limit {}",
-                    rawPassword.length(), MAX_PASSWORD_LENGTH);
             throw new IllegalArgumentException("Password exceeds maximum allowed length");
         }
     }

@@ -46,29 +46,27 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
-        return LegalDocumentResponse.builder()
-                .document(LegalDocumentResponse.DocumentData.builder()
-                        .type(type.name().toLowerCase())
-                        .version(doc.getVersion())
-                        .title(type == LegalDocumentType.PRIVACY_POLICY ? "Məxfilik Siyasəti" : "İstifadə Qaydaları")
-                        .content(doc.getContent())
-                        .updatedAt(doc.getPublishedAt())
-                        .build())
-                .build();
+        return new LegalDocumentResponse(
+                type.name().toLowerCase(),
+                doc.getVersion(),
+                type == LegalDocumentType.PRIVACY_POLICY ? "Məxfilik Siyasəti" : "İstifadə Qaydaları",
+                doc.getContent(),
+                doc.getPublishedAt()
+        );
     }
 
     @Transactional
     @Override
     public void createDocument(CreateLegalDocumentRequest request) {
-        if (legalDocumentRepository.existsByTypeAndVersion(request.getType(), request.getVersion())) {
+        if (legalDocumentRepository.existsByTypeAndVersion(request.type(), request.version())) {
             throw new az.fitnest.identity.exception.ConflictException("Sənəd versiyası artıq mövcuddur");
         }
 
-        String normalizedLang = normalizeLanguage(request.getLanguage());
+        String normalizedLang = normalizeLanguage(request.language());
 
         // Requirement 8: Enforce single active document per type and language
-        if (Boolean.TRUE.equals(request.getIsActive())) {
-            var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(request.getType(), normalizedLang);
+        if (Boolean.TRUE.equals(request.isActive())) {
+            var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(request.type(), normalizedLang);
             if (!activeDocs.isEmpty()) {
                 activeDocs.forEach(d -> d.setActive(false));
                 legalDocumentRepository.saveAll(activeDocs);
@@ -76,12 +74,12 @@ public class LegalServiceImpl implements LegalService {
         }
 
         LegalDocument doc = LegalDocument.builder()
-                .type(request.getType())
-                .version(request.getVersion())
+                .type(request.type())
+                .version(request.version())
                 .language(normalizedLang)
-                .content(request.getContent())
-                .isActive(request.getIsActive())
-                .publishedAt(request.getIsActive() ? LocalDateTime.now() : null)
+                .content(request.content())
+                .isActive(request.isActive())
+                .publishedAt(request.isActive() ? LocalDateTime.now() : null)
                 .build();
 
         legalDocumentRepository.save(doc);
@@ -91,8 +89,8 @@ public class LegalServiceImpl implements LegalService {
     @Override
     public void acceptConsent(Long userId, ConsentAcceptRequest request, String ipAddress, String userAgent) {
         // Validation: Ensure versions exist and are ACTIVE
-        boolean privacyExistsAndActive = legalDocumentRepository.existsByTypeAndVersionAndIsActiveTrue(LegalDocumentType.PRIVACY_POLICY, request.getPrivacyVersion());
-        boolean termsExistsAndActive = legalDocumentRepository.existsByTypeAndVersionAndIsActiveTrue(LegalDocumentType.TERMS_OF_USE, request.getTermsVersion());
+        boolean privacyExistsAndActive = legalDocumentRepository.existsByTypeAndVersionAndIsActiveTrue(LegalDocumentType.PRIVACY_POLICY, request.privacyVersion());
+        boolean termsExistsAndActive = legalDocumentRepository.existsByTypeAndVersionAndIsActiveTrue(LegalDocumentType.TERMS_OF_USE, request.termsVersion());
 
         if (!privacyExistsAndActive || !termsExistsAndActive) {
             throw new ValidationException("Yanlış razılıq versiyası", "INVALID_CONSENT_VERSION");
@@ -102,18 +100,18 @@ public class LegalServiceImpl implements LegalService {
         Optional<UserConsent> latestConsentOpt = userConsentRepository.findTopByUserIdOrderByAcceptedAtDesc(userId);
         if (latestConsentOpt.isPresent()) {
             UserConsent latest = latestConsentOpt.get();
-            if (latest.getPrivacyPolicyVersion().equals(request.getPrivacyVersion()) &&
-                    latest.getTermsOfUseVersion().equals(request.getTermsVersion())) {
+            if (latest.getPrivacyPolicyVersion().equals(request.privacyVersion()) &&
+                    latest.getTermsOfUseVersion().equals(request.termsVersion())) {
                 return; // Already accepted these exact versions
             }
         }
 
         UserConsent consent = UserConsent.builder()
                 .userId(userId)
-                .privacyPolicyVersion(request.getPrivacyVersion())
-                .termsOfUseVersion(request.getTermsVersion())
+                .privacyPolicyVersion(request.privacyVersion())
+                .termsOfUseVersion(request.termsVersion())
                 .acceptedAt(LocalDateTime.now())
-                .platform(request.getPlatform())
+                .platform(request.platform())
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
                 .build();
@@ -138,26 +136,24 @@ public class LegalServiceImpl implements LegalService {
             boolean isPrivacyUpToDate = latestPrivacyVersion != null && latestPrivacyVersion.equals(consent.getPrivacyPolicyVersion());
             boolean isTermsUpToDate = latestTermsVersion != null && latestTermsVersion.equals(consent.getTermsOfUseVersion());
 
-            return UserConsentStatusResponse.builder()
-                    .privacy(UserConsentStatusResponse.ConsentStatus.builder()
-                            .accepted(true)
-                            .upToDate(isPrivacyUpToDate)
-                            .version(consent.getPrivacyPolicyVersion())
-                            .acceptedAt(consent.getAcceptedAt())
-                            .build())
-                    .terms(UserConsentStatusResponse.ConsentStatus.builder()
-                            .accepted(true)
-                            .upToDate(isTermsUpToDate)
-                            .version(consent.getTermsOfUseVersion())
-                            .acceptedAt(consent.getAcceptedAt())
-                            .build())
-                    .build();
+            return new UserConsentStatusResponse(
+                    new UserConsentStatusResponse.ConsentStatus(true, isPrivacyUpToDate),
+                    new UserConsentStatusResponse.ConsentStatus(true, isTermsUpToDate),
+                    true,
+                    isPrivacyUpToDate && isTermsUpToDate,
+                    consent.getPrivacyPolicyVersion(),
+                    consent.getAcceptedAt()
+            );
         }
 
-        return UserConsentStatusResponse.builder()
-                .privacy(UserConsentStatusResponse.ConsentStatus.builder().accepted(false).upToDate(false).build())
-                .terms(UserConsentStatusResponse.ConsentStatus.builder().accepted(false).upToDate(false).build())
-                .build();
+        return new UserConsentStatusResponse(
+                new UserConsentStatusResponse.ConsentStatus(false, false),
+                new UserConsentStatusResponse.ConsentStatus(false, false),
+                false,
+                false,
+                null,
+                null
+        );
     }
 
     @Override
@@ -218,14 +214,14 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findById(id)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
-        if (request.getVersion() != null && !request.getVersion().isBlank()) {
-            doc.setVersion(request.getVersion());
+        if (request.version() != null && !request.version().isBlank()) {
+            doc.setVersion(request.version());
         }
-        if (request.getLanguage() != null && !request.getLanguage().isBlank()) {
-            doc.setLanguage(normalizeLanguage(request.getLanguage()));
+        if (request.language() != null && !request.language().isBlank()) {
+            doc.setLanguage(normalizeLanguage(request.language()));
         }
-        if (request.getContent() != null && !request.getContent().isBlank()) {
-            doc.setContent(request.getContent());
+        if (request.content() != null && !request.content().isBlank()) {
+            doc.setContent(request.content());
         }
 
         legalDocumentRepository.save(doc);
@@ -276,16 +272,16 @@ public class LegalServiceImpl implements LegalService {
             consents = userConsentRepository.findAllByOrderByAcceptedAtDesc(pageable);
         }
 
-        return consents.map(c -> AdminConsentResponse.builder()
-                .id(c.getId())
-                .userId(c.getUserId())
-                .privacyPolicyVersion(c.getPrivacyPolicyVersion())
-                .termsOfUseVersion(c.getTermsOfUseVersion())
-                .acceptedAt(c.getAcceptedAt())
-                .ipAddress(c.getIpAddress())
-                .userAgent(c.getUserAgent())
-                .platform(c.getPlatform())
-                .build());
+        return consents.map(c -> new AdminConsentResponse(
+                c.getId(),
+                c.getUserId(),
+                c.getPrivacyPolicyVersion(),
+                c.getTermsOfUseVersion(),
+                c.getAcceptedAt(),
+                c.getIpAddress(),
+                c.getUserAgent(),
+                c.getPlatform()
+        ));
     }
 
     // ==================== Helper Methods ====================
@@ -304,16 +300,16 @@ public class LegalServiceImpl implements LegalService {
     }
 
     private AdminLegalDocumentResponse toAdminResponse(LegalDocument doc) {
-        return AdminLegalDocumentResponse.builder()
-                .id(doc.getId())
-                .type(doc.getType().name())
-                .version(doc.getVersion())
-                .language(doc.getLanguage())
-                .content(doc.getContent())
-                .isActive(doc.isActive())
-                .publishedAt(doc.getPublishedAt())
-                .createdDate(doc.getCreatedDate())
-                .lastModifiedDate(doc.getLastModifiedDate())
-                .build();
+        return new AdminLegalDocumentResponse(
+                doc.getId(),
+                doc.getType().name(),
+                doc.getVersion(),
+                doc.getLanguage(),
+                doc.getContent(),
+                doc.isActive(),
+                doc.getPublishedAt(),
+                doc.getCreatedDate(),
+                doc.getLastModifiedDate()
+        );
     }
 }

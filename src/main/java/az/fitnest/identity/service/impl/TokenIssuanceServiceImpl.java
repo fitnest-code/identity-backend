@@ -55,11 +55,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         boolean consentRequired = legalService.isConsentRequired(user.getId());
         UserResponse userResponse = UserResponseMapper.toResponse(user, consentRequired);
 
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .user(userResponse)
-                .build();
+        return new LoginResponse(accessToken, refreshToken, userResponse);
     }
 
     private void saveAuthToken(Long userId, String accessToken, String refreshToken, String jti, String deviceType,

@@ -3,72 +3,58 @@ package az.fitnest.identity.dto;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ErrorWrapper {
-
-    @JsonProperty("error")
-    private ErrorDetail error;
-
+public record ErrorWrapper(
+        @JsonProperty("error") ErrorDetail error,
+        String code,
+        String message,
+        int status,
+        String path,
+        LocalDateTime timestamp,
+        String field,
+        String issue
+) {
     public static ErrorWrapper fromErrorResponse(ErrorResponse errorResponse, int status) {
         Map<String, Object> details = null;
-        if (errorResponse.getDetails() != null && errorResponse.getDetails().containsKey("validationErrors")) {
+        if (errorResponse.details() != null && errorResponse.details().containsKey("validationErrors")) {
             @SuppressWarnings("unchecked")
-            Map<String, String> validationErrors = (Map<String, String>) errorResponse.getDetails().get("validationErrors");
+            Map<String, String> validationErrors = (Map<String, String>) errorResponse.details().get("validationErrors");
             if (validationErrors != null) {
                 List<FieldIssue> issues = validationErrors.entrySet().stream()
-                        .map(entry -> FieldIssue.builder()
-                                .field(entry.getKey())
-                                .issue(entry.getValue())
-                                .build())
+                        .map(entry -> new FieldIssue(entry.getKey(), entry.getValue()))
                         .toList();
                 details = Map.of("validationErrors", issues);
             }
         }
 
-        return ErrorWrapper.builder()
-                .error(ErrorDetail.builder()
-                        .code(errorResponse.getCode())
-                        .message(errorResponse.getMessage())
-                        .status(status)
-                        .path(errorResponse.getPath())
-                        .timestamp(errorResponse.getTimestamp())
-                        .details(details)
-                        .build())
-                .build();
+        return new ErrorWrapper(
+                new ErrorDetail(
+                        errorResponse.code(),
+                        errorResponse.message(),
+                        status,
+                        errorResponse.path(),
+                        errorResponse.timestamp(),
+                        details
+                ),
+                null, null, status, null, null, null, null
+        );
     }
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ErrorDetail {
-        private String code;
-        private String message;
-        private int status;
-        private String path;
-        private LocalDateTime timestamp;
-        private Map<String, Object> details;
-    }
+    public record ErrorDetail(
+            String code,
+            String message,
+            int status,
+            String path,
+            LocalDateTime timestamp,
+            Map<String, Object> details
+    ) {}
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FieldIssue {
-        private String field;
-        private String issue;
-    }
+    public record FieldIssue(
+            String field,
+            String issue
+    ) {}
 }

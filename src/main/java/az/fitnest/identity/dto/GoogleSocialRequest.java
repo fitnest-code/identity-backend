@@ -1,31 +1,22 @@
 package az.fitnest.identity.dto;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@ToString(exclude = "idToken")
-public class GoogleSocialRequest {
-
+public record GoogleSocialRequest(
     @NotBlank
     @JsonAlias("id_token")
-    private String idToken;
+    String idToken,
 
     @JsonAlias("full_name")
-    private String fullName;
+    String fullName,
 
     @JsonAlias("first_name")
-    private String firstName;
+    String firstName,
 
     @JsonAlias("last_name")
-    private String lastName;
+    String lastName,
 
     @JsonAlias("email")
-    private String email;
-}
+    String email
+) {}

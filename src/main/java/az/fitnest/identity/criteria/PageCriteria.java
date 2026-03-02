@@ -13,16 +13,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PageCriteria {
 
-    @Builder.Default
-    private Integer page = 0;
-
-    @Builder.Default
-    private Integer size = 20;
-
+    private Integer page;
     private String sortBy;
 
-    @Builder.Default
-    private SortDirection direction = SortDirection.ASC;
 
     public Integer getPage() {
         return page != null && page > 0 ? page - 1 : 0;

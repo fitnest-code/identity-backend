@@ -37,19 +37,15 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordService passwordService;
     private final AuthTokenRepository authTokenRepository;
     private final RedisTokenService redisTokenService;
-
     @Override
     @Transactional
     public OtpSendResponse forgotPassword(ForgotPasswordRequest request) {
-        if (request == null || !StringUtils.hasText(request.getMobile())) {
-            return OtpSendResponse.builder().message(OtpMessages.OTP_SENT_IF_EXISTS).build();
+        if (request == null || !StringUtils.hasText(request.mobile())) {
+            return new OtpSendResponse(null, null, null, OtpMessages.OTP_SENT_IF_EXISTS);
         }
-        String rawMobile = request.getMobile();
+        String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
-        OtpSendRequest otpRequest = OtpSendRequest.builder()
-                .mobile(mobile)
-                .purpose(OtpPurpose.PASSWORD_RESET)
-                .build();
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.PASSWORD_RESET, mobile);
         return otpService.sendOtp(otpRequest);
     }
 
@@ -57,20 +53,17 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Transactional
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
         // Early validation
-        if (request == null || !StringUtils.hasText(request.getResetToken()) ||
-                !StringUtils.hasText(request.getNewPassword()) || !StringUtils.hasText(request.getConfirmPassword())) {
+        if (request == null || !StringUtils.hasText(request.resetToken()) ||
+                !StringUtils.hasText(request.newPassword())) {
             throw new az.fitnest.identity.exception.ValidationException("Yanlış sorğu parametrləri", "VALIDATION_ERROR");
         }
         // Password policy: min length, complexity, breached-password check (pseudo-code)
-        String newPassword = request.getNewPassword();
+        String newPassword = request.newPassword();
         if (newPassword.length() < 8) {
             throw new az.fitnest.identity.exception.ValidationException("Şifrə ən azı 8 simvoldan ibarət olmalıdır", "VALIDATION_ERROR");
         }
-        // Add complexity and breached-password checks as needed
-        if (!newPassword.equals(request.getConfirmPassword())) {
-            throw new az.fitnest.identity.exception.ValidationException("Şifrələr uyğun gəlmir", "VALIDATION_ERROR");
-        }
-        String identifier = resetPasswordTokenService.requireIdentifier(request.getResetToken());
+        
+        String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
         User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("Yanlış məlumatlar"));
         if (user.isDeleted()) {
@@ -85,13 +78,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         user.setPasswordHash(passwordHash);
         userRepository.save(user);
         // Consume reset token before revoking tokens
-        resetPasswordTokenService.consume(request.getResetToken());
+        resetPasswordTokenService.consume(request.resetToken());
         // Publish event after commit for Redis revocation (pseudo-code)
         // TransactionSynchronizationManager.registerSynchronization(new RedisRevocationEvent(user.getId()));
         revokeAllUserTokens(user.getId());
-        return ResetPasswordResponse.builder()
-                .message("Şifrə uğurla sıfırlandı.")
-                .build();
+        return new ResetPasswordResponse("Şifrə uğurla sıfırlandı.");
     }
 
     private void revokeAllUserTokens(Long userId) {

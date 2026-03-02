@@ -5,7 +5,14 @@ import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.UpdateUserProfileCommand;
 import az.fitnest.identity.model.entity.User;
-import az.fitnest.user.grpc.*;
+import az.fitnest.user.grpc.UserServiceGrpc;
+import az.fitnest.user.grpc.GetUserByIdRequest;
+import az.fitnest.user.grpc.UpdateUserProfileRequest;
+import az.fitnest.user.grpc.UpdateProfileImageRequest;
+import az.fitnest.user.grpc.UpdateSetupRequiredRequest;
+import az.fitnest.user.grpc.UpdateLanguageRequest;
+import az.fitnest.user.grpc.DeleteUserRequest;
+import az.fitnest.user.grpc.UpdateSessionStatusRequest;
 import com.google.protobuf.Empty;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -19,10 +26,10 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     private final UserService userService;
 
     @Override
-    public void getUserById(GetUserByIdRequest request, StreamObserver<UserResponse> responseObserver) {
+    public void getUserById(GetUserByIdRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
             User user = userService.getUserById(request.getUserId());
-            UserResponse response = UserResponse.newBuilder()
+            az.fitnest.user.grpc.UserResponse response = az.fitnest.user.grpc.UserResponse.newBuilder()
                     .setUserId(user.getId())
                     .setFirstName(user.getFirstName() != null ? user.getFirstName() : "")
                     .setLastName(user.getLastName() != null ? user.getLastName() : "")
@@ -44,17 +51,17 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void updateUserProfile(UpdateUserProfileRequest request, StreamObserver<UserResponse> responseObserver) {
+    public void updateUserProfile(UpdateUserProfileRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
-            UpdateUserProfileCommand command = UpdateUserProfileCommand.builder()
-                    .firstName(request.getFirstName())
-                    .lastName(request.getLastName())
-                    .email(request.getEmail())
-                    .mobile(request.getMobile())
-                    .build();
+            az.fitnest.identity.dto.UpdateUserProfileCommand command = new az.fitnest.identity.dto.UpdateUserProfileCommand(
+                    request.getFirstName(),
+                    request.getLastName(),
+                    request.getEmail(),
+                    request.getMobile()
+            );
 
             User user = userService.updateUserProfile(request.getUserId(), command);
-            UserResponse response = buildUserResponse(user);
+            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -67,10 +74,10 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void updateProfileImage(UpdateProfileImageRequest request, StreamObserver<UserResponse> responseObserver) {
+    public void updateProfileImage(UpdateProfileImageRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
             User user = userService.updateProfileImageUrl(request.getUserId(), request.getImageUrl());
-            UserResponse response = buildUserResponse(user);
+            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -83,10 +90,10 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void updateSetupRequired(UpdateSetupRequiredRequest request, StreamObserver<UserResponse> responseObserver) {
+    public void updateSetupRequired(UpdateSetupRequiredRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
             User user = userService.updateSetupRequired(request.getUserId(), request.getSetupRequired());
-            UserResponse response = buildUserResponse(user);
+            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -99,10 +106,10 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void updateLanguage(UpdateLanguageRequest request, StreamObserver<UserResponse> responseObserver) {
+    public void updateLanguage(UpdateLanguageRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
             User user = userService.updateLanguage(request.getUserId(), request.getLanguage());
-            UserResponse response = buildUserResponse(user);
+            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -129,11 +136,11 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void updateSessionStatus(UpdateSessionStatusRequest request, StreamObserver<UserResponse> responseObserver) {
+    public void updateSessionStatus(UpdateSessionStatusRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
             az.fitnest.identity.model.enums.SessionStatus sessionStatus = az.fitnest.identity.model.enums.SessionStatus.valueOf(request.getSessionStatus());
             User user = userService.updateSessionStatus(request.getUserId(), sessionStatus);
-            UserResponse response = buildUserResponse(user);
+            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -145,9 +152,9 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         }
     }
 
-    private UserResponse buildUserResponse(User user) {
-        String createdAt = user.getCreatedDate() != null ? user.getCreatedDate().toString() : "";
-        return UserResponse.newBuilder()
+    private az.fitnest.user.grpc.UserResponse buildUserResponse(User user) {
+        String createdDate = user.getCreatedDate() != null ? user.getCreatedDate().toString() : "";
+        return az.fitnest.user.grpc.UserResponse.newBuilder()
                 .setUserId(user.getId())
                 .setFirstName(user.getFirstName() != null ? user.getFirstName() : "")
                 .setLastName(user.getLastName() != null ? user.getLastName() : "")
@@ -159,7 +166,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                 .setStatus(user.getStatus() != null ? user.getStatus().name() : "")
                 .setAccountLocked(user.isAccountLocked())
                 .setSessionStatus(user.getSessionStatus() != null ? user.getSessionStatus().name() : "")
-                .setCreatedAt(createdAt)
+                .setCreatedAt(createdDate)
                 .build();
     }
 }

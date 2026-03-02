@@ -35,11 +35,12 @@ public class InternalUserController {
     public ResponseEntity<UserResponse> updateUserProfile(
             @PathVariable Long userId,
             @RequestBody @Valid UpdateUserProfileRequest request) {
-        User user = userService.updateUserProfile(userId, UpdateUserProfileCommand.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-                .build());
+        User user = userService.updateUserProfile(userId, new UpdateUserProfileCommand(
+                request.firstName(),
+                request.lastName(),
+                request.email(),
+                null
+        ));
         return ResponseEntity.ok(toUserResponse(user));
     }
 
@@ -47,7 +48,7 @@ public class InternalUserController {
     public ResponseEntity<UserResponse> updateProfileImage(
             @PathVariable Long userId,
             @RequestBody UpdateProfileImageRequest request) {
-        User user = userService.updateProfileImageUrl(userId, request.getImageUrl());
+        User user = userService.updateProfileImageUrl(userId, request.imageUrl());
         return ResponseEntity.ok(toUserResponse(user));
     }
 
@@ -55,7 +56,7 @@ public class InternalUserController {
     public ResponseEntity<UserResponse> updateSetupRequired(
             @PathVariable Long userId,
             @RequestBody UpdateSetupRequiredRequest request) {
-        User user = userService.updateSetupRequired(userId, request.getSetupRequired());
+        User user = userService.updateSetupRequired(userId, request.setupRequired());
         return ResponseEntity.ok(toUserResponse(user));
     }
 
@@ -63,7 +64,7 @@ public class InternalUserController {
     public ResponseEntity<UserResponse> updateLanguage(
             @PathVariable Long userId,
             @RequestBody @Valid az.fitnest.identity.dto.UpdateLanguageRequest request) {
-        User user = userService.updateLanguage(userId, request.getCode());
+        User user = userService.updateLanguage(userId, request.code());
         return ResponseEntity.ok(toUserResponse(user));
     }
 
@@ -71,7 +72,7 @@ public class InternalUserController {
     public ResponseEntity<UserResponse> updateSessionStatus(
             @PathVariable Long userId,
             @RequestBody @Valid UpdateSessionStatusRequest request) {
-        User user = userService.updateSessionStatus(userId, request.getSessionStatus());
+        User user = userService.updateSessionStatus(userId, request.sessionStatus());
         return ResponseEntity.ok(toUserResponse(user));
     }
 

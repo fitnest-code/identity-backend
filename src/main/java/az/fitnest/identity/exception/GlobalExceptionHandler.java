@@ -95,10 +95,7 @@ public class GlobalExceptionHandler {
     ) {
         List<FieldIssue> issues = new ArrayList<>();
         for (FieldError error : exception.getBindingResult().getFieldErrors()) {
-            issues.add(FieldIssue.builder()
-                    .field(error.getField())
-                    .issue(safeMessage(error.getDefaultMessage()))
-                    .build());
+            issues.add(new FieldIssue(error.getField(), safeMessage(error.getDefaultMessage())));
         }
 
         Map<String, Object> details = Map.of("fieldIssues", issues);
@@ -122,10 +119,10 @@ public class GlobalExceptionHandler {
     ) {
         List<FieldIssue> issues = new ArrayList<>();
         exception.getConstraintViolations().forEach(v -> {
-            issues.add(FieldIssue.builder()
-                    .field(v.getPropertyPath() != null ? v.getPropertyPath().toString() : "param")
-                    .issue(safeMessage(v.getMessage()))
-                    .build());
+            issues.add(new FieldIssue(
+                    v.getPropertyPath() != null ? v.getPropertyPath().toString() : "param",
+                    safeMessage(v.getMessage())
+            ));
         });
 
         Map<String, Object> details = Map.of("fieldIssues", issues);
@@ -271,16 +268,17 @@ public class GlobalExceptionHandler {
             String path,
             Map<String, Object> details
     ) {
-        return ApiResponse.<Void>builder()
-                .error(ApiError.builder()
-                        .code(code)
-                        .message(message)
-                        .status(status.value())
-                        .path(path)
-                        .timestamp(OffsetDateTime.now())
-                        .details(details)
-                        .build())
-                .build();
+        return new ApiResponse<>(
+                null,
+                new ApiError(
+                        code,
+                        message,
+                        status.value(),
+                        path,
+                        OffsetDateTime.now(),
+                        details
+                )
+        );
     }
 
     private String rootMessage(Throwable t) {

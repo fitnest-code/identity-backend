@@ -1,35 +1,24 @@
 package az.fitnest.identity.dto;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class OtpVerifyResponse {
-
-    private Boolean verified;
+public record OtpVerifyResponse(
+    Boolean verified,
 
     @JsonProperty("registration_token")
-    private String registrationToken;
+    String registrationToken,
 
     @JsonProperty("message")
-    private String message;
+    String message,
 
     @JsonProperty("reset_token")
-    private String resetToken;
+    String resetToken,
 
     @JsonProperty("access_token")
-    private String accessToken;
+    String accessToken,
 
     @JsonProperty("refresh_token")
-    private String refreshToken;
+    String refreshToken,
 
-    private UserResponse user;
-}
+    UserResponse user
+) {}

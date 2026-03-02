@@ -80,14 +80,14 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile) {
-        String rawMobile = request.getMobile() != null ? request.getMobile() : mobile;
+        String rawMobile = request.mobile() != null ? request.mobile() : mobile;
         String mobileNumber = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
 
         if (mobileNumber == null) {
             throw new IllegalArgumentException("Mobil nömrə təqdim edilməlidir");
         }
 
-        OtpPurpose purpose = request.getPurpose();
+        OtpPurpose purpose = request.purpose();
 
         validateRateLimit(purpose, mobileNumber);
 
@@ -145,12 +145,7 @@ public class OtpServiceImpl implements OtpService {
 
     private OtpSendResponse createFakeSessionResponse() {
         String fakeSessionId = otpSessionIdGenerator.generateSessionId();
-        return OtpSendResponse.builder()
-                .otpSessionId(fakeSessionId)
-                .expiresInSeconds(otpTtlSeconds)
-                .resendAvailableInSeconds(resendCooldownSeconds)
-                .message(OtpMessages.OTP_SENT_IF_EXISTS)
-                .build();
+        return new OtpSendResponse(fakeSessionId, otpTtlSeconds, resendCooldownSeconds, OtpMessages.OTP_SENT_IF_EXISTS);
     }
 
     private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile) {
@@ -176,12 +171,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private OtpSendResponse createSuccessResponse(String sessionId) {
-        return OtpSendResponse.builder()
-                .otpSessionId(sessionId)
-                .expiresInSeconds(otpTtlSeconds)
-                .resendAvailableInSeconds(resendCooldownSeconds)
-                .message(OtpMessages.OTP_SENT)
-                .build();
+        return new OtpSendResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, OtpMessages.OTP_SENT);
     }
 
     @Override
@@ -194,11 +184,11 @@ public class OtpServiceImpl implements OtpService {
 
         OtpSessionPayload session = sessionOpt.get();
 
-        if (session.getLocked()) {
+        if (session.locked()) {
             throw new InvalidCredentialsException(OtpMessages.OTP_LOCKED);
         }
 
-        if (session.getVerified()) {
+        if (session.verified()) {
             throw new InvalidCredentialsException(OtpMessages.OTP_ALREADY_VERIFIED);
         }
 
@@ -209,7 +199,7 @@ public class OtpServiceImpl implements OtpService {
         // Since we removed emailExistsAtCreation, we rely on sendOtp logic.
         // It's safer to not re-check here if field relies on state at creation which is immutable in session.
 
-        boolean isValid = hashOtp(otpCode).equals(session.getOtpHash());
+        boolean isValid = hashOtp(otpCode).equals(session.otpHash());
 
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
 
@@ -235,11 +225,11 @@ public class OtpServiceImpl implements OtpService {
 
         OtpSessionPayload verifiedSession = result.getSession();
         return OtpVerificationResult.builder()
-                .purpose(verifiedSession.getPurpose())
-                .firstName(verifiedSession.getFirstName())
-                .lastName(verifiedSession.getLastName())
-                .passwordHash(verifiedSession.getUserPasswordHash())
-                .mobile(verifiedSession.getMobile())
+                .purpose(verifiedSession.purpose())
+                .firstName(verifiedSession.firstName())
+                .lastName(verifiedSession.lastName())
+                .passwordHash(verifiedSession.userPasswordHash())
+                .mobile(verifiedSession.mobile())
                 .build();
     }
 
@@ -253,25 +243,33 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request) {
-        OtpVerificationResult verificationResult = verifyOtp(request.getOtpSessionId(), request.getOtpCode());
+        OtpVerificationResult verificationResult = verifyOtp(request.otpSessionId(), request.otpCode());
 
-        String identifier = verificationResult.getMobile();
+        String identifier = verificationResult.mobile();
 
-        if (verificationResult.getPurpose() == OtpPurpose.REGISTRATION) {
+        if (verificationResult.purpose() == OtpPurpose.REGISTRATION) {
             String registrationToken = registrationTokenService.issueForIdentifier(identifier);
-            return OtpVerifyResponse.builder()
-                    .verified(true)
-                    .registrationToken(registrationToken)
-                    .message(OtpMessages.OTP_VERIFIED)
-                    .build();
-        } else if (verificationResult.getPurpose() == OtpPurpose.PASSWORD_RESET) {
+            return new OtpVerifyResponse(
+                    true,
+                    registrationToken,
+                    OtpMessages.OTP_VERIFIED,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        } else if (verificationResult.purpose() == OtpPurpose.PASSWORD_RESET) {
             String resetToken = resetPasswordTokenService.issueForIdentifier(identifier);
-            return OtpVerifyResponse.builder()
-                    .verified(true)
-                    .resetToken(resetToken)
-                    .message(OtpMessages.OTP_VERIFIED)
-                    .build();
-        } else if (verificationResult.getPurpose() == OtpPurpose.REACTIVATION) {
+            return new OtpVerifyResponse(
+                    true,
+                    null,
+                    OtpMessages.OTP_VERIFIED,
+                    resetToken,
+                    null,
+                    null,
+                    null
+            );
+        } else if (verificationResult.purpose() == OtpPurpose.REACTIVATION) {
             az.fitnest.identity.model.entity.User user = userRepository.findFirstByMobile(identifier)
                     .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("İstifadəçi tapılmadı"));
 
@@ -281,13 +279,15 @@ public class OtpServiceImpl implements OtpService {
             String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
             az.fitnest.identity.dto.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
 
-            return OtpVerifyResponse.builder()
-                    .verified(true)
-                    .message(az.fitnest.identity.model.constants.OtpMessages.OTP_VERIFIED)
-                    .accessToken(loginResponse.getAccessToken())
-                    .refreshToken(loginResponse.getRefreshToken())
-                    .user(loginResponse.getUser())
-                    .build();
+            return new OtpVerifyResponse(
+                    true,
+                    null,
+                    az.fitnest.identity.model.constants.OtpMessages.OTP_VERIFIED,
+                    null,
+                    loginResponse.accessToken(),
+                    loginResponse.refreshToken(),
+                    loginResponse.user()
+            );
         } else {
             throw new InvalidCredentialsException("Yanlış OTP təyinatı");
         }

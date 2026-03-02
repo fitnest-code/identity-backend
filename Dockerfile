@@ -1,7 +1,7 @@
 # -----------------------------
 # Stage 1: Build JAR
 # -----------------------------
-FROM gradle:8.5.0-jdk17 AS builder
+FROM gradle:9.3-jdk25 AS builder
 WORKDIR /app
 
 # Cache dependencies
@@ -18,7 +18,7 @@ RUN ./gradlew clean bootJar --no-build-cache --no-daemon
 # -----------------------------
 # Stage 2: Runtime image
 # -----------------------------
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:25-jre
 
 # Create non-root user
 RUN groupadd -g 1001 fitnest && \
@@ -34,4 +34,4 @@ USER fitnest
 EXPOSE 8080
 
 # Using simple exec form. JVM will pick up JAVA_TOOL_OPTIONS from environment.
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS:-'-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseZGC -XX:+ZGenerational'} -jar app.jar"]

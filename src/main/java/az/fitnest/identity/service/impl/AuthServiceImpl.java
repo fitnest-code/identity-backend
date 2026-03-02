@@ -48,18 +48,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getMobile());
-        AuthenticationResult result = authenticate(mobile, request.getPassword());
+        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
+        AuthenticationResult result = authenticate(mobile, request.password());
 
         if (result.status() == AuthenticationStatus.REACTIVATION_REQUIRED) {
-            az.fitnest.identity.dto.OtpSendRequest otpRequest = az.fitnest.identity.dto.OtpSendRequest.builder()
-                    .mobile(result.user().getMobile())
-                    .purpose(az.fitnest.identity.model.enums.OtpPurpose.REACTIVATION)
-                    .build();
+            az.fitnest.identity.dto.OtpSendRequest otpRequest = new az.fitnest.identity.dto.OtpSendRequest(
+                    az.fitnest.identity.model.enums.OtpPurpose.REACTIVATION,
+                    result.user().getMobile()
+            );
             az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
             throw new az.fitnest.identity.exception.AccountDeactivatedException(
                     "Giriş üçün əlavə təsdiqləmə tələb olunur. Təhlükəsizlik kodunu daxil edin.",
-                    otpResponse.getOtpSessionId()
+                    otpResponse.otpSessionId()
             );
         }
 
@@ -153,10 +153,7 @@ public class AuthServiceImpl implements AuthService {
             userRepository.save(user);
         }
 
-        return RefreshResponse.builder()
-                .accessToken(tokens.getAccessToken())
-                .refreshToken(tokens.getRefreshToken())
-                .build();
+        return new RefreshResponse(tokens.accessToken(), tokens.refreshToken());
     }
 
     private User internalRefresh(Long userId, String refreshToken) {

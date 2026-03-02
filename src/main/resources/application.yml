@@ -22,6 +22,9 @@ server:
     mime-types: application/json,text/plain,text/css,application/javascript,application/openapi+json,application/vnd.api+json,text/html,application/xml,application/vnd.oai.openapi+json
 
 spring:
+  threads:
+    virtual:
+      enabled: true
   main:
     lazy-initialization: ${SPRING_MAIN_LAZY_INITIALIZATION:false}
   application:
@@ -63,6 +66,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
         jdbc:
           batch_size: 20
         order_inserts: true

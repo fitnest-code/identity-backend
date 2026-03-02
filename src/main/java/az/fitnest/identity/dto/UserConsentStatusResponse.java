@@ -1,36 +1,23 @@
 package az.fitnest.identity.dto;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-public class UserConsentStatusResponse {
-    private ConsentStatus privacy;
-    private ConsentStatus terms;
+public record UserConsentStatusResponse(
+    ConsentStatus privacy,
+    ConsentStatus terms,
+    boolean accepted,
 
-    @Data
-    @Builder
-    public static class ConsentStatus {
-        /**
-         * True if the user has accepted ANY version of this document.
-         */
-        private boolean accepted;
+    @JsonProperty("up_to_date")
+    boolean upToDate,
 
-        /**
-         * True if the user has accepted the LATEST active version of this document.
-         */
-        @JsonProperty("up_to_date")
-        private boolean upToDate;
+    String version,
 
-        private String version;
-
-        @JsonProperty("accepted_at")
-        private LocalDateTime acceptedAt;
-    }
+    @JsonProperty("accepted_at")
+    LocalDateTime acceptedAt
+) {
+    public record ConsentStatus(
+        boolean accepted,
+        boolean upToDate
+    ) {}
 }

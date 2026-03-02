@@ -14,7 +14,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -44,20 +44,20 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/login")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/refresh")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/register/complete")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/otp/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/social/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/forgot-password/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/reset-password")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/legal/privacy-policy")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/v1/legal/terms-of-use")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
+                        .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/register/complete").permitAll()
+                        .requestMatchers("/api/v1/auth/otp/**").permitAll()
+                        .requestMatchers("/api/v1/auth/social/**").permitAll()
+                        .requestMatchers("/api/v1/auth/forgot-password/**").permitAll()
+                        .requestMatchers("/api/v1/auth/reset-password").permitAll()
+                        .requestMatchers("/api/v1/legal/privacy-policy").permitAll()
+                        .requestMatchers("/api/v1/legal/terms-of-use").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -86,9 +86,7 @@ public class SecurityConfig {
 
     @Bean
     public RoleHierarchy roleHierarchy() {
-        RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
-        hierarchy.setHierarchy("ROLE_SUPER_ADMIN > ROLE_ADMIN\nROLE_ADMIN > ROLE_USER");
-        return hierarchy;
+        return RoleHierarchyImpl.fromHierarchy("ROLE_SUPER_ADMIN > ROLE_ADMIN\nROLE_ADMIN > ROLE_USER");
     }
 
     @Bean

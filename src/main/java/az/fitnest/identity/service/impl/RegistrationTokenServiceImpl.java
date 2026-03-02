@@ -56,7 +56,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
 
         try {
             RegistrationTokenPayload payload = objectMapper.readValue(payloadJson, RegistrationTokenPayload.class);
-            if (payload.getPurpose() != OtpPurpose.REGISTRATION) {
+            if (payload.purpose() != OtpPurpose.REGISTRATION) {
                 throw new UnauthorizedException("Yanlış qeydiyyat tokeni təyinatı");
             }
             return payload;
@@ -67,7 +67,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
 
     @Override
     public String requireIdentifier(String token) {
-        return requirePayload(token).getIdentifier();
+        return requirePayload(token).identifier();
     }
 
     @Override

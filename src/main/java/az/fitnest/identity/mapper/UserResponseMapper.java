@@ -16,20 +16,20 @@ public final class UserResponseMapper {
     }
 
     public static UserResponse toResponse(User user, boolean consentRequired) {
-        UserResponse response = new UserResponse();
-        response.setUserId(user.getId());
-        response.setFirstName(user.getFirstName());
-        response.setLastName(user.getLastName());
-        response.setMobile(user.getMobile());
-        response.setEmail(user.getEmail());
-        response.setHasAccount(user.hasAccount());
-        response.setSetupRequired(user.isSetupRequired());
-        response.setProfileImageUrl(user.getProfileImageUrl());
-        response.setLanguage(user.getLanguage());
-        response.setStatus(user.getStatus() != null ? user.getStatus().name() : null);
-        response.setAccountLocked(user.isAccountLocked());
-        response.setCreatedAt(user.getCreatedDate());
-        response.setConsentRequired(consentRequired);
-        return response;
+        return new UserResponse(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getMobile(),
+                user.getEmail(),
+                user.hasAccount(),
+                user.isSetupRequired(),
+                user.getProfileImageUrl(),
+                user.getLanguage(),
+                user.getStatus() != null ? user.getStatus().name() : null,
+                user.isAccountLocked(),
+                user.getCreatedDate(),
+                consentRequired
+        );
     }
 }

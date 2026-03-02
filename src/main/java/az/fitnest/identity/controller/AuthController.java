@@ -60,7 +60,7 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Yanlış və ya vaxtı keçmiş yeniləmə tokeni")
     })
     public ResponseEntity<RefreshResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
+        return ResponseEntity.ok(authService.refresh(request.refreshToken()));
     }
 
     @PostMapping("/logout")
@@ -93,7 +93,7 @@ public class AuthController {
     @Operation(summary = "Apple ilə sosial giriş")
     public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginApple(request);
-        HttpStatus status = response.getUser().isSetupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
+        HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);
     }
 
@@ -101,7 +101,7 @@ public class AuthController {
     @Operation(summary = "Google ilə sosial giriş")
     public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
-        HttpStatus status = response.getUser().isSetupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
+        HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);
     }
 
@@ -126,7 +126,7 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         Long userId = UserContext.getRequiredUserId();
-        userService.changePassword(userId, request.getOldPassword(), request.getNewPassword(), request.getConfirmNewPassword());
+        userService.changePassword(userId, request.oldPassword(), request.newPassword(), request.confirmNewPassword());
         return ResponseEntity.ok().build();
     }
 

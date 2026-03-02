@@ -5,34 +5,25 @@ import az.fitnest.identity.model.enums.UserStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
 
 import java.util.Map;
 
-@Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "Standard API response wrapper")
-public class ApiResponse<T> {
+public record ApiResponse<T>(
+        @Schema(description = "The response data payload")
+        T data,
 
-    @Schema(description = "The response data payload")
-    private T data;
-
-    @Schema(description = "Error details if the request failed")
-    private ApiError error;
+        @Schema(description = "Error details if the request failed")
+        ApiError error
+) {
 
     public static <T> ApiResponse<T> success(T data) {
-        return ApiResponse.<T>builder()
-                .data(data)
-                .build();
+        return new ApiResponse<>(data, null);
     }
 
     public static <T> ApiResponse<T> error(ApiError apiError) {
-        return ApiResponse.<T>builder()
-                .error(apiError)
-                .build();
+        return new ApiResponse<>(null, apiError);
     }
 
     @JsonValue

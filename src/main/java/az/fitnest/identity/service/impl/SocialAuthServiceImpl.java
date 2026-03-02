@@ -38,7 +38,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     @Transactional
     @Override
     public LoginResponse socialLoginApple(AppleSocialRequest request) {
-        AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.getIdentityToken());
+        AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.identityToken());
         String providerId = claims.userId();
 
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
@@ -51,9 +51,9 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
             if (user.isDeleted()) {
                 User newUser = createUserForSocialLogin(
-                        request.getFirstName(),
-                        request.getLastName(),
-                        request.getFullName() != null ? request.getFullName() : "User",
+                        request.firstName(),
+                        request.lastName(),
+                        request.fullName() != null ? request.fullName() : "User",
                         null
                 );
                 socialAuth.setUserId(newUser.getId());
@@ -67,9 +67,9 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         // No email linking anymore. Create new user.
 
         User newUser = createUserForSocialLogin(
-                request.getFirstName(),
-                request.getLastName(),
-                request.getFullName() != null ? request.getFullName() : "User",
+                request.firstName(),
+                request.lastName(),
+                request.fullName() != null ? request.fullName() : "User",
                 null);
 
         SocialAuth socialAuth = SocialAuth.builder()
@@ -85,7 +85,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     @Transactional
     @Override
     public LoginResponse socialLoginGoogle(GoogleSocialRequest request) {
-        GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.getIdToken());
+        GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.idToken());
         String providerId = claims.userId();
 
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
@@ -98,9 +98,9 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
             if (user.isDeleted()) {
                 User newUser = createUserForSocialLogin(
-                        request.getFirstName(),
-                        request.getLastName(),
-                        request.getFullName() != null ? request.getFullName() : "User",
+                        request.firstName(),
+                        request.lastName(),
+                        request.fullName() != null ? request.fullName() : "User",
                         null
                 );
                 socialAuth.setUserId(newUser.getId());
@@ -114,9 +114,9 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         // No email linking anymore. Create new user.
 
         User newUser = createUserForSocialLogin(
-                request.getFirstName(),
-                request.getLastName(),
-                request.getFullName() != null ? request.getFullName() : "User",
+                request.firstName(),
+                request.lastName(),
+                request.fullName() != null ? request.fullName() : "User",
                 null);
 
         SocialAuth socialAuth = SocialAuth.builder()
