@@ -6,11 +6,11 @@ server:
     enabled: true
   tomcat:
     threads:
-      max: 75
+      max: 200
       min-spare: 20
     connection-timeout: 20000
-    max-connections: 8192
-    accept-count: 100
+    max-connections: 10000
+    accept-count: 200
     # Enable URI encoding for proper Swagger URL handling
     uri-encoding: UTF-8
   servlet:
