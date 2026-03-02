@@ -45,7 +45,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
         String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
-        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.PASSWORD_RESET, mobile);
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.PASSWORD_RESET, mobile, null);
         return otpService.sendOtp(otpRequest);
     }
 

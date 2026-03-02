@@ -25,6 +25,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByMobile(String mobile);
 
+    Optional<User> findFirstByEmail(String email);
+
+    boolean existsByEmail(String email);
+
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.failedLoginAttempts = u.failedLoginAttempts + 1 WHERE u.id = :userId")

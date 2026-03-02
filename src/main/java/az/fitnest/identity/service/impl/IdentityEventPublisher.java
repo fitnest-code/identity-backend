@@ -1,14 +1,12 @@
 package az.fitnest.identity.service.impl;
 
-import az.fitnest.identity.model.enums.UserStatus;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-
-import java.util.UUID;
-
+import az.fitnest.identity.model.event.NotificationEvent;
+import az.fitnest.identity.service.UserSetupCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -23,5 +21,15 @@ public class IdentityEventPublisher {
                 .source("identity-service")
                 .build();
         kafkaTemplate.send("user-setup-completed", String.valueOf(userId), event);
+    }
+
+    public void publishNotification(NotificationEvent event) {
+        if (event.getEventId() == null) {
+            event.setEventId(UUID.randomUUID().toString());
+        }
+        if (event.getTimestamp() == null) {
+            event.setTimestamp(System.currentTimeMillis());
+        }
+        kafkaTemplate.send("notification-events", event.getRecipient(), event);
     }
 }

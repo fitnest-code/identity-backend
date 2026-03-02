@@ -18,5 +18,6 @@ public record OtpSessionPayload(
     String firstName,
     String lastName,
     String userPasswordHash,
-    String mobile
+    String mobile,
+    String email
 ) {}

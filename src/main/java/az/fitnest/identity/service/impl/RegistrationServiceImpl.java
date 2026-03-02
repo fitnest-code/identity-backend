@@ -41,7 +41,7 @@ public class RegistrationServiceImpl implements RegistrationService {
             throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
         }
 
-        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, mobile);
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, mobile, null);
 
         return otpService.sendOtp(
                 otpRequest,
