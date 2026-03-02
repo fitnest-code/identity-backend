@@ -56,9 +56,9 @@ public interface UserService {
 
     void requestEmailChange(Long userId, String newEmail);
 
-    User confirmEmailChange(Long userId, String newEmail, String otpCode);
+    User confirmEmailChange(Long userId, String otpCode);
 
     void requestMobileChange(Long userId, String newMobile);
 
-    User confirmMobileChange(Long userId, String newMobile, String otpCode);
+    User confirmMobileChange(Long userId, String otpCode);
 }

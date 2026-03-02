@@ -43,9 +43,13 @@ public interface OtpService {
 
     OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile);
 
+    OtpSendResponse sendOtpByUserId(Long userId, OtpSendRequest request);
+
     OtpVerificationResult verifyOtp(String sessionId, String otpCode);
 
     OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode);
+
+    OtpVerificationResult verifyOtpByUserId(Long userId, OtpPurpose purpose, String otpCode);
 
     OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request);
 }

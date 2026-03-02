@@ -143,14 +143,15 @@ public class UserServiceImpl implements UserService {
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail);
-        otpService.sendOtp(otpRequest);
+        otpService.sendOtpByUserId(userId, otpRequest);
     }
 
     @Override
     @Transactional
-    public User confirmEmailChange(Long userId, String newEmail, String otpCode) {
+    public User confirmEmailChange(Long userId, String otpCode) {
         User user = getUserOrThrow(userId);
-        otpService.verifyOtpByIdentifier(newEmail.toLowerCase(), OtpPurpose.EMAIL_CHANGE, otpCode);
+        var verificationResult = otpService.verifyOtpByUserId(userId, OtpPurpose.EMAIL_CHANGE, otpCode);
+        String newEmail = verificationResult.email();
 
         user.setEmail(newEmail.toLowerCase());
         User saved = userRepository.save(user);
@@ -171,15 +172,15 @@ public class UserServiceImpl implements UserService {
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null);
-        otpService.sendOtp(otpRequest);
+        otpService.sendOtpByUserId(userId, otpRequest);
     }
 
     @Override
     @Transactional
-    public User confirmMobileChange(Long userId, String newMobile, String otpCode) {
+    public User confirmMobileChange(Long userId, String otpCode) {
         User user = getUserOrThrow(userId);
-        String normalizedMobile = MobileNumberUtils.normalize(newMobile);
-        otpService.verifyOtpByIdentifier(normalizedMobile, OtpPurpose.MOBILE_CHANGE, otpCode);
+        var verificationResult = otpService.verifyOtpByUserId(userId, OtpPurpose.MOBILE_CHANGE, otpCode);
+        String normalizedMobile = verificationResult.mobile();
 
         user.setMobile(normalizedMobile);
         User saved = userRepository.save(user);

@@ -81,7 +81,16 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Override
+    public OtpSendResponse sendOtpByUserId(Long userId, OtpSendRequest request) {
+        return sendOtp(request, null, null, null, null, userId);
+    }
+
+    @Override
     public OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile) {
+        return sendOtp(request, firstName, lastName, userPasswordHash, mobile, null);
+    }
+
+    private OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile, Long userId) {
         String rawMobile = request.mobile() != null ? request.mobile() : mobile;
         String rawEmail = request.email();
         String mobileNumber = rawMobile != null ? az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile) : null;
@@ -106,10 +115,10 @@ public class OtpServiceImpl implements OtpService {
             return createFakeSessionResponse();
         }
 
-        invalidateActiveSession(purpose, identifier);
+        invalidateActiveSession(purpose, identifier, userId);
 
         String otp = otpGenerator.generateOtp();
-        String sessionId = createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email);
+        String sessionId = createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
             emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
@@ -129,11 +138,17 @@ public class OtpServiceImpl implements OtpService {
         return false;
     }
 
-    private void invalidateActiveSession(OtpPurpose purpose, String identifier) {
+    private void invalidateActiveSession(OtpPurpose purpose, String identifier, Long userId) {
         otpStore.getActiveSessionPointer(purpose, identifier).ifPresent(existingSessionId -> {
             otpStore.deleteSession(existingSessionId);
             otpStore.deleteActivePointer(purpose, identifier);
         });
+        if (userId != null) {
+            otpStore.getActiveSessionPointer(purpose, "user:" + userId).ifPresent(existingSessionId -> {
+                otpStore.deleteSession(existingSessionId);
+                otpStore.deleteActivePointer(purpose, "user:" + userId);
+            });
+        }
     }
 
     private void validateRateLimit(OtpPurpose purpose, String identifier) {
@@ -159,7 +174,7 @@ public class OtpServiceImpl implements OtpService {
         return new OtpSendResponse(fakeSessionId, otpTtlSeconds, resendCooldownSeconds, OtpMessages.OTP_SENT_IF_EXISTS);
     }
 
-    private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile, String email) {
+    private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile, String email, Long userId) {
         String otpHash = hashOtp(otp);
         String sessionId = otpSessionIdGenerator.generateSessionId();
 
@@ -179,6 +194,9 @@ public class OtpServiceImpl implements OtpService {
 
         String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobile;
         otpStore.saveOtpSessionAtomically(purpose, identifier, sessionId, payload, otpTtlSeconds);
+        if (userId != null) {
+            otpStore.setActiveSessionPointer(purpose, "user:" + userId, sessionId, otpTtlSeconds);
+        }
 
         return sessionId;
     }
@@ -250,6 +268,14 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, identifier)
+                .orElseThrow(() -> new InvalidCredentialsException(OtpMessages.INVALID_OTP));
+
+        return verifyOtp(sessionId, otpCode);
+    }
+
+    @Override
+    public OtpVerificationResult verifyOtpByUserId(Long userId, OtpPurpose purpose, String otpCode) {
+        String sessionId = otpStore.getActiveSessionPointer(purpose, "user:" + userId)
                 .orElseThrow(() -> new InvalidCredentialsException(OtpMessages.INVALID_OTP));
 
         return verifyOtp(sessionId, otpCode);

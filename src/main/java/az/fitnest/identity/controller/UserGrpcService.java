@@ -173,7 +173,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void confirmEmailChange(ConfirmEmailChangeRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
-            User user = userService.confirmEmailChange(request.getUserId(), request.getNewEmail(), request.getOtpCode());
+            User user = userService.confirmEmailChange(request.getUserId(), request.getOtpCode());
             az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -202,7 +202,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void confirmMobileChange(ConfirmMobileChangeRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
-            User user = userService.confirmMobileChange(request.getUserId(), request.getNewMobile(), request.getOtpCode());
+            User user = userService.confirmMobileChange(request.getUserId(), request.getOtpCode());
             az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
