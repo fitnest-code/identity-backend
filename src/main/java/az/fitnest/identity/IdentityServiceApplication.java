@@ -10,12 +10,15 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.scheduling.annotation.EnableAsync;
 
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
 @SpringBootApplication
 @EnableMethodSecurity
 @EnableCaching
 @EnableJpaAuditing
 @EnableAsync
 @EnableKafka
+@EnableJpaRepositories(basePackages = "az.fitnest.identity.repository")
 public class IdentityServiceApplication {
 
     public static void main(String[] args) {
