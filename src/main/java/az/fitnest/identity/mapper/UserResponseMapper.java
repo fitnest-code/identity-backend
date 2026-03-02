@@ -16,6 +16,11 @@ public final class UserResponseMapper {
     }
 
     public static UserResponse toResponse(User user, boolean consentRequired) {
+        String profileImageUrl = user.getProfileImageUrl();
+        if (profileImageUrl != null && !profileImageUrl.isBlank() && !profileImageUrl.startsWith("http")) {
+            profileImageUrl = "/api/v1/me/profile/images/" + profileImageUrl;
+        }
+
         return new UserResponse(
                 user.getId(),
                 user.getFirstName(),
@@ -24,7 +29,7 @@ public final class UserResponseMapper {
                 user.getEmail(),
                 user.hasAccount(),
                 user.isSetupRequired(),
-                user.getProfileImageUrl(),
+                profileImageUrl,
                 user.getLanguage(),
                 user.getStatus() != null ? user.getStatus().name() : null,
                 user.isAccountLocked(),

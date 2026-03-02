@@ -35,7 +35,9 @@ public class DataInitializer {
             initAdminUser();
             initSuperAdminUser();
             initRegularUser();
+            initRegularUser2();
             initPartnerUser();
+            initPartnerUser2();
             initLegalDocuments();
             initUserConsents();
         };
@@ -138,6 +140,40 @@ public class DataInitializer {
             user.setSetupRequired(false);
             user.setRole(partnerRole);
             user.setProfileImageUrl("https://i.pravatar.cc/150?u=partner");
+            userRepository.save(user);
+        }
+    }
+
+    private void initRegularUser2() {
+        String userMobile = az.fitnest.identity.util.MobileNumberUtils.normalize("0550000001");
+        if (userRepository.findFirstByMobile(userMobile).isEmpty()) {
+            Role userRole = roleRepository.findByName("ROLE_USER").orElse(null);
+            User user = new User();
+            user.setFirstName("Alice");
+            user.setLastName("Smith");
+            user.setMobile(userMobile);
+            user.setPasswordHash(passwordService.hashPassword("User123!"));
+            user.setHasAccount(true);
+            user.setSetupRequired(false);
+            user.setRole(userRole);
+            user.setProfileImageUrl("https://i.pravatar.cc/150?u=alice");
+            userRepository.save(user);
+        }
+    }
+
+    private void initPartnerUser2() {
+        String partnerMobile = az.fitnest.identity.util.MobileNumberUtils.normalize("0700000001");
+        if (userRepository.findFirstByMobile(partnerMobile).isEmpty()) {
+            Role partnerRole = roleRepository.findByName("ROLE_PARTNER").orElse(null);
+            User user = new User();
+            user.setFirstName("Bob");
+            user.setLastName("Partner");
+            user.setMobile(partnerMobile);
+            user.setPasswordHash(passwordService.hashPassword("Partner123!"));
+            user.setHasAccount(true);
+            user.setSetupRequired(false);
+            user.setRole(partnerRole);
+            user.setProfileImageUrl("https://i.pravatar.cc/150?u=bob");
             userRepository.save(user);
         }
     }
