@@ -3,11 +3,13 @@ package az.fitnest.identity.service.impl;
 import az.fitnest.identity.model.event.NotificationEvent;
 import az.fitnest.identity.service.UserSetupCompletedEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class IdentityEventPublisher {
@@ -30,6 +32,8 @@ public class IdentityEventPublisher {
         if (event.getTimestamp() == null) {
             event.setTimestamp(System.currentTimeMillis());
         }
+        log.info("Publishing notification event: {} to recipient: {} on topic: notification-events", 
+                event.getEventId(), event.getRecipient());
         kafkaTemplate.send("notification-events", event.getRecipient(), event);
     }
 }

@@ -59,10 +59,10 @@ public class OtpController {
             )
     })
     @PostMapping("/verify")
-    public ResponseEntity<OtpVerifyResponse> verifyOtp(
+    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<OtpVerifyResponse>> verifyOtp(
             @Valid @RequestBody OtpVerifyRequest request
     ) {
         OtpVerifyResponse response = otpService.verifyOtpAndIssueToken(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(response));
     }
 }

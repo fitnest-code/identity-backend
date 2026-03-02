@@ -31,6 +31,6 @@ public record ApiResponse<T>(
         if (error != null) {
             return Map.of("error", error);
         }
-        return data;
+        return Map.of("data", data != null ? data : Map.of());
     }
 }
