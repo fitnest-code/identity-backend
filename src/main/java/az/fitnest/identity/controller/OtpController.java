@@ -26,48 +26,6 @@ public class OtpController {
 
     private final OtpService otpService;
 
-    @Operation(
-            summary = "OTP göndərin",
-            description = "Göstərilən mobil nömrəyə 4 rəqəmli OTP kodu göndərir. " +
-                    "QEYDİYYAT və GİRİŞ məqsədlərini dəstəkləyir. " +
-                    "Sui-istifadənin qarşısını almaq üçün limit tətbiq edilir. " +
-                    "QEYDİYYAT üçün: mobil nömrə artıq qeydiyyatdan keçmiş olmamalıdır. " +
-                    "GİRİŞ üçün: mobil nömrə qeydiyyatdan keçmiş olmalıdır."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "OTP uğurla göndərildi",
-                    content = @Content(schema = @Schema(implementation = OtpSendResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Yanlış sorğu məlumatı və ya doğrulama uğursuz oldu",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Mobil nömrə tapılmadı (GİRİŞ məqsədi üçün)",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Mobil nömrə artıq qeydiyyatdan keçib (QEYDİYYAT məqsədi üçün)",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "429",
-                    description = "OTP limiti keçilib - çox sayda sorğu",
-                    content = @Content
-            )
-    })
-    @PostMapping("/send")
-    public ResponseEntity<OtpSendResponse> sendOtp(
-            @Valid @RequestBody OtpSendRequest request
-    ) {
-        OtpSendResponse response = otpService.sendOtp(request);
-        return ResponseEntity.ok(response);
-    }
 
     @Operation(
             summary = "OTP-ni doğrulayın",
