@@ -178,7 +178,7 @@ springdoc:
   default-produces-media-type: application/json
   writer-with-default-pretty-printer: false
   # Pre-load OpenAPI spec at startup
-  pre-loading-enabled: false
+  pre-loading-enabled: true
 
   # Use faster model converters
   model-converters:
@@ -263,7 +263,7 @@ management:
     health:
       show-details: ${MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS:when-authorized}
       probes:
-        enabled: ${MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED:false}
+        enabled: true
     metrics:
       enabled: true
     prometheus:
@@ -318,6 +318,7 @@ resilience4j:
         waitDuration: 1s
         retryExceptions:
           - org.springframework.web.client.ResourceAccessException
+          - java.net.ConnectException
 
 # Cache Configuration
 cache:
@@ -378,6 +379,8 @@ grpc:
         client-private-key: ${GRPC_CLIENT_KEY:}
   notifications:
     deadline-ms: 10000
+    keep-alive-time: 30s
+    keep-alive-timeout: 5s
 
 eureka:
   client:
