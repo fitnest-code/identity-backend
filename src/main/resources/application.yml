@@ -254,7 +254,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,metrics
       base-path: /actuator
       cors:
         allowed-origins: ${CORS_ALLOWED_ORIGINS:http://161.97.183.7,http://localhost}
