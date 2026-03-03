@@ -20,49 +20,59 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.OffsetDateTime;
 import java.util.*;
 
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private final MessageSource messageSource;
+
+    public GlobalExceptionHandler(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
+
     // ---------- OTP Rate Limit ----------
     @ExceptionHandler(OtpRateLimitedException.class)
-    public ResponseEntity<ApiResponse> handleOtpRateLimitedException(
+    public ResponseEntity<ApiResponse<Void>> handleOtpRateLimitedException(
             OtpRateLimitedException exception,
             HttpServletRequest request
     ) {
-        ApiResponse body = wrap(
-                exception.getErrorCode(),
-                exception.getMessage(),
-                HttpStatus.TOO_MANY_REQUESTS,
-                request.getRequestURI(),
-                null
-        );
+        ApiError error = ApiError.builder()
+                .code(exception.getErrorCode())
+                .message(getMessage("error.otp_rate_limited"))
+                .status(HttpStatus.TOO_MANY_REQUESTS.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
 
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .header("Retry-After", String.valueOf(exception.getWaitTimeSeconds()))
-                .body(body);
+                .body(ApiResponse.error(error));
     }
 
     @ExceptionHandler(AccountDeactivatedException.class)
-    public ResponseEntity<ApiResponse> handleAccountDeactivatedException(
+    public ResponseEntity<ApiResponse<Void>> handleAccountDeactivatedException(
             AccountDeactivatedException exception,
             HttpServletRequest request
     ) {
         Map<String, Object> details = Map.of("otp_session_id", exception.getOtpSessionId());
 
-        ApiResponse body = wrap(
-                "ACCOUNT_DEACTIVATED",
-                exception.getMessage(),
-                HttpStatus.FORBIDDEN,
-                request.getRequestURI(),
-                details
-        );
+        ApiError error = ApiError.builder()
+                .code("ACCOUNT_DEACTIVATED")
+                .message(getMessage("error.account_deactivated"))
+                .status(HttpStatus.FORBIDDEN.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .details(details)
+                .build();
 
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(error));
     }
 
     // ---------- Custom BaseException ----------
     @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ApiResponse> handleBaseException(
+    public ResponseEntity<ApiResponse<Void>> handleBaseException(
             BaseException exception,
             HttpServletRequest request
     ) {
@@ -70,50 +80,49 @@ public class GlobalExceptionHandler {
 
         if (exception instanceof ValidationException ve && ve.getBindingResult() != null) {
             Map<String, String> validationErrors = new LinkedHashMap<>();
-            for (FieldError error : ve.getBindingResult().getFieldErrors()) {
-                validationErrors.putIfAbsent(error.getField(), safeMessage(error.getDefaultMessage()));
+            for (FieldError fieldError : ve.getBindingResult().getFieldErrors()) {
+                validationErrors.putIfAbsent(fieldError.getField(), safeMessage(fieldError.getDefaultMessage()));
             }
             details = Map.of("validationErrors", validationErrors);
         }
 
-        ApiResponse body = wrap(
-                exception.getErrorCode(),
-                safeMessage(exception.getMessage()),
-                exception.getHttpStatus(),
-                request.getRequestURI(),
-                details
-        );
+        ApiError error = ApiError.builder()
+                .code(exception.getErrorCode())
+                .message(getLocalizedMessage(exception.getErrorCode(), exception.getMessage()))
+                .status(exception.getHttpStatus().value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .details(details)
+                .build();
 
-        return ResponseEntity.status(exception.getHttpStatus()).body(body);
+        return ResponseEntity.status(exception.getHttpStatus()).body(ApiResponse.error(error));
     }
 
     // ---------- Bean Validation on @RequestBody ----------
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse> handleMethodArgumentNotValid(
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValid(
             MethodArgumentNotValidException exception,
             HttpServletRequest request
     ) {
         List<FieldIssue> issues = new ArrayList<>();
-        for (FieldError error : exception.getBindingResult().getFieldErrors()) {
-            issues.add(new FieldIssue(error.getField(), safeMessage(error.getDefaultMessage())));
+        for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
+            issues.add(new FieldIssue(fieldError.getField(), safeMessage(fieldError.getDefaultMessage())));
         }
 
-        Map<String, Object> details = Map.of("fieldIssues", issues);
+        ApiError error = ApiError.builder()
+                .code("VALIDATION_ERROR")
+                .message(getMessage("error.validation"))
+                .status(HttpStatus.BAD_REQUEST.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .details(Map.of("fieldIssues", issues))
+                .build();
 
-        ApiResponse body = wrap(
-                "VALIDATION_ERROR",
-                "Validasiya xətası",
-                HttpStatus.BAD_REQUEST,
-                request.getRequestURI(),
-                details
-        );
-
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity.badRequest().body(ApiResponse.error(error));
     }
 
-    // ---------- @Validated on params/path/query ----------
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiResponse> handleConstraintViolationException(
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(
             ConstraintViolationException exception,
             HttpServletRequest request
     ) {
@@ -125,106 +134,97 @@ public class GlobalExceptionHandler {
             ));
         });
 
-        Map<String, Object> details = Map.of("fieldIssues", issues);
+        ApiError error = ApiError.builder()
+                .code("VALIDATION_ERROR")
+                .message(getMessage("error.validation"))
+                .status(HttpStatus.BAD_REQUEST.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .details(Map.of("fieldIssues", issues))
+                .build();
 
-        ApiResponse body = wrap(
-                "VALIDATION_ERROR",
-                "Validasiya xətası",
-                HttpStatus.BAD_REQUEST,
-                request.getRequestURI(),
-                details
-        );
-
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity.badRequest().body(ApiResponse.error(error));
     }
 
     // ---------- Bad arguments ----------
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse> handleIllegalArgument(
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(
             IllegalArgumentException exception,
             HttpServletRequest request
     ) {
-        ApiResponse body = wrap(
-                "INVALID_ARGUMENT",
-                "Yanlış sorğu məlumatı",
-                HttpStatus.BAD_REQUEST,
-                request.getRequestURI(),
-                null
-        );
+        ApiError error = ApiError.builder()
+                .code("INVALID_ARGUMENT")
+                .message(getMessage("error.invalid_argument"))
+                .status(HttpStatus.BAD_REQUEST.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
 
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity.badRequest().body(ApiResponse.error(error));
     }
 
     // ---------- Malformed JSON / request body ----------
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse> handleNotReadable(
+    public ResponseEntity<ApiResponse<Void>> handleNotReadable(
             HttpMessageNotReadableException exception,
             HttpServletRequest request
     ) {
-        // Do NOT leak raw parser message to clients by default.
-        // But we can provide a safe hint for common cases.
         String root = rootMessage(exception);
-        String userMessage = "Yanlış sorğu formatı (JSON xətası).";
+        String userMessage = getMessage("error.invalid_json_format");
 
-        Map<String, Object> details = null;
         if (root != null && root.toLowerCase(Locale.ROOT).contains("cannot deserialize")) {
-            userMessage = "Yanlış sorğu formatı (tip uyğunsuzluğu).";
-        } else if (root != null && root.toLowerCase(Locale.ROOT).contains("unexpected character")) {
-            userMessage = "Yanlış sorğu formatı (JSON xətası).";
+            userMessage = getMessage("error.type_mismatch");
         }
 
-        // If you *want* a safe detail field, include a generic hint, not raw stack info.
-        details = Map.of("hint", userMessage);
+        ApiError error = ApiError.builder()
+                .code("INVALID_JSON")
+                .message(userMessage)
+                .status(HttpStatus.BAD_REQUEST.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .details(Map.of("hint", userMessage))
+                .build();
 
-        ApiResponse body = wrap(
-                "INVALID_JSON",
-                userMessage,
-                HttpStatus.BAD_REQUEST,
-                request.getRequestURI(),
-                details
-        );
-
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity.badRequest().body(ApiResponse.error(error));
     }
 
     // ---------- DB constraint / unique violations ----------
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiResponse> handleDataIntegrityViolation(
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
             DataIntegrityViolationException exception,
             HttpServletRequest request
     ) {
-        String msg = "Məlumat bazası xətası. Daxil edilən məlumatların unikallığını və ya tamlığını yoxlayın.";
+        String msg = getMessage("error.data_integrity");
         String code = "DATA_INTEGRITY_VIOLATION";
 
         String root = Optional.ofNullable(rootMessage(exception)).orElse("");
         String lower = root.toLowerCase(Locale.ROOT);
 
-        // Prefer matching on root-cause text; still supports your constraint names.
         if (root.contains("uk_users_mobile") || lower.contains("users_mobile") || lower.contains("mobile") && lower.contains("duplicate")) {
-            msg = "Bu mobil nömrə artıq qeydiyyatdan keçib.";
+            msg = getMessage("error.duplicate_mobile");
             code = "DUPLICATE_MOBILE";
         } else if (root.contains("uk_users_email") || lower.contains("users_email") || lower.contains("email") && lower.contains("duplicate")) {
-            msg = "Bu email artıq qeydiyyatdan keçib.";
+            msg = getMessage("error.duplicate_email");
             code = "DUPLICATE_EMAIL";
         } else if (lower.contains("not-null") || lower.contains("null value") || lower.contains("violates not-null constraint")) {
-            msg = "Zəruri məlumatlar çatışmır.";
+            msg = getMessage("error.null_constraint");
             code = "NULL_CONSTRAINT_VIOLATION";
         }
 
-        ApiResponse body = wrap(
-                code,
-                msg,
-                HttpStatus.CONFLICT,
-                request.getRequestURI(),
-                null
-        );
+        ApiError error = ApiError.builder()
+                .code(code)
+                .message(msg)
+                .status(HttpStatus.CONFLICT.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(error));
     }
 
     // ---------- Transaction wrapper for validation exceptions ----------
     @ExceptionHandler(TransactionSystemException.class)
-    public ResponseEntity<ApiResponse> handleTransactionSystemException(
+    public ResponseEntity<ApiResponse<Void>> handleTransactionSystemException(
             TransactionSystemException exception,
             HttpServletRequest request
     ) {
@@ -233,53 +233,56 @@ public class GlobalExceptionHandler {
             return handleConstraintViolationException(cve, request);
         }
 
-        ApiResponse body = wrap(
-                "TRANSACTION_ERROR",
-                "Əməliyyat zamanı xəta baş verdi.",
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                request.getRequestURI(),
-                null
-        );
+        ApiError error = ApiError.builder()
+                .code("TRANSACTION_ERROR")
+                .message(getMessage("error.transaction_error"))
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(error));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse> handleGeneric(
+    public ResponseEntity<ApiResponse<Void>> handleGeneric(
             Exception exception,
             HttpServletRequest request
     ) {
-        ApiResponse body = wrap(
-                "INTERNAL_SERVER_ERROR",
-                "Daxili server xətası",
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                request.getRequestURI(),
-                null
-        );
+        ApiError error = ApiError.builder()
+                .code("INTERNAL_SERVER_ERROR")
+                .message(getMessage("error.internal_server_error"))
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .path(request.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(error));
+    }
+
+    private String getMessage(String code) {
+        try {
+            return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+        } catch (Exception e) {
+            return code; // Fallback to code if message not found
+        }
+    }
+
+    private String getLocalizedMessage(String errorCode, String defaultMessage) {
+        String key = "error." + errorCode.toLowerCase();
+        String message = getMessage(key);
+        if (message.equals(key)) {
+            // Try resolving by original errorCode
+            message = getMessage(errorCode);
+            if (message.equals(errorCode)) {
+                return safeMessage(defaultMessage);
+            }
+        }
+        return message;
     }
 
     // ---------- Helpers ----------
-    private ApiResponse<Void> wrap(
-            String code,
-            String message,
-            HttpStatus status,
-            String path,
-            Map<String, Object> details
-    ) {
-        return new ApiResponse<>(
-                null,
-                new ApiError(
-                        code,
-                        message,
-                        status.value(),
-                        path,
-                        OffsetDateTime.now(),
-                        details
-                )
-        );
-    }
+
 
     private String rootMessage(Throwable t) {
         Throwable cur = t;
@@ -290,6 +293,16 @@ public class GlobalExceptionHandler {
     }
 
     private String safeMessage(String msg) {
-        return (msg == null || msg.isBlank()) ? "Gözlənilməz xəta" : msg;
+        if (msg == null || msg.isBlank()) {
+            return getMessage("error.unexpected");
+        }
+        // If the message looks like a key, try to resolve it
+        if (msg.startsWith("error.")) {
+            String resolved = getMessage(msg);
+            if (!resolved.equals(msg)) {
+                return resolved;
+            }
+        }
+        return msg;
     }
 }

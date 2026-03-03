@@ -1,27 +1,15 @@
-package az.fitnest.identity.exception;
-
-import az.fitnest.identity.model.enums.UserStatus;
-
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 public abstract class BaseException extends RuntimeException {
 
-    private static final long serialVersionUID = 1L;
-
-    private final HttpStatus httpStatus;
     private final String errorCode;
+    private final HttpStatus httpStatus;
 
-    protected BaseException(String message, HttpStatus httpStatus, String errorCode) {
+    protected BaseException(String message, String errorCode, HttpStatus httpStatus) {
         super(message);
-        this.httpStatus = httpStatus;
         this.errorCode = errorCode;
-    }
-
-    public HttpStatus getHttpStatus() {
-        return httpStatus;
-    }
-
-    public String getErrorCode() {
-        return errorCode;
+        this.httpStatus = httpStatus;
     }
 }
