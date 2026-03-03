@@ -87,22 +87,9 @@ public class AuthController {
         )));
     }
 
-
-    @PostMapping("/register")
-    @Operation(summary = "Qeydiyyatı başladın")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<OtpSendResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(registrationService.startRegistration(request)));
-    }
-
-    @PostMapping("/register/complete")
-    @Operation(summary = "Qeydiyyatı tamamlayın")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<LoginResponse>> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(az.fitnest.identity.dto.ApiResponse.success(registrationService.completeRegistration(request)));
-    }
-
     @PostMapping("/social/apple")
     @Operation(summary = "Apple ilə sosial giriş")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<LoginResponse>> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
+    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<LoginResponse>> socialLoginApple(@Valid @RequestBody az.fitnest.identity.dto.AppleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginApple(request);
         HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(az.fitnest.identity.dto.ApiResponse.success(response));
@@ -110,59 +97,9 @@ public class AuthController {
 
     @PostMapping("/social/google")
     @Operation(summary = "Google ilə sosial giriş")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<LoginResponse>> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
+    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<LoginResponse>> socialLoginGoogle(@Valid @RequestBody az.fitnest.identity.dto.GoogleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
         HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(az.fitnest.identity.dto.ApiResponse.success(response));
-    }
-
-    @PostMapping("/forgot-password")
-    @Operation(summary = "Şifrəni unutmuşam")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP uğurla göndərildi", content = @Content(schema = @Schema(implementation = OtpSendResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Yanlış sorğu və ya doğrulama uğursuz oldu")
-    })
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<OtpSendResponse>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(passwordResetService.forgotPassword(request)));
-    }
-
-    @PostMapping("/reset-password")
-    @Operation(summary = "Şifrəni sıfırlayın")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<ResetPasswordResponse>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(passwordResetService.resetPassword(request)));
-    }
-
-    @PostMapping("/change-password")
-    @Operation(summary = "Şifrəni dəyişdirin")
-    @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<Map<String, Object>>> changePassword(
-            @Valid @RequestBody ChangePasswordRequest request,
-            HttpServletRequest servletRequest) {
-        Long userId = UserContext.getRequiredUserId();
-        userService.changePassword(userId, request.oldPassword(), request.newPassword(), request.confirmNewPassword());
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(Map.of(
-                "message", "Şifrə uğurla dəyişdirildi",
-                "status", 200,
-                "path", servletRequest.getRequestURI(),
-                "timestamp", OffsetDateTime.now()
-        )));
-    }
-
-    @PostMapping("/deactivate")
-    @Operation(summary = "Hesabı deaktiv edin", description = "Autentifikasiya olunmuş istifadəçinin hesabını deaktiv edir. Bu, yumşaq silinmədir (status INACTIVE olur).")
-    @SecurityRequirement(name = "bearerAuth")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Hesab uğurla deaktiv edildi"),
-            @ApiResponse(responseCode = "401", description = "Autentifikasiya olunmayıb")
-    })
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<Map<String, Object>>> deactivateAccount(HttpServletRequest request) {
-        Long userId = UserContext.getRequiredUserId();
-        userService.deactivateAccount(userId);
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(Map.of(
-                "message", "Hesab uğurla deaktiv edildi",
-                "status", 200,
-                "path", request.getRequestURI(),
-                "timestamp", OffsetDateTime.now()
-        )));
     }
 }
