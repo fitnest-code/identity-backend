@@ -1,3 +1,5 @@
+package az.fitnest.identity.exception;
+ 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 

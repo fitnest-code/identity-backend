@@ -9,7 +9,7 @@ public class AccountDeactivatedException extends BaseException {
     private final String otpSessionId;
 
     public AccountDeactivatedException(String message, String otpSessionId) {
-        super(message, org.springframework.http.HttpStatus.FORBIDDEN, "ACCOUNT_DEACTIVATED");
+        super(message, "ACCOUNT_DEACTIVATED", org.springframework.http.HttpStatus.FORBIDDEN);
         this.otpSessionId = otpSessionId;
     }
 }

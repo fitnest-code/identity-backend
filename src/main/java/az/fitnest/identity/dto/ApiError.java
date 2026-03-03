@@ -1,9 +1,11 @@
 package az.fitnest.identity.dto;
 
+import lombok.Builder;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.OffsetDateTime;
 
+@Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiError(
         String code,

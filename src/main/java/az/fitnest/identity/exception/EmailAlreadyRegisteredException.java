@@ -1,13 +1,12 @@
 package az.fitnest.identity.exception;
-
-import az.fitnest.identity.model.enums.UserStatus;
-
+ 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
-@ResponseStatus(HttpStatus.CONFLICT)
-public class EmailAlreadyRegisteredException extends RuntimeException {
+ 
+public class EmailAlreadyRegisteredException extends BaseException {
+ 
+    private static final long serialVersionUID = 1L;
+ 
     public EmailAlreadyRegisteredException(String message) {
-        super(message);
+        super(message, "EMAIL_ALREADY_REGISTERED", HttpStatus.CONFLICT);
     }
 }
