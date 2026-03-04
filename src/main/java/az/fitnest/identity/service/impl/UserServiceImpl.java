@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
     public User updateUserRole(Long userId, String roleName) {
         User user = getUserById(userId);
         Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new ResourceNotFoundException("Rol tapılmadı: " + roleName));
+                .orElseThrow(() -> new ResourceNotFoundException("error.resource_not_found", "RESOURCE_NOT_FOUND"));
 
         user.setRole(role);
 
@@ -92,7 +92,7 @@ public class UserServiceImpl implements UserService {
     private User createNewUserInternal(String firstName, String lastName, String passwordHash, String mobile) {
         mobile = MobileNumberUtils.normalize(mobile);
         if (mobile != null && userRepository.findFirstByMobile(mobile).isPresent()) {
-            throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
+            throw new ConflictException("error.duplicate_mobile", "DUPLICATE_MOBILE");
         }
 
         User user = User.builder()
@@ -136,10 +136,10 @@ public class UserServiceImpl implements UserService {
     public void requestEmailChange(Long userId, String newEmail) {
         User user = getUserOrThrow(userId);
         if (newEmail.equalsIgnoreCase(user.getEmail())) {
-            throw new ConflictException("Yeni e-poçt köhnə ilə eynidir");
+            throw new ConflictException("error.resource_conflict", "RESOURCE_CONFLICT");
         }
         if (userRepository.findFirstByEmail(newEmail.toLowerCase()).isPresent()) {
-            throw new ConflictException("Bu e-poçt artıq qeydiyyatdan keçib");
+            throw new ConflictException("error.duplicate_email", "DUPLICATE_EMAIL");
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail);
@@ -165,10 +165,10 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         String normalizedMobile = MobileNumberUtils.normalize(newMobile);
         if (normalizedMobile.equals(user.getMobile())) {
-            throw new ConflictException("Yeni mobil nömrə köhnə ilə eynidir");
+            throw new ConflictException("error.resource_conflict", "RESOURCE_CONFLICT");
         }
         if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
-            throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
+            throw new ConflictException("error.duplicate_mobile", "DUPLICATE_MOBILE");
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null);
@@ -274,10 +274,10 @@ public class UserServiceImpl implements UserService {
     public void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword) {
         User user = getUserById(userId);
         if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash()).matches()) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("Köhnə şifrə yanlışdır");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_credentials");
         }
         if (!newPassword.equals(confirmNewPassword)) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("Yeni şifrələr uyğun gəlmir");
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "VALIDATION_ERROR");
         }
         user.setPasswordHash(passwordService.hashPassword(newPassword));
         userRepository.save(user);
@@ -285,7 +285,7 @@ public class UserServiceImpl implements UserService {
 
     private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("error.resource_not_found", "RESOURCE_NOT_FOUND"));
     }
 
     private NameParts resolveNameParts(String firstName, String lastName, String fullName) {

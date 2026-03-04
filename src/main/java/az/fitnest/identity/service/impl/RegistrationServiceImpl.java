@@ -35,20 +35,20 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     public OtpSendResponse startRegistration(RegisterRequest request) {
-        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
+        String normalizedMobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
 
-        if (userRepository.findFirstByMobile(mobile).isPresent()) {
-            throw new ConflictException("Bu mobil nömrə artıq qeydiyyatdan keçib");
+        if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
+            throw new ConflictException("error.duplicate_mobile", "DUPLICATE_MOBILE");
         }
 
-        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, mobile, null);
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, normalizedMobile, null);
 
         return otpService.sendOtp(
                 otpRequest,
                 null,
                 null,
                 null,
-                mobile
+                normalizedMobile
         );
     }
 
