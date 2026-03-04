@@ -101,14 +101,15 @@ public class GlobalExceptionHandler {
 
     private String getLocalizedMessage(String errorCode, String defaultMessage) {
         String key = "error." + errorCode.toLowerCase();
-        String message = getMessage(key);
-        if (message.equals(key)) {
-            message = getMessage(errorCode);
-            if (message.equals(errorCode)) {
+        try {
+            return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
+        } catch (org.springframework.context.NoSuchMessageException e1) {
+            try {
+                return messageSource.getMessage(errorCode, null, LocaleContextHolder.getLocale());
+            } catch (org.springframework.context.NoSuchMessageException e2) {
                 return safeMessage(defaultMessage);
             }
         }
-        return message;
     }
 
     private String safeMessage(String msg) {
@@ -125,7 +126,7 @@ public class GlobalExceptionHandler {
     private String getMessage(String code) {
         try {
             return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
-        } catch (Exception e) {
+        } catch (org.springframework.context.NoSuchMessageException e) {
             return code;
         }
     }
