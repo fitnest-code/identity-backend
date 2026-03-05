@@ -52,6 +52,10 @@ public record UserResponse(
     @Schema(description = "Timestamp when the user account was created", example = "2023-01-15T10:30:00")
     LocalDateTime createdAt,
 
+    @JsonProperty("profileImage")
+    @Schema(description = "URL to the user's profile image (camelCase)", example = "https://example.com/images/profile.jpg")
+    String profileImage,
+
     @JsonProperty("consent_required")
     @Schema(description = "Indicates if user consent is required for certain actions", example = "false")
     boolean consentRequired
