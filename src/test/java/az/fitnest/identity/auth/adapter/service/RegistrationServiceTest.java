@@ -4,7 +4,7 @@ import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.dto.RegisterCompleteRequest;
 import az.fitnest.identity.dto.RegisterRequest;
-import az.fitnest.identity.entity.User;
+import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.service.OtpService;
@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,8 +60,7 @@ public class RegistrationServiceTest {
 
     @Test
     void startRegistration_shouldCallOtpService_whenMobileProvided() {
-        RegisterRequest request = new RegisterRequest();
-        request.setMobile("0501234567");
+        RegisterRequest request = new RegisterRequest("0501234567");
         
         when(userRepository.findByMobileIncludingDeleted("+994501234567")).thenReturn(Optional.empty());
         
@@ -77,8 +77,7 @@ public class RegistrationServiceTest {
 
     @Test
     void startRegistration_shouldThrowConflict_whenMobileExists() {
-        RegisterRequest request = new RegisterRequest();
-        request.setMobile("0501234567");
+        RegisterRequest request = new RegisterRequest("0501234567");
         
         when(userRepository.findByMobileIncludingDeleted("+994501234567")).thenReturn(Optional.of(new User()));
         
@@ -87,16 +86,12 @@ public class RegistrationServiceTest {
     
     @Test
     void completeRegistration_shouldCreateUser_whenTokenValid() {
-        RegisterCompleteRequest request = new RegisterCompleteRequest();
-        request.setRegistrationToken("valid-token");
-        request.setFirstName("John");
-        request.setLastName("Doe");
-        request.setPassword("password");
+        RegisterCompleteRequest request = new RegisterCompleteRequest("valid-token", "John", "Doe", "password");
         
         when(registrationTokenService.requireIdentifier("valid-token")).thenReturn("+994501234567");
         when(passwordService.hashPassword("password")).thenReturn("hashedPass");
         when(userService.createNewUser("John", "Doe", "hashedPass", "+994501234567")).thenReturn(new User());
-        when(tokenIssuanceService.issueTokens(any())).thenReturn(new LoginResponse());
+        when(tokenIssuanceService.issueTokens(any(User.class), any())).thenReturn(new LoginResponse("access", "refresh", null));
 
         registrationService.completeRegistration(request);
         

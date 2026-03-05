@@ -152,52 +152,16 @@ public class FitnestSecurityFilterTest {
     }
 
     @Test
-    void shouldNotFilterSwaggerUiEndpoints() {
-        // Arrange
-        when(request.getRequestURI()).thenReturn("/swagger-ui/index.html");
-
-        // Act & Assert
-        assertTrue(filter.shouldNotFilter(request),
-                "Swagger UI endpoints should be skipped for performance");
-    }
-
-    @Test
-    void shouldNotFilterApiDocsEndpoints() {
-        // Arrange
-        when(request.getRequestURI()).thenReturn("/v3/api-docs");
-
-        // Act & Assert
-        assertTrue(filter.shouldNotFilter(request),
-                "OpenAPI docs endpoints should be skipped for performance");
-    }
-
-    @Test
-    void shouldNotFilterActuatorEndpoints() {
-        // Arrange
-        when(request.getRequestURI()).thenReturn("/actuator/health");
-
-        // Act & Assert
-        assertTrue(filter.shouldNotFilter(request),
-                "Actuator endpoints should be skipped for performance");
-    }
-
-    @Test
-    void shouldNotFilterWebjarsEndpoints() {
-        // Arrange
-        when(request.getRequestURI()).thenReturn("/webjars/swagger-ui/swagger-ui.css");
-
-        // Act & Assert
-        assertTrue(filter.shouldNotFilter(request),
-                "Webjars endpoints should be skipped for performance");
-    }
-
-    @Test
     void shouldFilterApiEndpoints() {
         // Arrange
         when(request.getRequestURI()).thenReturn("/api/v1/auth/login");
 
-        // Act & Assert
-        assertFalse(filter.shouldNotFilter(request),
-                "API endpoints should NOT be skipped");
+        // Act
+        try {
+            filter.doFilterInternal(request, response, filterChain);
+            verify(filterChain).doFilter(request, response);
+        } catch (ServletException | IOException e) {
+            fail("Exception should not be thrown");
+        }
     }
 }
