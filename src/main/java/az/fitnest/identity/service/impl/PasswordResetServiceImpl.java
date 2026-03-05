@@ -3,7 +3,8 @@ package az.fitnest.identity.service.impl;
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.model.enums.SessionStatus;
 
-import az.fitnest.identity.model.constants.OtpMessages;
+
+
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.dto.ForgotPasswordRequest;
 import az.fitnest.identity.dto.OtpSendRequest;

@@ -14,7 +14,7 @@ import az.fitnest.identity.exception.OtpRateLimitedException;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.SmsService;
 import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.model.constants.OtpMessages;
+
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
 import az.fitnest.identity.service.ResetPasswordTokenService;
@@ -316,7 +316,7 @@ public class OtpServiceImpl implements OtpService {
             return new OtpVerifyResponse(
                     true,
                     null,
-                    az.fitnest.identity.model.constants.OtpMessages.OTP_VERIFIED,
+                    "otp.verified",
                     null,
                     loginResponse.accessToken(),
                     loginResponse.refreshToken(),
