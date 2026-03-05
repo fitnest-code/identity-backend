@@ -37,11 +37,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordService passwordService;
     private final AuthTokenRepository authTokenRepository;
     private final RedisTokenService redisTokenService;
+    private final org.springframework.context.MessageSource messageSource;
     @Override
     @Transactional
     public OtpSendResponse forgotPassword(ForgotPasswordRequest request) {
         if (request == null || !StringUtils.hasText(request.mobile())) {
-            return new OtpSendResponse(null, null, null, OtpMessages.OTP_SENT_IF_EXISTS);
+            return new OtpSendResponse(null, null, null, getMessage("error.otp_sent_if_exists"));
         }
         String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
@@ -55,12 +56,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         // Early validation
         if (request == null || !StringUtils.hasText(request.resetToken()) ||
                 !StringUtils.hasText(request.newPassword())) {
-            throw new az.fitnest.identity.exception.ValidationException("Yanlış sorğu parametrləri", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("error.invalid_request", "VALIDATION_ERROR");
         }
         // Password policy: min length, complexity, breached-password check (pseudo-code)
         String newPassword = request.newPassword();
         if (newPassword.length() < 8) {
-            throw new az.fitnest.identity.exception.ValidationException("Şifrə ən azı 8 simvoldan ibarət olmalıdır", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("error.password_min_length", "VALIDATION_ERROR");
         }
         
         String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
@@ -71,7 +72,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
         // Optional: reject if newPassword equals old password
         if (passwordService.verifyPassword(newPassword, user.getPasswordHash()).matches()) {
-            throw new az.fitnest.identity.exception.ValidationException("Yeni şifrə köhnə şifrədən fərqli olmalıdır", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("error.password_must_be_different", "VALIDATION_ERROR");
         }
         // Hash and set password
         String passwordHash = passwordService.hashPassword(newPassword);
@@ -82,7 +83,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         // Publish event after commit for Redis revocation (pseudo-code)
         // TransactionSynchronizationManager.registerSynchronization(new RedisRevocationEvent(user.getId()));
         revokeAllUserTokens(user.getId());
-        return new ResetPasswordResponse("Şifrə uğurla sıfırlandı.");
+        return new ResetPasswordResponse(getMessage("error.password_reset_success"));
+    }
+
+    private String getMessage(String code, Object... args) {
+        return messageSource.getMessage(code, args, org.springframework.context.i18n.LocaleContextHolder.getLocale());
     }
 
     private void revokeAllUserTokens(Long userId) {

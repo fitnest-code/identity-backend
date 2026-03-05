@@ -49,6 +49,7 @@ public class OtpServiceImpl implements OtpService {
     private final TokenIssuanceService tokenIssuanceService;
     private final EmailService emailService;
     private final Clock clock;
+    private final org.springframework.context.MessageSource messageSource;
 
     @Value("${otp.ttl-seconds}")
     private int otpTtlSeconds;
@@ -100,7 +101,7 @@ public class OtpServiceImpl implements OtpService {
         String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobileNumber;
 
         if (identifier == null) {
-            throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? "E-poçt təqdim edilməlidir" : "Mobil nömrə təqdim edilməlidir");
+            throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? getMessage("error.missing_email") : getMessage("error.missing_mobile"));
         }
 
         validateRateLimit(purpose, identifier);
@@ -156,14 +157,7 @@ public class OtpServiceImpl implements OtpService {
         if (!rateLimitResult.allowed()) {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
             // Security hardening: Do not leak actual wait time to client.
-            // Use a generic message but log the real wait time internally.
-            String message = OtpMessages.rateLimitGeneric();
-
-            // Assuming OtpMessages.rateLimitGeneric() exists or similar. 
-            // If not, I'll use a standard "Too many requests. Please try again later."
-            if (message == null || message.isBlank()) {
-                message = "Too many requests. Please try again later.";
-            }
+            String message = getMessage("error.otp_rate_limit_generic");
 
             throw new OtpRateLimitedException(message, waitTimeSeconds);
         }
@@ -171,7 +165,7 @@ public class OtpServiceImpl implements OtpService {
 
     private OtpSendResponse createFakeSessionResponse() {
         String fakeSessionId = otpSessionIdGenerator.generateSessionId();
-        return new OtpSendResponse(fakeSessionId, otpTtlSeconds, resendCooldownSeconds, OtpMessages.OTP_SENT_IF_EXISTS);
+        return new OtpSendResponse(fakeSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("error.otp_sent_if_exists"));
     }
 
     private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile, String email, Long userId) {
@@ -202,7 +196,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private OtpSendResponse createSuccessResponse(String sessionId) {
-        return new OtpSendResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, OtpMessages.OTP_SENT);
+        return new OtpSendResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("error.otp_sent"));
     }
 
     @Override
@@ -210,17 +204,17 @@ public class OtpServiceImpl implements OtpService {
         Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
 
         if (sessionOpt.isEmpty()) {
-            throw new InvalidCredentialsException(OtpMessages.INVALID_OTP);
+            throw new InvalidCredentialsException("error.invalid_otp");
         }
 
         OtpSessionPayload session = sessionOpt.get();
 
         if (session.locked()) {
-            throw new InvalidCredentialsException(OtpMessages.OTP_LOCKED);
+            throw new InvalidCredentialsException("error.otp_locked");
         }
 
         if (session.verified()) {
-            throw new InvalidCredentialsException(OtpMessages.OTP_ALREADY_VERIFIED);
+            throw new InvalidCredentialsException("error.otp_already_verified");
         }
 
         // We no longer check emailExistsAtCreation because removing it from payload means we trust
@@ -235,23 +229,23 @@ public class OtpServiceImpl implements OtpService {
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
 
         if (!result.isFound()) {
-            throw new InvalidCredentialsException(OtpMessages.INVALID_OTP);
+            throw new InvalidCredentialsException("error.invalid_otp");
         }
 
         if (result.isLocked()) {
-            throw new InvalidCredentialsException(OtpMessages.OTP_LOCKED);
+            throw new InvalidCredentialsException("error.otp_locked");
         }
 
         if (result.isAlreadyVerified()) {
-            throw new InvalidCredentialsException(OtpMessages.OTP_ALREADY_VERIFIED);
+            throw new InvalidCredentialsException("error.otp_already_verified");
         }
 
         if (result.isExpired()) {
-            throw new InvalidCredentialsException(OtpMessages.INVALID_OTP);
+            throw new InvalidCredentialsException("error.invalid_otp");
         }
 
         if (!isValid) {
-            throw new InvalidCredentialsException(OtpMessages.INVALID_OTP);
+            throw new InvalidCredentialsException("error.invalid_otp");
         }
 
         OtpSessionPayload verifiedSession = result.getSession();
@@ -268,7 +262,7 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, identifier)
-                .orElseThrow(() -> new InvalidCredentialsException(OtpMessages.INVALID_OTP));
+                .orElseThrow(() -> new InvalidCredentialsException("error.invalid_otp"));
 
         return verifyOtp(sessionId, otpCode);
     }
@@ -276,7 +270,7 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResult verifyOtpByUserId(Long userId, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, "user:" + userId)
-                .orElseThrow(() -> new InvalidCredentialsException(OtpMessages.INVALID_OTP));
+                .orElseThrow(() -> new InvalidCredentialsException("error.invalid_otp"));
 
         return verifyOtp(sessionId, otpCode);
     }
@@ -292,7 +286,7 @@ public class OtpServiceImpl implements OtpService {
             return new OtpVerifyResponse(
                     true,
                     registrationToken,
-                    OtpMessages.OTP_VERIFIED,
+                    getMessage("error.otp_verified"),
                     null,
                     null,
                     null,
@@ -303,7 +297,7 @@ public class OtpServiceImpl implements OtpService {
             return new OtpVerifyResponse(
                     true,
                     null,
-                    OtpMessages.OTP_VERIFIED,
+                    getMessage("error.otp_verified"),
                     resetToken,
                     null,
                     null,
@@ -311,7 +305,7 @@ public class OtpServiceImpl implements OtpService {
             );
         } else if (verificationResult.purpose() == OtpPurpose.REACTIVATION) {
             az.fitnest.identity.model.entity.User user = userRepository.findFirstByMobile(identifier)
-                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("İstifadəçi tapılmadı"));
+                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.user_not_found"));
 
             user.setStatus(az.fitnest.identity.model.enums.UserStatus.ACTIVE);
             userRepository.save(user);
@@ -332,15 +326,19 @@ public class OtpServiceImpl implements OtpService {
             return new OtpVerifyResponse(
                     true,
                     null,
-                    OtpMessages.OTP_VERIFIED,
+                    getMessage("error.otp_verified"),
                     null,
                     null,
                     null,
                     null
             );
         } else {
-            throw new InvalidCredentialsException("Yanlış OTP təyinatı");
+            throw new InvalidCredentialsException("error.invalid_otp_purpose");
         }
+    }
+
+    private String getMessage(String code, Object... args) {
+        return messageSource.getMessage(code, args, org.springframework.context.i18n.LocaleContextHolder.getLocale());
     }
 
     private String hashOtp(String otp) {

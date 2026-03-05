@@ -54,38 +54,38 @@ public class AppleTokenVerifier {
             Boolean emailVerified = claims.getBooleanClaim("email_verified");
 
             if (!APPLE_ISSUER.equals(issuer)) {
-                throw new UnauthorizedException("Invalid Apple token: invalid issuer");
+                throw new UnauthorizedException("error.invalid_apple_token");
             }
 
             if (!appleClientId.equals(audience)) {
-                throw new UnauthorizedException("Invalid Apple token: invalid audience");
+                throw new UnauthorizedException("error.invalid_apple_token");
             }
 
             if (expirationTime != null && expirationTime.before(new Date())) {
-                throw new UnauthorizedException("Invalid Apple token: expired");
+                throw new UnauthorizedException("error.invalid_apple_token");
             }
 
             if (subject == null || subject.isEmpty()) {
-                throw new UnauthorizedException("Invalid Apple token: missing subject");
+                throw new UnauthorizedException("error.invalid_apple_token");
             }
 
             String keyId = header.getKeyID();
             RSAPublicKey publicKey = getApplePublicKey(keyId);
             if (publicKey == null) {
-                throw new UnauthorizedException("Invalid Apple token: public key not found");
+                throw new UnauthorizedException("error.invalid_apple_token");
             }
 
             if (!signedJWT.verify(new RSASSAVerifier(publicKey))) {
-                throw new UnauthorizedException("Invalid Apple token: signature verification failed");
+                throw new UnauthorizedException("error.invalid_apple_token");
             }
 
             return new AppleTokenClaims(subject, email, emailVerified != null && emailVerified);
         } catch (ParseException | JOSEException e) {
-            throw new UnauthorizedException("Invalid Apple token: " + e.getMessage());
+            throw new UnauthorizedException("error.invalid_apple_token");
         } catch (UnauthorizedException e) {
             throw e;
         } catch (Exception e) {
-            throw new UnauthorizedException("Invalid Apple token: " + e.getMessage());
+            throw new UnauthorizedException("error.invalid_apple_token");
         }
     }
 
@@ -112,7 +112,7 @@ public class AppleTokenVerifier {
                 return null;
             }
         } catch (Exception e) {
-            throw new UnauthorizedException("Failed to fetch Apple public keys: " + e.getMessage());
+            throw new UnauthorizedException("error.apple_public_key_error");
         }
     }
 

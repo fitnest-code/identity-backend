@@ -45,7 +45,7 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
         try {
             GoogleIdToken token = getVerifier().verify(idToken);
             if (token == null) {
-                throw new UnauthorizedException("Invalid Google token: verification failed");
+                throw new UnauthorizedException("error.invalid_google_token");
             }
 
             GoogleIdToken.Payload payload = token.getPayload();
@@ -57,22 +57,22 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
             Long expirationTimeSeconds = payload.getExpirationTimeSeconds();
 
             if (userId == null || userId.isEmpty()) {
-                throw new UnauthorizedException("Invalid Google token: missing subject");
+                throw new UnauthorizedException("error.invalid_google_token");
             }
 
             if (!"https://accounts.google.com".equals(issuer) && !"accounts.google.com".equals(issuer)) {
-                throw new UnauthorizedException("Invalid Google token: invalid issuer");
+                throw new UnauthorizedException("error.invalid_google_token");
             }
 
             if (expirationTimeSeconds != null && expirationTimeSeconds * 1000L < System.currentTimeMillis()) {
-                throw new UnauthorizedException("Invalid Google token: expired");
+                throw new UnauthorizedException("error.invalid_google_token");
             }
 
             return new GoogleTokenClaims(userId, email, "true".equalsIgnoreCase(emailVerified));
         } catch (UnauthorizedException e) {
             throw e;
         } catch (Exception e) {
-            throw new UnauthorizedException("Invalid Google token: " + e.getMessage());
+            throw new UnauthorizedException("error.invalid_google_token");
         }
     }
 }

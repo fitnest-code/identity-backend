@@ -59,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
             );
             az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
             throw new az.fitnest.identity.exception.AccountDeactivatedException(
-                    "Giriş üçün əlavə təsdiqləmə tələb olunur. Təhlükəsizlik kodunu daxil edin.",
+                    "error.reactivation_required",
                     otpResponse.otpSessionId()
             );
         }
@@ -84,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthenticationResult authenticate(String mobile, String password) {
         User user = userRepository.findFirstByMobile(mobile)
-                .orElseThrow(() -> new InvalidCredentialsException("Yanlış giriş məlumatları"));
+                .orElseThrow(() -> new InvalidCredentialsException("error.invalid_credentials"));
 
         Instant now = Instant.now();
 
@@ -92,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
             PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
             if (user.getPasswordHash() == null || !verification.matches()) {
                 userRepository.incrementFailedLoginAttempts(user.getId());
-                throw new InvalidCredentialsException("Yanlış giriş məlumatları");
+                throw new InvalidCredentialsException("error.invalid_credentials");
             }
             return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
         }
@@ -138,11 +138,11 @@ public class AuthServiceImpl implements AuthService {
             userId = jwtService.parseUserId(refreshToken, "refresh");
             expiration = jwtService.parseExpiration(refreshToken);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new UnauthorizedException("Yanlış giriş məlumatları");
+            throw new UnauthorizedException("error.invalid_credentials");
         }
 
         if (expiration.isBefore(Instant.now())) {
-            throw new UnauthorizedException("Yanlış giriş məlumatları");
+            throw new UnauthorizedException("error.invalid_credentials");
         }
 
         User user = internalRefresh(userId, refreshToken);
@@ -163,7 +163,7 @@ public class AuthServiceImpl implements AuthService {
 
         Instant now = Instant.now();
         if (user.isDeleted() || user.isAccountLocked()) {
-            throw new UnauthorizedException("Yanlış giriş məlumatları");
+            throw new UnauthorizedException("error.invalid_credentials");
         }
 
         String refreshTokenHash = tokenHasher.hash(refreshToken);

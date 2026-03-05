@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
-@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "User profile information returned in authentication responses")
 public record UserResponse(
     @JsonProperty("user_id")
@@ -51,10 +51,6 @@ public record UserResponse(
     @JsonProperty("created_at")
     @Schema(description = "Timestamp when the user account was created", example = "2023-01-15T10:30:00")
     LocalDateTime createdAt,
-
-    @JsonProperty("profileImage")
-    @Schema(description = "URL to the user's profile image (camelCase)", example = "https://example.com/images/profile.jpg")
-    String profileImage,
 
     @JsonProperty("consent_required")
     @Schema(description = "Indicates if user consent is required for certain actions", example = "false")
