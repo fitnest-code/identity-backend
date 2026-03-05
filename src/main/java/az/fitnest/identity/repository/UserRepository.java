@@ -49,10 +49,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             """)
     int markNoSessionsIfNone(@Param("userId") Long userId, @Param("status") SessionStatus status);
 
-    /**
-     * Finds a user by mobile number, including deleted users.
-     * This is used for registration and conflict checks.
-     */
     @Query("SELECT u FROM User u WHERE u.mobile = :mobile")
     Optional<User> findByMobileIncludingDeleted(@Param("mobile") String mobile);
 }
