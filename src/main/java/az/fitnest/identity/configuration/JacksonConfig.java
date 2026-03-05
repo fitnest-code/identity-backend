@@ -37,8 +37,8 @@ public class JacksonConfig {
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         objectMapper.disable(SerializationFeature.WRITE_DATE_KEYS_AS_TIMESTAMPS);
 
-        // Skip null values to reduce JSON size
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        // Skip null values to reduce JSON size - REMOVED to satisfy user request for explicit nulls
+        // objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS); // Default is ALWAYS
 
         // Ignore unknown properties for forward compatibility
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
