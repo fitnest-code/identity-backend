@@ -33,16 +33,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     public void getUserById(GetUserByIdRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
             User user = userService.getUserById(request.getUserId());
-            az.fitnest.user.grpc.UserResponse response = az.fitnest.user.grpc.UserResponse.newBuilder()
-                    .setUserId(user.getId())
-                    .setFirstName(user.getFirstName() != null ? user.getFirstName() : "")
-                    .setLastName(user.getLastName() != null ? user.getLastName() : "")
-                    .setEmail(user.getEmail() != null ? user.getEmail() : "")
-                    .setMobile(user.getMobile() != null ? user.getMobile() : "")
-                    .setProfileImageUrl(user.getProfileImageUrl() != null ? user.getProfileImageUrl() : "")
-                    .setSetupRequired(user.isSetupRequired())
-                    .setLanguage(user.getLanguage() != null ? user.getLanguage() : "")
-                    .build();
+            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
