@@ -1,5 +1,7 @@
 package az.fitnest.identity.controller;
 
+import lombok.extern.slf4j.Slf4j;
+
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.service.UserService;
@@ -23,6 +25,7 @@ import az.fitnest.user.grpc.ConfirmEmailChangeRequest;
 import az.fitnest.user.grpc.RequestMobileChangeRequest;
 import az.fitnest.user.grpc.ConfirmMobileChangeRequest;
 
+@Slf4j
 @GrpcService
 @RequiredArgsConstructor
 public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
@@ -38,6 +41,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e) {
+            log.error("Error in getUserById for userId {}: {}", request.getUserId(), e.getMessage(), e);
             responseObserver.onError(Status.INTERNAL
                     .withDescription("Failed to get user: " + e.getMessage())
                     .withCause(e)
