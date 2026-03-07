@@ -308,6 +308,10 @@ public class OtpServiceImpl implements OtpService {
                     .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.user_not_found"));
 
             user.setStatus(az.fitnest.identity.model.enums.UserStatus.ACTIVE);
+            user.setDeactivationReason(null);
+            user.setDeactivatedAt(null);
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
             userRepository.save(user);
 
             String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();

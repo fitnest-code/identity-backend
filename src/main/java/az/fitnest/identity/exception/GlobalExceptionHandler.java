@@ -27,6 +27,23 @@ public class GlobalExceptionHandler {
         this.messageSource = messageSource;
     }
 
+    @ExceptionHandler(AccountDeactivatedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountDeactivatedException(AccountDeactivatedException exception, WebRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("otpSessionId", exception.getOtpSessionId());
+
+        ApiError apiError = ApiError.builder()
+                .code(exception.getErrorCode())
+                .message(getLocalizedMessage(exception.getErrorCode(), exception.getMessage()))
+                .status(exception.getHttpStatus().value())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .timestamp(OffsetDateTime.now())
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(exception.getHttpStatus()).body(ApiResponse.error(apiError));
+    }
+
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ApiResponse<Void>> handleBaseException(BaseException exception, WebRequest request) {
         ApiError apiError = ApiError.builder()
