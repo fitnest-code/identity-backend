@@ -16,7 +16,6 @@ public class PageCriteria {
     private Integer page;
     private String sortBy;
 
-
     public Integer getPage() {
         return page != null && page > 0 ? page - 1 : 0;
     }

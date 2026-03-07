@@ -106,7 +106,7 @@ public class OtpServiceImpl implements OtpService {
 
         validateRateLimit(purpose, identifier);
 
-        boolean exists = (purpose == OtpPurpose.EMAIL_CHANGE) 
+        boolean exists = (purpose == OtpPurpose.EMAIL_CHANGE)
                 ? userRepository.findFirstByEmail(email).isPresent()
                 : userRepository.findFirstByMobile(mobileNumber).isPresent();
 
@@ -156,7 +156,6 @@ public class OtpServiceImpl implements OtpService {
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
         if (!rateLimitResult.allowed()) {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
-            // Security hardening: Do not leak actual wait time to client.
             String message = getMessage("error.otp_rate_limit_generic");
 
             throw new OtpRateLimitedException(message, waitTimeSeconds);
@@ -216,13 +215,6 @@ public class OtpServiceImpl implements OtpService {
         if (session.verified()) {
             throw new InvalidCredentialsException("error.otp_already_verified");
         }
-
-        // We no longer check emailExistsAtCreation because removing it from payload means we trust
-        // doesPurposeMatchExistence ran at creation time.
-        // Or we should assume existence was checked at creation.
-        // But previously we double checked here.
-        // Since we removed emailExistsAtCreation, we rely on sendOtp logic.
-        // It's safer to not re-check here if field relies on state at creation which is immutable in session.
 
         boolean isValid = hashOtp(otpCode).equals(session.otpHash());
 

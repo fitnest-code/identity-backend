@@ -3,8 +3,6 @@ package az.fitnest.identity.service.impl;
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.model.enums.SessionStatus;
 
-
-
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.dto.ForgotPasswordRequest;
 import az.fitnest.identity.dto.OtpSendRequest;
@@ -54,29 +52,24 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
-        // Early validation
         if (request == null || !StringUtils.hasText(request.resetToken()) ||
                 !StringUtils.hasText(request.newPassword())) {
             throw new az.fitnest.identity.exception.ValidationException("error.invalid_request", "VALIDATION_ERROR");
         }
-        // Password policy: min length, complexity, breached-password check (pseudo-code)
         String newPassword = request.newPassword();
         if (newPassword.length() < 8) {
             throw new az.fitnest.identity.exception.ValidationException("error.password_min_length", "VALIDATION_ERROR");
         }
-        
+
         String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
         User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_credentials"));
-        // Optional: reject if newPassword equals old password
         if (passwordService.verifyPassword(newPassword, user.getPasswordHash()).matches()) {
             throw new az.fitnest.identity.exception.ValidationException("error.password_must_be_different", "VALIDATION_ERROR");
         }
-        // Hash and set password
         String passwordHash = passwordService.hashPassword(newPassword);
         user.setPasswordHash(passwordHash);
 
-        // If the account was deactivated, reactivate it upon successful password reset
         if (user.isDeactivated()) {
             user.setStatus(UserStatus.ACTIVE);
             user.setDeactivationReason(null);
@@ -86,10 +79,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
 
         userRepository.save(user);
-        // Consume reset token before revoking tokens
         resetPasswordTokenService.consume(request.resetToken());
-        // Publish event after commit for Redis revocation (pseudo-code)
-        // TransactionSynchronizationManager.registerSynchronization(new RedisRevocationEvent(user.getId()));
         revokeAllUserTokens(user.getId());
         return new ResetPasswordResponse(getMessage("error.password_reset_success"));
     }
@@ -99,8 +89,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     }
 
     private void revokeAllUserTokens(Long userId) {
-        // Optimize: bulk revoke pattern (pseudo-code)
-        // redisTokenService.invalidateTokensBefore(userId, Instant.now());
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
         for (AuthToken token : tokens) {
             if (token.getJti() != null) {
@@ -108,7 +96,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             }
         }
         authTokenRepository.deleteByUserId(userId);
-        // mark user as having no active sessions
         userRepository.findById(userId).ifPresent(u -> {
             u.setSessionStatus(SessionStatus.NO_SESSIONS);
             userRepository.save(u);

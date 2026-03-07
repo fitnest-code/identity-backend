@@ -15,10 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Locale;
 
-/**
- * Configuration to warm up OpenAPI documentation at startup.
- * This pre-generates the OpenAPI spec so the first request is fast.
- */
 @Configuration
 public class OpenApiWarmupConfig {
 
@@ -36,11 +32,6 @@ public class OpenApiWarmupConfig {
         this.openApiResource = openApiResource;
     }
 
-    /**
-     * Warm up OpenAPI documentation after application startup.
-     * This triggers the generation of the OpenAPI spec before any user request,
-     * eliminating the slow first-request issue.
-     */
     @EventListener(ApplicationReadyEvent.class)
     @Async
     public void warmUpOpenApi() {
@@ -49,27 +40,19 @@ public class OpenApiWarmupConfig {
         }
 
         try {
-            // Try direct resource call first (faster, no network)
             if (openApiResource != null) {
                 try {
                     openApiResource.openapiJson(null, "", Locale.getDefault());
                     return;
                 } catch (Exception e) {
-                    // Fall back to HTTP
                 }
             }
 
-            // Fallback: HTTP call to trigger generation
             warmupViaHttp();
         } catch (Exception e) {
-            // Non-critical, don't fail startup
         }
     }
 
-    /**
-     * Warm up by making an HTTP call to the OpenAPI endpoint.
-     * This is a fallback if direct resource access is not available.
-     */
     private void warmupViaHttp() {
         try {
             String apiDocsPath = springDocConfigProperties.getApiDocs().getPath();
@@ -85,13 +68,11 @@ public class OpenApiWarmupConfig {
 
             int responseCode = connection.getResponseCode();
             if (responseCode == 200) {
-                // Read the response to ensure it's fully generated
                 connection.getInputStream().readAllBytes();
             }
 
             connection.disconnect();
         } catch (Exception e) {
-            // Ignore warmup failures
         }
     }
 }

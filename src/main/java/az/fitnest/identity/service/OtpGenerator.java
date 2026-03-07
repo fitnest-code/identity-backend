@@ -12,6 +12,6 @@ public class OtpGenerator {
     private final SecureRandom random = new SecureRandom();
 
     public String generateOtp() {
-        return "1111"; // Hardcoded for now as requested
+        return "1111";
     }
 }

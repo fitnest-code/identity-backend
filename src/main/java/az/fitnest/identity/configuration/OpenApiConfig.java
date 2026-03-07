@@ -17,10 +17,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-/**
- * OpenAPI configuration optimized for fast loading.
- * Uses lazy initialization and caching for better performance.
- */
 @Configuration
 public class OpenApiConfig {
 
@@ -45,7 +41,6 @@ public class OpenApiConfig {
                                 .description("Enter your JWT token. Get it from /api/v1/auth/login or /api/v1/auth/register/complete")))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
 
-        // Add server URL for Istio routing if configured
         if (serverUrl != null && !serverUrl.isEmpty()) {
             openAPI.servers(List.of(new Server().url(serverUrl).description("API Server")));
         }
@@ -53,15 +48,9 @@ public class OpenApiConfig {
         return openAPI;
     }
 
-
-    /**
-     * Customizer to optimize operation processing.
-     * Skips unnecessary processing for faster spec generation.
-     */
     @Bean
     public OperationCustomizer operationCustomizer() {
         return (operation, handlerMethod) -> {
-            // Remove null descriptions to reduce JSON size
             if (operation.getDescription() != null && operation.getDescription().isEmpty()) {
                 operation.setDescription(null);
             }

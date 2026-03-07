@@ -22,7 +22,6 @@ public interface LegalService {
 
     boolean isConsentRequired(Long userId);
 
-    // Admin methods
     List<AdminLegalDocumentResponse> getAllDocuments(LegalDocumentType type, String language, Boolean active);
 
     AdminLegalDocumentResponse getDocumentById(Long id);
@@ -37,4 +36,3 @@ public interface LegalService {
 
     Page<AdminConsentResponse> getConsents(Long userId, Pageable pageable);
 }
-

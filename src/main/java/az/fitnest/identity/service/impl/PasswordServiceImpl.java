@@ -9,24 +9,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-/**
- * Production-grade implementation of {@link PasswordService}.
- * Features:
- * - DelegatingPasswordEncoder support for multiple algorithms.
- * - Argon2 as the current high-security default.
- * - BCrypt support for legacy compatibility.
- * - Maximum password length enforcement to prevent DoS attacks.
- * - Constant-time verification behavior.
- * - Transparent hash upgrade detection.
- */
 @Service
 @RequiredArgsConstructor
 public class PasswordServiceImpl implements PasswordService {
 
-    /**
-     * Maximum password length to prevent excessive CPU usage during hashing (DoS protection).
-     * Argon2/BCrypt can be computationally expensive for very long strings.
-     */
     private static final int MAX_PASSWORD_LENGTH = 128;
 
     private final PasswordEncoder passwordEncoder;
@@ -39,21 +25,17 @@ public class PasswordServiceImpl implements PasswordService {
 
     @Override
     public PasswordVerificationResult verifyPassword(String rawPassword, String passwordHash) {
-        // Uniform failure for blank inputs to mitigate enumeration and timing leakage
         if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(passwordHash)) {
             return new PasswordVerificationResult(false, false);
         }
 
         try {
-            // matches() typically uses constant-time comparisons internally
             boolean matches = passwordEncoder.matches(rawPassword, passwordHash);
 
-            // Check if the current hash uses a suboptimal algorithm or parameters
             boolean upgradeRecommended = matches && passwordEncoder.upgradeEncoding(passwordHash);
 
             return new PasswordVerificationResult(matches, upgradeRecommended);
         } catch (Exception e) {
-            // Catch unexpected hashing failures (e.g. malformed hash) to prevent stack trace leaks
             return new PasswordVerificationResult(false, false);
         }
     }

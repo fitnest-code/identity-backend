@@ -6,10 +6,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-/**
- * Request DTO for sending OTP codes.
- * Used to initiate OTP verification for various purposes like registration or login.
- */
 @Schema(description = "Request to send an OTP code to a mobile number")
 public record OtpSendRequest(
     @NotNull

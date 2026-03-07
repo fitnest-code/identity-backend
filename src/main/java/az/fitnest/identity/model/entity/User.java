@@ -9,9 +9,6 @@ import lombok.*;
 
 import java.time.Instant;
 
-/**
- * Entity representing a user in the identity system.
- */
 @Entity
 @Table(
         name = "users",
@@ -85,7 +82,6 @@ public class User extends BaseAuditableEntity {
     @Column(name = "deactivated_at")
     private Instant deactivatedAt;
 
-    // Manual getters to bypass Lombok issues
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
     public String getMobile() { return mobile; }

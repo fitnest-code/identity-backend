@@ -30,7 +30,7 @@ public class LocaleConfig {
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
         messageSource.setBasenames("messages");
         messageSource.setDefaultEncoding("UTF-8");
-        messageSource.setFallbackToSystemLocale(false); // Do not fall back to OS locale, stick to defaultLocale
+        messageSource.setFallbackToSystemLocale(false);
         return messageSource;
     }
 }

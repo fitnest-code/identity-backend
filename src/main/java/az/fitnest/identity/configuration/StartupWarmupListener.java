@@ -8,14 +8,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-/**
- * Eliminates "first request" cold-start by warming up critical dependencies
- * on ApplicationReadyEvent.
- */
 @Component
 @ConditionalOnProperty(prefix = "app.warmup", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class StartupWarmupListener {
-
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -32,7 +27,6 @@ public class StartupWarmupListener {
         try {
             jdbcTemplate.queryForObject("SELECT 1", Integer.class);
         } catch (Exception e) {
-            // Ignore warmup failures
         }
     }
 }

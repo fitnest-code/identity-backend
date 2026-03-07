@@ -22,7 +22,6 @@ public interface LegalDocumentRepository extends JpaRepository<LegalDocument, Lo
 
     List<LegalDocument> findAllByTypeAndLanguageAndIsActiveTrue(LegalDocumentType type, String language);
 
-    // Admin queries
     List<LegalDocument> findAllByOrderByPublishedAtDesc();
 
     List<LegalDocument> findAllByTypeOrderByPublishedAtDesc(LegalDocumentType type);

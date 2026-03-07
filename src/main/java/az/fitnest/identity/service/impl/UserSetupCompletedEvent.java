@@ -16,5 +16,5 @@ public class UserSetupCompletedEvent {
     private String eventId;
     private Long userId;
     private Long timestamp;
-    private String source; // identity-service
+    private String source;
 }

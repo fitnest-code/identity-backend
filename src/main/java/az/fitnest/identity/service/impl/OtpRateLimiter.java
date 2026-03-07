@@ -21,13 +21,13 @@ public class OtpRateLimiter {
                 -- ARGV[1] = windowMs
                 -- ARGV[2] = cooldownMs
                 -- ARGV[3] = maxAttempts
-            
+
                 local windowKey = KEYS[1]
                 local cdKey     = KEYS[2]
                 local windowMs   = tonumber(ARGV[1])
                 local cooldownMs = tonumber(ARGV[2])
                 local maxA       = tonumber(ARGV[3])
-            
+
                 -- 1. Cooldown gate (cheap check)
                 if cooldownMs > 0 then
                     local cdTtl = redis.call('PTTL', cdKey)
@@ -35,24 +35,24 @@ public class OtpRateLimiter {
                         return {0, math.floor((cdTtl + 999) / 1000)} -- denied, waitSec
                     end
                 end
-            
+
                 -- 2. Fixed window counter
                 local n = redis.call('INCR', windowKey)
                 if n == 1 then
                     redis.call('PEXPIRE', windowKey, windowMs)
                 end
-            
+
                 if n > maxA then
                     local wTtl = redis.call('PTTL', windowKey)
                     if wTtl < 0 then wTtl = windowMs end -- safety fallback
                     return {0, math.floor((wTtl + 999) / 1000)} -- denied, waitSec
                 end
-            
+
                 -- 3. Set/update cooldown
                 if cooldownMs > 0 then
                     redis.call('PSETEX', cdKey, cooldownMs, '1')
                 end
-            
+
                 return {1, 0} -- allowed
             """;
     @SuppressWarnings("rawtypes")
@@ -65,7 +65,6 @@ public class OtpRateLimiter {
     private final OtpRateLimitProperties properties;
     private final MeterRegistry meterRegistry;
     private final PhoneNormalizer phoneNormalizer;
-    // Local shielding for rapid IP bursts (cost-effective rejection)
     private final Cache<String, Long> localBurstShield;
 
     public OtpRateLimiter(StringRedisTemplate redisTemplate,
@@ -84,27 +83,22 @@ public class OtpRateLimiter {
                 .build();
     }
 
-    /**
-     * Dual-dimension limit: Phone + IP.
-     */
     public RateLimitResult checkRateLimit(OtpPurpose purpose, String phoneNumber, String clientIp) {
         if (purpose == null || phoneNumber == null || phoneNumber.isEmpty()) {
             meterRegistry.counter("otp.ratelimit.invalid.input").increment();
             return new RateLimitResult(false, properties.getWindowSeconds());
         }
 
-        // 1. Local Burst Shield (IP-based, extremely cheap)
         if (clientIp != null) {
             String shieldKey = purpose.name() + ":" + clientIp;
             Long count = localBurstShield.getIfPresent(shieldKey);
-            if (count != null && count > 5) { // Max 5 requests per 2 seconds per IP locally
+            if (count != null && count > 5) {
                 meterRegistry.counter("otp.ratelimit.local.shield.denied").increment();
-                return new RateLimitResult(false, 30); // generic short delay
+                return new RateLimitResult(false, 30);
             }
             localBurstShield.put(shieldKey, count == null ? 1L : count + 1);
         }
 
-        // 2. Redis Limiting (Identifier-based: Phone or Email)
         String finalIdentifier;
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
             finalIdentifier = phoneNumber.toLowerCase().trim();
@@ -119,7 +113,6 @@ public class OtpRateLimiter {
         RateLimitResult identifierResult = checkRedisRateLimit("identifier", purpose, finalIdentifier);
         if (!identifierResult.allowed()) return identifierResult;
 
-        // 3. Redis Limiting (IP-based, if provided)
         if (clientIp != null) {
             RateLimitResult ipResult = checkRedisRateLimit("ip", purpose, clientIp);
             if (!ipResult.allowed()) return ipResult;

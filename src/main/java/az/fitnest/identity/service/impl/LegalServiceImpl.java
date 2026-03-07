@@ -42,7 +42,6 @@ public class LegalServiceImpl implements LegalService {
     private LegalDocumentResponse getDocument(LegalDocumentType type, String lang) {
         String normalizedLang = normalizeLanguage(lang);
 
-        // Fallback to EN if requested lang not found, or just return empty if nothing exists
         LegalDocument doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
@@ -63,7 +62,6 @@ public class LegalServiceImpl implements LegalService {
 
         String normalizedLang = normalizeLanguage(request.language());
 
-        // Requirement 8: Enforce single active document per type and language
         if (Boolean.TRUE.equals(request.isActive())) {
             var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(request.type(), normalizedLang);
             if (!activeDocs.isEmpty()) {
@@ -87,7 +85,6 @@ public class LegalServiceImpl implements LegalService {
     @Transactional
     @Override
     public void acceptConsent(Long userId, ConsentAcceptRequest request, String ipAddress, String userAgent) {
-        // Validation: Ensure versions exist and are ACTIVE
         boolean privacyExistsAndActive = legalDocumentRepository.existsByTypeAndVersionAndIsActiveTrue(LegalDocumentType.PRIVACY_POLICY, request.privacyVersion());
         boolean termsExistsAndActive = legalDocumentRepository.existsByTypeAndVersionAndIsActiveTrue(LegalDocumentType.TERMS_OF_USE, request.termsVersion());
 
@@ -95,13 +92,12 @@ public class LegalServiceImpl implements LegalService {
             throw new ValidationException("Yanlış razılıq versiyası", "INVALID_CONSENT_VERSION");
         }
 
-        // Idempotency check
         Optional<UserConsent> latestConsentOpt = userConsentRepository.findTopByUserIdOrderByAcceptedAtDesc(userId);
         if (latestConsentOpt.isPresent()) {
             UserConsent latest = latestConsentOpt.get();
             if (latest.getPrivacyPolicyVersion().equals(request.privacyVersion()) &&
                     latest.getTermsOfUseVersion().equals(request.termsVersion())) {
-                return; // Already accepted these exact versions
+                return;
             }
         }
 
@@ -122,15 +118,11 @@ public class LegalServiceImpl implements LegalService {
     public UserConsentStatusResponse getUserConsentStatus(Long userId) {
         Optional<UserConsent> latestConsent = userConsentRepository.findTopByUserIdOrderByAcceptedAtDesc(userId);
 
-        // Get latest active versions
         String latestPrivacyVersion = getLatestVersion(LegalDocumentType.PRIVACY_POLICY);
         String latestTermsVersion = getLatestVersion(LegalDocumentType.TERMS_OF_USE);
 
         if (latestConsent.isPresent()) {
             UserConsent consent = latestConsent.get();
-
-            // Accepted = true if they have accepted ANY version (which they have if record exists)
-            // UpToDate = true if their version matches latest active
 
             boolean isPrivacyUpToDate = latestPrivacyVersion != null && latestPrivacyVersion.equals(consent.getPrivacyPolicyVersion());
             boolean isTermsUpToDate = latestTermsVersion != null && latestTermsVersion.equals(consent.getTermsOfUseVersion());
@@ -161,14 +153,12 @@ public class LegalServiceImpl implements LegalService {
         String latestPrivacyVersion = getLatestVersion(LegalDocumentType.PRIVACY_POLICY);
         String latestTermsVersion = getLatestVersion(LegalDocumentType.TERMS_OF_USE);
 
-        // If NO active documents exist at all, consent is not required.
         if (latestPrivacyVersion == null && latestTermsVersion == null) {
             return false;
         }
 
-        // If we have at least one active doc, we check user status
         if (latestConsent.isEmpty()) {
-            return true; // No consent at all -> required
+            return true;
         }
 
         UserConsent consent = latestConsent.get();
@@ -176,11 +166,8 @@ public class LegalServiceImpl implements LegalService {
         boolean privacyOk = (latestPrivacyVersion == null) || latestPrivacyVersion.equals(consent.getPrivacyPolicyVersion());
         boolean termsOk = (latestTermsVersion == null) || latestTermsVersion.equals(consent.getTermsOfUseVersion());
 
-        // Required if EITHER is not OK
         return !privacyOk || !termsOk;
     }
-
-    // ==================== Admin Methods ====================
 
     @Override
     public List<AdminLegalDocumentResponse> getAllDocuments(LegalDocumentType type, String language, Boolean active) {
@@ -242,7 +229,6 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findById(id)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
-        // Deactivate all other documents of the same type and language
         var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(doc.getType(), doc.getLanguage());
         activeDocs.forEach(d -> d.setActive(false));
         legalDocumentRepository.saveAll(activeDocs);
@@ -282,8 +268,6 @@ public class LegalServiceImpl implements LegalService {
                 c.getPlatform()
         ));
     }
-
-    // ==================== Helper Methods ====================
 
     private String normalizeLanguage(String lang) {
         if (lang == null || lang.isBlank()) {

@@ -17,7 +17,6 @@ public interface SocialAuthRepository extends JpaRepository<SocialAuth, Long> {
             String providerId
     );
 
-
     boolean existsByProviderAndProviderId(
             SocialProvider provider,
             String providerId

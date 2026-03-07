@@ -6,4 +6,3 @@ public record DeactivateAccountRequest(
     @JsonProperty("reason")
     String reason
 ) {}
-

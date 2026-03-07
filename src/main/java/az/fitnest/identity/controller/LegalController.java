@@ -59,7 +59,6 @@ public class LegalController {
         return ResponseEntity.ok(legalService.getTermsOfUse(lang, format));
     }
 
-
     @GetMapping("/consents/me")
     @Operation(summary = "Razılıqlarımı əldə edin", description = "Cari autentifikasiya olunmuş istifadəçi üçün razılıq statusunu yoxlayır.")
     @SecurityRequirement(name = "bearerAuth")

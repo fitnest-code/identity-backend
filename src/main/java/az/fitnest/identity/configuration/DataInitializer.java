@@ -24,10 +24,6 @@ public class DataInitializer {
     private final LegalDocumentRepository legalDocumentRepository;
     private final UserConsentRepository userConsentRepository;
 
-    // The explicit constructor is removed because @RequiredArgsConstructor handles it.
-    // If there were specific initialization logic beyond simple assignment,
-    // an explicit constructor would be needed, but for final fields, Lombok is preferred.
-
     @Bean
     public CommandLineRunner initData() {
         return args -> {
@@ -180,7 +176,6 @@ public class DataInitializer {
 
     private void initLegalDocuments() {
         if (legalDocumentRepository.count() == 0) {
-            // Privacy Policy EN
             legalDocumentRepository.save(LegalDocument.builder()
                     .type(LegalDocumentType.PRIVACY_POLICY)
                     .version("1.0")
@@ -190,7 +185,6 @@ public class DataInitializer {
                     .publishedAt(LocalDateTime.now())
                     .build());
 
-            // Terms of Use EN
             legalDocumentRepository.save(LegalDocument.builder()
                     .type(LegalDocumentType.TERMS_OF_USE)
                     .version("1.0")
@@ -200,7 +194,6 @@ public class DataInitializer {
                     .publishedAt(LocalDateTime.now())
                     .build());
 
-            // Privacy Policy AZ
             legalDocumentRepository.save(LegalDocument.builder()
                     .type(LegalDocumentType.PRIVACY_POLICY)
                     .version("1.0")
@@ -214,7 +207,6 @@ public class DataInitializer {
 
     private void initUserConsents() {
         if (userConsentRepository.count() == 0) {
-            // Give consent to our test users
             userRepository.findAll().forEach(user -> {
                 userConsentRepository.save(UserConsent.builder()
                         .userId(user.getId())

@@ -26,7 +26,6 @@ public class OtpController {
 
     private final OtpService otpService;
 
-
     @Operation(
             summary = "OTP-ni doğrulayın",
             description = "İstifadəçi tərəfindən təqdim olunan OTP kodunu doğrulayır. " +

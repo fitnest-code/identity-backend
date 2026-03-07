@@ -21,4 +21,3 @@ public class IdentityEventPublisher {
         kafkaTemplate.send("user-setup-completed", String.valueOf(userId), event);
     }
 }
-

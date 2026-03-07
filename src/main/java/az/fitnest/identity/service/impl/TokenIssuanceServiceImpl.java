@@ -49,7 +49,6 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
 
         redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
 
-        // Do NOT remove all previous tokens for this user. Allow multiple sessions/devices.
         saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
 
         boolean consentRequired = legalService.isConsentRequired(user.getId());

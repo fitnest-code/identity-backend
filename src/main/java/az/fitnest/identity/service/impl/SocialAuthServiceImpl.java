@@ -64,8 +64,6 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
 
-        // No email linking anymore. Create new user.
-
         User newUser = createUserForSocialLogin(
                 request.firstName(),
                 request.lastName(),
@@ -110,8 +108,6 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
             return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
-
-        // No email linking anymore. Create new user.
 
         User newUser = createUserForSocialLogin(
                 request.firstName(),

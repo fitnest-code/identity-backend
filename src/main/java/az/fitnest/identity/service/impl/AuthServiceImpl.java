@@ -64,8 +64,6 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        // Single device policy: revoke only the active session in Redis to avoid heavy DB churn. 
-        // Token records in DB are kept for auditability.
         String activeJti = redisTokenService.getActiveSession(result.user().getId());
         if (activeJti != null) {
             redisTokenService.revokeAccessToken(activeJti);
@@ -107,7 +105,6 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("Yanlış giriş məlumatları");
         }
 
-        // Transparent hash upgrade during login
         if (verification.upgradeRecommended()) {
             String newHash = passwordService.hashPassword(password);
             user.setPasswordHash(newHash);
@@ -120,10 +117,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         resetFailedLoginAttempts(user.getId());
-        // No need for userRepository.save(user) if only status was changed, 
-        // but let's be safe if it was NO_SESSIONS -> ACTIVE
         if (user.getStatus() == UserStatus.ACTIVE && user.getFailedLoginAttempts() > 0) {
-            // already handled by resetFailedLoginAttempts(userId) which is atomic
         }
 
         return new AuthenticationResult(user, AuthenticationStatus.SUCCESS);
@@ -190,8 +184,6 @@ public class AuthServiceImpl implements AuthService {
 
             internalLogout(userId, accessToken);
         } catch (Exception e) {
-            // Handle parsing errors gracefully (token might be malformed or expired already)
-            // Logout should be idempotent.
         }
     }
 
@@ -200,7 +192,6 @@ public class AuthServiceImpl implements AuthService {
         try {
             authTokenRepository.deleteByAccessTokenHash(tokenHasher.hash(accessToken));
         } catch (Exception e) {
-            // Ignore if hash fails
         }
 
         userRepository.markNoSessionsIfNone(userId, SessionStatus.NO_SESSIONS);

@@ -210,7 +210,6 @@ public class UserServiceImpl implements UserService {
         return saved;
     }
 
-
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
     @Override
@@ -229,7 +228,6 @@ public class UserServiceImpl implements UserService {
         try {
             eventPublisher.publishSetupCompleted(event.userId());
         } catch (Exception e) {
-            // Silently ignore or handle via other means as requested (no logging)
         }
     }
 
@@ -255,14 +253,12 @@ public class UserServiceImpl implements UserService {
     public void deactivateUser(Long userId, String reason) {
         User user = getUserOrThrow(userId);
 
-        // Deactivate: set status to INACTIVE and persist reason
         user.setStatus(UserStatus.INACTIVE);
         user.setDeactivationReason(reason);
         user.setDeactivatedAt(java.time.Instant.now());
         user.setSessionStatus(az.fitnest.identity.model.enums.SessionStatus.NO_SESSIONS);
         userRepository.save(user);
 
-        // Revoke all access tokens in Redis
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
         for (AuthToken token : tokens) {
             if (token.getJti() != null) {
@@ -270,10 +266,8 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        // Remove active session from Redis
         redisTokenService.removeActiveSession(userId);
 
-        // Delete all token records from DB
         authTokenRepository.deleteByUserId(userId);
     }
 
@@ -351,7 +345,6 @@ public class UserServiceImpl implements UserService {
         try {
             kafkaTemplate.send("user-events", event);
         } catch (Exception e) {
-            // Silently ignore or handle via other means as requested (no logging)
         }
     }
 

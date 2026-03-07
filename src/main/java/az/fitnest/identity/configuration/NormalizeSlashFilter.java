@@ -13,12 +13,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-/**
- * Normalizes incoming request URIs by collapsing multiple slashes ("//")
- * into a single slash. This helps when some clients or reverse proxies
- * accidentally introduce duplicate slashes, so that Spring MVC, Swagger,
- * and security mappings keep working as expected.
- */
 public class NormalizeSlashFilter implements Filter {
 
     @Override
@@ -31,7 +25,6 @@ public class NormalizeSlashFilter implements Filter {
         String originalUri = request.getRequestURI();
         String normalizedPath = originalUri.replaceAll("/{2,}", "/");
 
-        // If nothing to normalize, continue as-is
         if (normalizedPath.equals(originalUri)) {
             chain.doFilter(request, response);
             return;
@@ -66,4 +59,3 @@ public class NormalizeSlashFilter implements Filter {
         chain.doFilter(wrappedRequest, response);
     }
 }
-

@@ -5,10 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/**
- * Request DTO for user login.
- * Contains credentials required for authentication.
- */
 @Schema(description = "User login credentials")
 public record LoginRequest(
     @NotBlank(message = "Mobil nömrə tələb olunur")

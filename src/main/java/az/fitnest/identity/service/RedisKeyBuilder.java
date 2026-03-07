@@ -70,9 +70,8 @@ public final class RedisKeyBuilder {
 
     public RedisKeys rateLimitKeys(OtpPurpose purpose, String identifier) {
         validateInputs(purpose, identifier);
-        // stable, non-PII identifier
         String id = shortHmac(purpose.name() + "|" + identifier);
-        String tag = "{" + id + "}"; // same slot for Redis Cluster
+        String tag = "{" + id + "}";
         return new RedisKeys(
                 PREFIX_OTP + SEPARATOR + PREFIX_RL + SEPARATOR + tag + ":w",
                 PREFIX_OTP + SEPARATOR + PREFIX_RL + SEPARATOR + tag + ":c"
@@ -112,7 +111,6 @@ public final class RedisKeyBuilder {
         try {
             Mac mac = getMac();
             byte[] h = mac.doFinal(s.getBytes(StandardCharsets.UTF_8));
-            // 12 bytes => 24 hex chars (plenty for entropy, avoids long keys)
             return HexFormat.of().formatHex(java.util.Arrays.copyOf(h, 12));
         } catch (Exception e) {
             throw new IllegalStateException("Failed to generate HMAC", e);

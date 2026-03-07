@@ -14,10 +14,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-/**
- * Application warmup configuration that pre-warms various resources at startup.
- * This helps eliminate cold-start latency on the first requests.
- */
 @Configuration
 public class ApplicationWarmupConfig {
 
@@ -34,10 +30,6 @@ public class ApplicationWarmupConfig {
         this.redisTemplate = redisTemplate;
     }
 
-    /**
-     * Warm up application resources after startup.
-     * Runs asynchronously to not block the application startup.
-     */
     @EventListener(ApplicationReadyEvent.class)
     @Async
     public void warmupApplication() {
@@ -45,26 +37,17 @@ public class ApplicationWarmupConfig {
             return;
         }
 
-
-        // Warm up database connection pool
         if (warmupDb) {
             warmupDatabase();
         }
 
-        // Warm up Redis connection
         warmupRedis();
 
-        // Warm up JIT by touching commonly used classes
         warmupJit();
     }
 
-    /**
-     * Warm up database connection pool by executing a simple query.
-     * This ensures connections are established before user requests arrive.
-     */
     private void warmupDatabase() {
         try {
-            // Execute multiple queries to warm up multiple connections in the pool
             for (int i = 0; i < 3; i++) {
                 try (Connection conn = dataSource.getConnection();
                      PreparedStatement stmt = conn.prepareStatement("SELECT 1");
@@ -78,29 +61,20 @@ public class ApplicationWarmupConfig {
         }
     }
 
-    /**
-     * Warm up Redis connection.
-     */
     private void warmupRedis() {
         try {
-            // Simple ping to establish connection
             redisTemplate.hasKey("__warmup__");
         } catch (Exception e) {
         }
     }
 
-    /**
-     * Warm up JIT compiler by touching commonly used code paths.
-     */
     private void warmupJit() {
         try {
-            // Touch common string operations
             String test = "warmup-test-string";
             test.toLowerCase();
             test.toUpperCase();
             test.split("-");
 
-            // Touch common collections
             java.util.List<String> list = new java.util.ArrayList<>();
             list.add("test");
             list.stream().filter(s -> s != null).count();

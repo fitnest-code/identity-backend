@@ -61,16 +61,16 @@ public class RegistrationServiceTest {
     @Test
     void startRegistration_shouldCallOtpService_whenMobileProvided() {
         RegisterRequest request = new RegisterRequest("0501234567");
-        
+
         when(userRepository.findFirstByMobile("+994501234567")).thenReturn(Optional.empty());
 
         registrationService.startRegistration(request);
-        
+
         verify(otpService).sendOtp(
-            any(OtpSendRequest.class), 
-            eq(null), 
-            eq(null), 
-            eq(null), 
+            any(OtpSendRequest.class),
+            eq(null),
+            eq(null),
+            eq(null),
             eq("+994501234567")
         );
     }
@@ -78,23 +78,23 @@ public class RegistrationServiceTest {
     @Test
     void startRegistration_shouldThrowConflict_whenMobileExists() {
         RegisterRequest request = new RegisterRequest("0501234567");
-        
+
         when(userRepository.findFirstByMobile("+994501234567")).thenReturn(Optional.of(new User()));
 
         assertThrows(ConflictException.class, () -> registrationService.startRegistration(request));
     }
-    
+
     @Test
     void completeRegistration_shouldCreateUser_whenTokenValid() {
         RegisterCompleteRequest request = new RegisterCompleteRequest("valid-token", "John", "Doe", "password");
-        
+
         when(registrationTokenService.requireIdentifier("valid-token")).thenReturn("+994501234567");
         when(passwordService.hashPassword("password")).thenReturn("hashedPass");
         when(userService.createNewUser("John", "Doe", "hashedPass", "+994501234567")).thenReturn(new User());
         when(tokenIssuanceService.issueTokens(any(User.class), any())).thenReturn(new LoginResponse("access", "refresh", null));
 
         registrationService.completeRegistration(request);
-        
+
         verify(registrationTokenService).consume("valid-token");
         verify(userService).createNewUser("John", "Doe", "hashedPass", "+994501234567");
     }

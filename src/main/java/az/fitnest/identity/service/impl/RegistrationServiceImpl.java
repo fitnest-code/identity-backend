@@ -58,10 +58,8 @@ public class RegistrationServiceImpl implements RegistrationService {
         String registrationToken = request.registrationToken();
         String identifier = registrationTokenService.requireIdentifier(registrationToken);
 
-        // Identifier is always mobile now
         String mobile = identifier;
 
-        // Consume the token so it cannot be used again
         registrationTokenService.consume(registrationToken);
 
         String passwordHash = passwordService.hashPassword(request.password());
