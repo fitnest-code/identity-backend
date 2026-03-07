@@ -245,37 +245,47 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
     @Override
-    public void deactivateAccount(Long userId) {
-        deleteUser(userId, "Self-deactivation");
+    public void deactivateAccount(Long userId, String reason) {
+        deactivateUser(userId, reason != null && !reason.isBlank() ? reason : "Self-deactivation");
     }
 
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
     @Override
-    public void deleteUser(Long userId, String reason) {
+    public void deactivateUser(Long userId, String reason) {
         User user = getUserOrThrow(userId);
-        // Soft-delete: set status to INACTIVE and persist
+
+        // Deactivate: set status to INACTIVE and persist reason
         user.setStatus(UserStatus.INACTIVE);
+        user.setDeactivationReason(reason);
+        user.setDeactivatedAt(java.time.Instant.now());
+        user.setSessionStatus(az.fitnest.identity.model.enums.SessionStatus.NO_SESSIONS);
         userRepository.save(user);
 
+        // Revoke all access tokens in Redis
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
         for (AuthToken token : tokens) {
             if (token.getJti() != null) {
                 redisTokenService.revokeAccessToken(token.getJti());
             }
         }
+
+        // Remove active session from Redis
+        redisTokenService.removeActiveSession(userId);
+
+        // Delete all token records from DB
         authTokenRepository.deleteByUserId(userId);
     }
 
     @Transactional
     @Override
-    public void deleteAllUsers() {
+    public void deactivateAllUsers() {
         List<User> users = userRepository.findAll();
         for (User user : users) {
             if (user.getRole() != null && "ROLE_SUPER_ADMIN".equals(user.getRole().getName())) {
                 continue;
             }
-            deleteUser(user.getId(), "Super Admin Cleanup");
+            deactivateUser(user.getId(), "Super Admin Cleanup");
         }
     }
 

@@ -66,11 +66,11 @@ public class UserAdminController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "BÜTÜN istifadəçiləri silin (Kritik)", description = "Sistemdəki bütün istifadəçi qeydlərini təmizləyir. Bu əməliyyat yalnız SUPER_ADMIN tərəfindən həyata keçirilə bilər.")
+    @Operation(summary = "BÜTÜN istifadəçiləri deaktiv edin (Kritik)", description = "Sistemdəki bütün istifadəçi hesablarını deaktiv edir. Bu əməliyyat yalnız SUPER_ADMIN tərəfindən həyata keçirilə bilər.")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/all")
-    public ResponseEntity<Void> deleteAllUsers() {
-        userService.deleteAllUsers();
+    public ResponseEntity<Void> deactivateAllUsers() {
+        userService.deactivateAllUsers();
         return ResponseEntity.noContent().build();
     }
 }

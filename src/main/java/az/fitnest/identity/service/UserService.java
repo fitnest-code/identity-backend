@@ -42,15 +42,15 @@ public interface UserService {
 
     User updateLanguage(Long userId, String language);
 
-    void deleteUser(Long userId, String reason);
+    void deactivateUser(Long userId, String reason);
 
-    void deactivateAccount(Long userId);
+    void deactivateAccount(Long userId, String reason);
 
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
 
     Page<az.fitnest.identity.dto.UserResponse> getAllUsersMapped(int page, int size);
 
-    void deleteAllUsers();
+    void deactivateAllUsers();
 
     User updateSessionStatus(Long userId, az.fitnest.identity.model.enums.SessionStatus sessionStatus);
 

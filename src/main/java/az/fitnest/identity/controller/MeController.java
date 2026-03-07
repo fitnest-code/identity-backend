@@ -94,9 +94,12 @@ public class MeController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Hesab uğurla deaktiv edildi"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Autentifikasiya olunmayıb")
     })
-    public ResponseEntity<ApiResponse<Map<String, Object>>> deactivateAccount(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> deactivateAccount(
+            @RequestBody(required = false) az.fitnest.identity.dto.DeactivateAccountRequest body,
+            HttpServletRequest request) {
         Long userId = UserContext.getRequiredUserId();
-        userService.deactivateAccount(userId);
+        String reason = (body != null) ? body.reason() : null;
+        userService.deactivateAccount(userId, reason);
         return ResponseEntity.ok(ApiResponse.success(Map.of(
                 "message", "Hesab uğurla deaktiv edildi",
                 "status", 200,

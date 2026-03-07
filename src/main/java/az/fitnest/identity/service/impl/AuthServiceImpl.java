@@ -88,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
 
         Instant now = Instant.now();
 
-        if (user.isDeleted()) {
+        if (user.isDeactivated()) {
             PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
             if (user.getPasswordHash() == null || !verification.matches()) {
                 userRepository.incrementFailedLoginAttempts(user.getId());
@@ -162,7 +162,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UnauthorizedException("Yanlış giriş məlumatları"));
 
         Instant now = Instant.now();
-        if (user.isDeleted() || user.isAccountLocked()) {
+        if (user.isDeactivated() || user.isAccountLocked()) {
             throw new UnauthorizedException("error.invalid_credentials");
         }
 

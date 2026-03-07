@@ -68,7 +68,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
         User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_credentials"));
-        if (user.isDeleted()) {
+        if (user.isDeactivated()) {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_credentials", "INVALID_CREDENTIALS");
         }
         // Optional: reject if newPassword equals old password

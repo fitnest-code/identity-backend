@@ -13,7 +13,7 @@ import az.fitnest.user.grpc.UpdateUserProfileRequest;
 import az.fitnest.user.grpc.UpdateProfileImageRequest;
 import az.fitnest.user.grpc.UpdateSetupRequiredRequest;
 import az.fitnest.user.grpc.UpdateLanguageRequest;
-import az.fitnest.user.grpc.DeleteUserRequest;
+import az.fitnest.user.grpc.DeactivateUserRequest;
 import az.fitnest.user.grpc.UpdateSessionStatusRequest;
 import com.google.protobuf.Empty;
 import io.grpc.Status;
@@ -121,14 +121,14 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void deleteUser(DeleteUserRequest request, StreamObserver<com.google.protobuf.Empty> responseObserver) {
+    public void deactivateUser(DeactivateUserRequest request, StreamObserver<com.google.protobuf.Empty> responseObserver) {
         try {
-            userService.deleteUser(request.getUserId(), request.getReason());
+            userService.deactivateUser(request.getUserId(), request.getReason());
             responseObserver.onNext(com.google.protobuf.Empty.getDefaultInstance());
             responseObserver.onCompleted();
         } catch (Exception e) {
             responseObserver.onError(Status.INTERNAL
-                    .withDescription("Failed to delete user: " + e.getMessage())
+                    .withDescription("Failed to deactivate user: " + e.getMessage())
                     .withCause(e)
                     .asException());
         }

@@ -77,10 +77,10 @@ public class InternalUserController {
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(
+    public ResponseEntity<Void> deactivateUser(
             @PathVariable Long userId,
             @RequestParam(name = "reason", required = false) String reason) {
-        userService.deleteUser(userId, reason);
+        userService.deactivateUser(userId, reason);
         return ResponseEntity.noContent().build();
     }
 
