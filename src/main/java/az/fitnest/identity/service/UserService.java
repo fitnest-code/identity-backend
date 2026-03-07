@@ -58,7 +58,7 @@ public interface UserService {
 
     User confirmEmailChange(Long userId, String otpSessionId, String otpCode);
 
-    void requestMobileChange(Long userId, String newMobile);
+    az.fitnest.identity.dto.OtpSendResponse requestMobileChange(Long userId, String newMobile);
 
-    User confirmMobileChange(Long userId, String otpCode);
+    User confirmMobileChange(Long userId, String otpSessionId, String otpCode);
 }
