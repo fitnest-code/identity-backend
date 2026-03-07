@@ -59,22 +59,6 @@ public class LegalController {
         return ResponseEntity.ok(legalService.getTermsOfUse(lang, format));
     }
 
-    @PostMapping("/consents/accept")
-    @Operation(summary = "Razılıqları qəbul edin", description = "İstifadəçinin cari hüquqi sənədləri qəbul etməsini qeyd edir.")
-    @SecurityRequirement(name = "bearerAuth")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Razılıqlar uğurla qeyd edildi"),
-            @ApiResponse(responseCode = "401", description = "İstifadəçi autentifikasiya olunmayıb")
-    })
-    public ResponseEntity<Void> acceptConsents(
-            @Valid @RequestBody ConsentAcceptRequest request,
-            HttpServletRequest httpServletRequest) {
-        Long userId = getCurrentUserId();
-        String ipAddress = httpServletRequest.getRemoteAddr();
-        String userAgent = httpServletRequest.getHeader("User-Agent");
-        legalService.acceptConsent(userId, request, ipAddress, userAgent);
-        return ResponseEntity.ok().build();
-    }
 
     @GetMapping("/consents/me")
     @Operation(summary = "Razılıqlarımı əldə edin", description = "Cari autentifikasiya olunmuş istifadəçi üçün razılıq statusunu yoxlayır.")
