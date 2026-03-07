@@ -18,7 +18,7 @@ service UserService {
   rpc UpdateSessionStatus(UpdateSessionStatusRequest) returns (UserResponse);
   rpc RequestEmailChange(RequestEmailChangeRequest) returns (OtpSendResponseProto);
   rpc ConfirmEmailChange(ConfirmEmailChangeRequest) returns (UserResponse);
-  rpc RequestMobileChange(RequestMobileChangeRequest) returns (OtpSendResponseProto);
+  rpc RequestMobileChange(RequestMobileChangeRequest) returns (google.protobuf.Empty);
   rpc ConfirmMobileChange(ConfirmMobileChangeRequest) returns (UserResponse);
 }
 
@@ -100,5 +100,4 @@ message RequestMobileChangeRequest {
 message ConfirmMobileChangeRequest {
   int64 user_id = 1;
   string otp_code = 2;
-  string otp_session_id = 3;
 }
