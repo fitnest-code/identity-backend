@@ -54,11 +54,11 @@ public interface UserService {
 
     User updateSessionStatus(Long userId, az.fitnest.identity.model.enums.SessionStatus sessionStatus);
 
-    void requestEmailChange(Long userId, String newEmail);
+    az.fitnest.identity.dto.OtpSendResponse requestEmailChange(Long userId, String newEmail);
 
-    User confirmEmailChange(Long userId, String otpCode);
+    User confirmEmailChange(Long userId, String otpSessionId, String otpCode);
 
-    void requestMobileChange(Long userId, String newMobile);
+    az.fitnest.identity.dto.OtpSendResponse requestMobileChange(Long userId, String newMobile);
 
-    User confirmMobileChange(Long userId, String otpCode);
+    User confirmMobileChange(Long userId, String otpSessionId, String otpCode);
 }

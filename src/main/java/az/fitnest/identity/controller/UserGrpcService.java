@@ -152,10 +152,16 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void requestEmailChange(RequestEmailChangeRequest request, StreamObserver<com.google.protobuf.Empty> responseObserver) {
+    public void requestEmailChange(RequestEmailChangeRequest request, StreamObserver<az.fitnest.user.grpc.OtpSendResponseProto> responseObserver) {
         try {
-            userService.requestEmailChange(request.getUserId(), request.getNewEmail());
-            responseObserver.onNext(com.google.protobuf.Empty.getDefaultInstance());
+            az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.requestEmailChange(request.getUserId(), request.getNewEmail());
+            az.fitnest.user.grpc.OtpSendResponseProto response = az.fitnest.user.grpc.OtpSendResponseProto.newBuilder()
+                    .setOtpSessionId(otpResponse.otpSessionId() != null ? otpResponse.otpSessionId() : "")
+                    .setExpiresInSeconds(otpResponse.expiresInSeconds() != null ? otpResponse.expiresInSeconds() : 0)
+                    .setResendAvailableInSeconds(otpResponse.resendAvailableInSeconds() != null ? otpResponse.resendAvailableInSeconds() : 0)
+                    .setMessage(otpResponse.message() != null ? otpResponse.message() : "")
+                    .build();
+            responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e) {
             responseObserver.onError(Status.INTERNAL
@@ -168,7 +174,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void confirmEmailChange(ConfirmEmailChangeRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
-            User user = userService.confirmEmailChange(request.getUserId(), request.getOtpCode());
+            User user = userService.confirmEmailChange(request.getUserId(), request.getOtpSessionId(), request.getOtpCode());
             az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -181,10 +187,16 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void requestMobileChange(RequestMobileChangeRequest request, StreamObserver<com.google.protobuf.Empty> responseObserver) {
+    public void requestMobileChange(RequestMobileChangeRequest request, StreamObserver<az.fitnest.user.grpc.OtpSendResponseProto> responseObserver) {
         try {
-            userService.requestMobileChange(request.getUserId(), request.getNewMobile());
-            responseObserver.onNext(com.google.protobuf.Empty.getDefaultInstance());
+            az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.requestMobileChange(request.getUserId(), request.getNewMobile());
+            az.fitnest.user.grpc.OtpSendResponseProto response = az.fitnest.user.grpc.OtpSendResponseProto.newBuilder()
+                    .setOtpSessionId(otpResponse.otpSessionId() != null ? otpResponse.otpSessionId() : "")
+                    .setExpiresInSeconds(otpResponse.expiresInSeconds() != null ? otpResponse.expiresInSeconds() : 0)
+                    .setResendAvailableInSeconds(otpResponse.resendAvailableInSeconds() != null ? otpResponse.resendAvailableInSeconds() : 0)
+                    .setMessage(otpResponse.message() != null ? otpResponse.message() : "")
+                    .build();
+            responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e) {
             responseObserver.onError(Status.INTERNAL
@@ -197,7 +209,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void confirmMobileChange(ConfirmMobileChangeRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
-            User user = userService.confirmMobileChange(request.getUserId(), request.getOtpCode());
+            User user = userService.confirmMobileChange(request.getUserId(), request.getOtpSessionId(), request.getOtpCode());
             az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
             responseObserver.onNext(response);
             responseObserver.onCompleted();

@@ -133,7 +133,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void requestEmailChange(Long userId, String newEmail) {
+    public az.fitnest.identity.dto.OtpSendResponse requestEmailChange(Long userId, String newEmail) {
         User user = getUserOrThrow(userId);
         if (newEmail.equalsIgnoreCase(user.getEmail())) {
             throw new ConflictException("error.resource_conflict", "RESOURCE_CONFLICT");
@@ -143,14 +143,19 @@ public class UserServiceImpl implements UserService {
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail);
-        otpService.sendOtpByUserId(userId, otpRequest);
+        return otpService.sendOtpByUserId(userId, otpRequest);
     }
 
     @Override
     @Transactional
-    public User confirmEmailChange(Long userId, String otpCode) {
+    public User confirmEmailChange(Long userId, String otpSessionId, String otpCode) {
         User user = getUserOrThrow(userId);
-        var verificationResult = otpService.verifyOtpByUserId(userId, OtpPurpose.EMAIL_CHANGE, otpCode);
+        var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
+
+        if (verificationResult.purpose() != OtpPurpose.EMAIL_CHANGE) {
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_otp_purpose");
+        }
+
         String newEmail = verificationResult.email();
 
         user.setEmail(newEmail.toLowerCase());
@@ -161,7 +166,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void requestMobileChange(Long userId, String newMobile) {
+    public az.fitnest.identity.dto.OtpSendResponse requestMobileChange(Long userId, String newMobile) {
         User user = getUserOrThrow(userId);
         String normalizedMobile = MobileNumberUtils.normalize(newMobile);
         if (normalizedMobile.equals(user.getMobile())) {
@@ -172,14 +177,19 @@ public class UserServiceImpl implements UserService {
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null);
-        otpService.sendOtpByUserId(userId, otpRequest);
+        return otpService.sendOtpByUserId(userId, otpRequest);
     }
 
     @Override
     @Transactional
-    public User confirmMobileChange(Long userId, String otpCode) {
+    public User confirmMobileChange(Long userId, String otpSessionId, String otpCode) {
         User user = getUserOrThrow(userId);
-        var verificationResult = otpService.verifyOtpByUserId(userId, OtpPurpose.MOBILE_CHANGE, otpCode);
+        var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
+
+        if (verificationResult.purpose() != OtpPurpose.MOBILE_CHANGE) {
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_otp_purpose");
+        }
+
         String normalizedMobile = verificationResult.mobile();
 
         user.setMobile(normalizedMobile);
