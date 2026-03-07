@@ -47,7 +47,6 @@ public class LegalServiceImpl implements LegalService {
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
         return new LegalDocumentResponse(
-                type.name().toLowerCase(),
                 doc.getVersion(),
                 type == LegalDocumentType.PRIVACY_POLICY ? "Məxfilik Siyasəti" : "İstifadə Qaydaları",
                 doc.getContent(),

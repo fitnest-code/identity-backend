@@ -38,7 +38,7 @@ public class LegalController {
     @GetMapping("/privacy-policy")
     @Operation(summary = "Məxfilik Siyasətini əldə edin", description = "Aktiv məxfilik siyasəti məzmununu əldə edir.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Məxfilik siyasəti uğurla əldə edildi", content = @Content(schema = @Schema(implementation = LegalDocumentResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Məxfilik siyasəti uğurla əldə edildi"),
             @ApiResponse(responseCode = "404", description = "Aktiv məxfilik siyasəti tapılmadı")
     })
     public ResponseEntity<LegalDocumentResponse> getPrivacyPolicy(

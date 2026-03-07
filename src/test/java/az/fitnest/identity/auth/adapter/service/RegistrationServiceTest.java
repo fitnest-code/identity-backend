@@ -62,8 +62,8 @@ public class RegistrationServiceTest {
     void startRegistration_shouldCallOtpService_whenMobileProvided() {
         RegisterRequest request = new RegisterRequest("0501234567");
         
-        when(userRepository.findByMobileIncludingDeleted("+994501234567")).thenReturn(Optional.empty());
-        
+        when(userRepository.findFirstByMobile("+994501234567")).thenReturn(Optional.empty());
+
         registrationService.startRegistration(request);
         
         verify(otpService).sendOtp(
@@ -79,8 +79,8 @@ public class RegistrationServiceTest {
     void startRegistration_shouldThrowConflict_whenMobileExists() {
         RegisterRequest request = new RegisterRequest("0501234567");
         
-        when(userRepository.findByMobileIncludingDeleted("+994501234567")).thenReturn(Optional.of(new User()));
-        
+        when(userRepository.findFirstByMobile("+994501234567")).thenReturn(Optional.of(new User()));
+
         assertThrows(ConflictException.class, () -> registrationService.startRegistration(request));
     }
     
