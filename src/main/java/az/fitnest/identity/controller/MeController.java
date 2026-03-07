@@ -55,26 +55,21 @@ public class MeController {
         return ResponseEntity.ok(ApiResponse.success(UserResponseMapper.toResponse(updated)));
     }
 
-    @Operation(summary = "Mobil nömrə dəyişmə sorğusu", description = "Yeni mobil nömrəyə OTP kodu göndərir.")
+    @Operation(summary = "Mobil nömrə dəyişmə sorğusu", description = "Yeni mobil nömrəyə OTP kodu göndərir. Cavabda otp_session_id qaytarılır.")
     @PostMapping("/change-mobile/request")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> requestMobileChange(
-            @RequestParam String newMobile,
-            HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> requestMobileChange(
+            @RequestParam String newMobile) {
         Long userId = UserContext.getRequiredUserId();
-        userService.requestMobileChange(userId, newMobile);
-        return ResponseEntity.ok(ApiResponse.success(Map.of(
-                "message", "OTP kodu yeni mobil nömrənizə göndərildi",
-                "status", 200,
-                "path", request.getRequestURI(),
-                "timestamp", OffsetDateTime.now()
-        )));
+        az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.requestMobileChange(userId, newMobile);
+        return ResponseEntity.ok(ApiResponse.success(otpResponse));
     }
 
-    @Operation(summary = "Mobil nömrə dəyişməsini təsdiqləyin", description = "OTP kodu vasitəsilə yeni mobil nömrəni təsdiqləyir.")
+    @Operation(summary = "Mobil nömrə dəyişməsini təsdiqləyin", description = "OTP sessiya ID-si və OTP kodu vasitəsilə yeni mobil nömrəni təsdiqləyir.")
     @PostMapping("/change-mobile/confirm")
-    public ResponseEntity<ApiResponse<UserResponse>> confirmMobileChange(@RequestParam String otpCode) {
+    public ResponseEntity<ApiResponse<UserResponse>> confirmMobileChange(
+            @Valid @RequestBody az.fitnest.identity.dto.OtpVerifyRequest request) {
         Long userId = UserContext.getRequiredUserId();
-        User updated = userService.confirmMobileChange(userId, otpCode);
+        User updated = userService.confirmMobileChange(userId, request.otpSessionId(), request.otpCode());
         return ResponseEntity.ok(ApiResponse.success(UserResponseMapper.toResponse(updated)));
     }
 
