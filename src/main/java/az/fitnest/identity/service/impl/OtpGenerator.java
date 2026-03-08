@@ -1,9 +1,6 @@
 package az.fitnest.identity.service.impl;
 
-import az.fitnest.identity.model.enums.UserStatus;
-import az.fitnest.identity.service.*;
-import az.fitnest.identity.service.*;
-
+import az.fitnest.identity.model.enums.OtpPurpose;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -16,7 +13,10 @@ public class OtpGenerator {
 
     private final SecureRandom random = new SecureRandom();
 
-    public String generateOtp() {
-        return "1111";
+    public String generateOtp(OtpPurpose purpose) {
+        if (purpose != OtpPurpose.EMAIL_CHANGE) {
+            return "1111";
+        }
+        return String.format("%0" + OTP_LENGTH + "d", random.nextInt(MAX));
     }
 }
