@@ -50,6 +50,7 @@ public record UserResponse(
 
     @JsonProperty("created_at")
     @Schema(description = "Timestamp when the user account was created", example = "2023-01-15T10:30:00")
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy")
     LocalDateTime createdAt,
 
     @JsonProperty("consent_required")

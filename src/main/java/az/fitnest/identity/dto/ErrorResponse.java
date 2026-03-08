@@ -10,6 +10,7 @@ public record ErrorResponse(
     String message,
     String code,
     String path,
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy")
     LocalDateTime timestamp,
     Map<String, Object> details
 ) {

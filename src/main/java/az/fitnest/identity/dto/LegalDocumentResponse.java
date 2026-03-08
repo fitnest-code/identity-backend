@@ -9,5 +9,6 @@ public record LegalDocumentResponse(
     String content,
 
     @JsonProperty("updated_at")
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy")
     LocalDateTime updatedAt
 ) {}

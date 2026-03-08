@@ -14,6 +14,7 @@ public record UserConsentStatusResponse(
     String version,
 
     @JsonProperty("accepted_at")
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy")
     LocalDateTime acceptedAt
 ) {
     public record ConsentStatus(

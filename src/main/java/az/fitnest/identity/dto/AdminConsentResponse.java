@@ -16,6 +16,7 @@ public record AdminConsentResponse(
     String termsOfUseVersion,
 
     @JsonProperty("accepted_at")
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy")
     LocalDateTime acceptedAt,
 
     @JsonProperty("ip_address")
