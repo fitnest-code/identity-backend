@@ -1,6 +1,9 @@
 package az.fitnest.identity.controller;
 
+import az.fitnest.identity.util.UserContext;
 import az.fitnest.identity.model.enums.UserStatus;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import az.fitnest.identity.model.enums.LegalDocumentType;
 import az.fitnest.identity.dto.*;
@@ -34,6 +37,7 @@ import java.util.List;
 public class LegalController {
 
     private final LegalService legalService;
+    private final MessageSource messageSource;
 
     @GetMapping("/privacy-policy")
     @Operation(summary = "Məxfilik Siyasətini əldə edin", description = "Aktiv məxfilik siyasəti məzmununu əldə edir.")
@@ -67,15 +71,9 @@ public class LegalController {
             @ApiResponse(responseCode = "401", description = "İstifadəçi autentifikasiya olunmayıb")
     })
     public ResponseEntity<UserConsentStatusResponse> getUserConsents() {
-        Long userId = getCurrentUserId();
+        Long userId = UserContext.getRequiredUserId();
         return ResponseEntity.ok(legalService.getUserConsentStatus(userId));
     }
 
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof Long)) {
-            throw new az.fitnest.identity.exception.UnauthorizedException("User not authenticated");
-        }
-        return (Long) authentication.getPrincipal();
-    }
+
 }

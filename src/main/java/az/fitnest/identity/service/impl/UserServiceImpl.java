@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
     public User updateUserRole(Long userId, String roleName) {
         User user = getUserById(userId);
         Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new ResourceNotFoundException("error.resource_not_found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
 
         user.setRole(role);
 
@@ -92,7 +92,7 @@ public class UserServiceImpl implements UserService {
     private User createNewUserInternal(String firstName, String lastName, String passwordHash, String mobile) {
         mobile = MobileNumberUtils.normalize(mobile);
         if (mobile != null && userRepository.findFirstByMobile(mobile).isPresent()) {
-            throw new ConflictException("error.duplicate_mobile", "DUPLICATE_MOBILE");
+            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
         }
 
         User user = User.builder()
@@ -136,10 +136,10 @@ public class UserServiceImpl implements UserService {
     public az.fitnest.identity.dto.OtpSendResponse requestEmailChange(Long userId, String newEmail) {
         User user = getUserOrThrow(userId);
         if (newEmail.equalsIgnoreCase(user.getEmail())) {
-            throw new ConflictException("error.resource_conflict", "RESOURCE_CONFLICT");
+            throw new ConflictException("error.resource.conflict", "RESOURCE_CONFLICT");
         }
         if (userRepository.findFirstByEmail(newEmail.toLowerCase()).isPresent()) {
-            throw new ConflictException("error.duplicate_email", "DUPLICATE_EMAIL");
+            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_EMAIL");
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail);
@@ -153,7 +153,7 @@ public class UserServiceImpl implements UserService {
         var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
 
         if (verificationResult.purpose() != OtpPurpose.EMAIL_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_otp_purpose");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
 
         String newEmail = verificationResult.email();
@@ -170,10 +170,10 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         String normalizedMobile = MobileNumberUtils.normalize(newMobile);
         if (normalizedMobile.equals(user.getMobile())) {
-            throw new ConflictException("error.resource_conflict", "RESOURCE_CONFLICT");
+            throw new ConflictException("error.resource.conflict", "RESOURCE_CONFLICT");
         }
         if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
-            throw new ConflictException("error.duplicate_mobile", "DUPLICATE_MOBILE");
+            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null);
@@ -187,7 +187,7 @@ public class UserServiceImpl implements UserService {
         var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
 
         if (verificationResult.purpose() != OtpPurpose.MOBILE_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_otp_purpose");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
 
         String normalizedMobile = verificationResult.mobile();
@@ -243,7 +243,8 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
     @Override
-    public void deactivateAccount(Long userId, String reason) {
+    public void deactivateAccount(Long userId, az.fitnest.identity.dto.DeactivateAccountRequest request) {
+        String reason = (request != null) ? request.reason() : null;
         deactivateUser(userId, reason != null && !reason.isBlank() ? reason : "Self-deactivation");
     }
 
@@ -288,7 +289,7 @@ public class UserServiceImpl implements UserService {
     public void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword) {
         User user = getUserById(userId);
         if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash()).matches()) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_credentials");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials");
         }
         if (!newPassword.equals(confirmNewPassword)) {
             throw new az.fitnest.identity.exception.ValidationException("error.validation", "VALIDATION_ERROR");
@@ -299,7 +300,7 @@ public class UserServiceImpl implements UserService {
 
     private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("error.resource_not_found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
     }
 
     private NameParts resolveNameParts(String firstName, String lastName, String fullName) {

@@ -44,7 +44,7 @@ public interface UserService {
 
     void deactivateUser(Long userId, String reason);
 
-    void deactivateAccount(Long userId, String reason);
+    void deactivateAccount(Long userId, az.fitnest.identity.dto.DeactivateAccountRequest request);
 
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
 

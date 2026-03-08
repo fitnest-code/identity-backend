@@ -1,4 +1,4 @@
-package az.fitnest.identity.criteria;
+package az.fitnest.identity.util;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
@@ -16,7 +16,7 @@ public class UserContext {
 
     public static Long getRequiredUserId() {
         return getPrincipalAsLong()
-                .orElseThrow(() -> new RuntimeException("User not authenticated"));
+                .orElseThrow(() -> new az.fitnest.identity.exception.UnauthorizedException("error.auth.unauthorized"));
     }
 
     public static String getCurrentUserEmail() {

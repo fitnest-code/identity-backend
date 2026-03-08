@@ -38,7 +38,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         String normalizedMobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
 
         if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
-            throw new ConflictException("error.duplicate_mobile", "DUPLICATE_MOBILE");
+            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
         }
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, normalizedMobile, null);

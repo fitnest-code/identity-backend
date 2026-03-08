@@ -1,7 +1,10 @@
 package az.fitnest.identity.controller;
 
-import az.fitnest.identity.criteria.UserContext;
+import az.fitnest.identity.util.UserContext;
 import az.fitnest.identity.dto.ApiResponse;
+import az.fitnest.identity.dto.SuccessResponse;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.model.entity.User;
@@ -28,6 +31,7 @@ import java.util.Map;
 public class MeController {
 
     private final UserService userService;
+    private final MessageSource messageSource;
 
     @Operation(summary = "Cari istifadəçini əldə edin", description = "Autentifikasiya olunmuş istifadəçinin hesab təfərrüatlarını qaytarır.")
     @GetMapping
@@ -75,17 +79,14 @@ public class MeController {
 
     @PostMapping("/change-password")
     @Operation(summary = "Şifrəni dəyişdirin")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> changePassword(
+    public ResponseEntity<ApiResponse<SuccessResponse>> changePassword(
             @Valid @RequestBody az.fitnest.identity.dto.ChangePasswordRequest request,
             HttpServletRequest servletRequest) {
         Long userId = UserContext.getRequiredUserId();
         userService.changePassword(userId, request.oldPassword(), request.newPassword(), request.confirmNewPassword());
-        return ResponseEntity.ok(ApiResponse.success(Map.of(
-                "message", "Şifrə uğurla dəyişdirildi",
-                "status", 200,
-                "path", servletRequest.getRequestURI(),
-                "timestamp", OffsetDateTime.now()
-        )));
+        return ResponseEntity.ok(ApiResponse.success(
+                SuccessResponse.of(getMessage("success.password.changed"), servletRequest.getRequestURI())
+        ));
     }
 
     @PostMapping("/deactivate")
@@ -94,17 +95,17 @@ public class MeController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Hesab uğurla deaktiv edildi"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Autentifikasiya olunmayıb")
     })
-    public ResponseEntity<ApiResponse<Map<String, Object>>> deactivateAccount(
+    public ResponseEntity<ApiResponse<SuccessResponse>> deactivateAccount(
             @RequestBody(required = false) az.fitnest.identity.dto.DeactivateAccountRequest body,
             HttpServletRequest request) {
         Long userId = UserContext.getRequiredUserId();
-        String reason = (body != null) ? body.reason() : null;
-        userService.deactivateAccount(userId, reason);
-        return ResponseEntity.ok(ApiResponse.success(Map.of(
-                "message", "Hesab uğurla deaktiv edildi",
-                "status", 200,
-                "path", request.getRequestURI(),
-                "timestamp", OffsetDateTime.now()
-        )));
+        userService.deactivateAccount(userId, body);
+        return ResponseEntity.ok(ApiResponse.success(
+                SuccessResponse.of(getMessage("success.account.deactivated"), request.getRequestURI())
+        ));
+    }
+
+    private String getMessage(String code) {
+        return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
 }

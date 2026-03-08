@@ -81,7 +81,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException exception, WebRequest request) {
         ApiError apiError = ApiError.builder()
                 .code("BAD_REQUEST")
-                .message(getMessage("error.invalid_json_format"))
+                .message(getMessage("error.request.invalid_json"))
                 .status(HttpStatus.BAD_REQUEST.value())
                 .path(request.getDescription(false).replace("uri=", ""))
                 .timestamp(OffsetDateTime.now())
@@ -94,7 +94,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex, WebRequest request) {
         ApiError apiError = ApiError.builder()
                 .code("RUNTIME_EXCEPTION")
-                .message(getMessage("error.unexpected"))
+                .message(getMessage("error.server.unexpected"))
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .path(request.getDescription(false).replace("uri=", ""))
                 .timestamp(OffsetDateTime.now())
@@ -107,7 +107,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex, WebRequest request) {
         ApiError apiError = ApiError.builder()
                 .code("INTERNAL_SERVER_ERROR")
-                .message(getMessage("error.internal_server_error"))
+                .message(getMessage("error.server.internal"))
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .path(request.getDescription(false).replace("uri=", ""))
                 .timestamp(OffsetDateTime.now())
@@ -117,7 +117,7 @@ public class GlobalExceptionHandler {
     }
 
     private String getLocalizedMessage(String errorCode, String defaultMessage) {
-        String key = "error." + errorCode.toLowerCase();
+        String key = "error.service." + errorCode.toLowerCase();
         try {
             return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
         } catch (org.springframework.context.NoSuchMessageException e1) {
@@ -131,7 +131,7 @@ public class GlobalExceptionHandler {
 
     private String safeMessage(String msg) {
         if (msg == null || msg.isBlank()) {
-            return getMessage("error.unexpected");
+            return getMessage("error.server.unexpected");
         }
         if (msg.startsWith("error.")) {
             String resolved = getMessage(msg);

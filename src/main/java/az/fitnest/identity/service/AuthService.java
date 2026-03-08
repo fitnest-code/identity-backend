@@ -27,4 +27,6 @@ public interface AuthService {
     RefreshResponse refresh(String refreshToken);
 
     void logout(String accessToken);
+
+    void logoutFromHeader(String authHeader);
 }

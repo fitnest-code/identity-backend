@@ -101,7 +101,7 @@ public class OtpServiceImpl implements OtpService {
         String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobileNumber;
 
         if (identifier == null) {
-            throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? getMessage("error.missing_email") : getMessage("error.missing_mobile"));
+            throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? getMessage("error.service.missing_email") : getMessage("error.service.missing_mobile"));
         }
 
         validateRateLimit(purpose, identifier);
@@ -156,7 +156,7 @@ public class OtpServiceImpl implements OtpService {
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
         if (!rateLimitResult.allowed()) {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
-            String message = getMessage("error.otp_rate_limit_generic");
+            String message = getMessage("error.otp.rate_limit_generic");
 
             throw new OtpRateLimitedException(message, waitTimeSeconds);
         }
@@ -164,7 +164,7 @@ public class OtpServiceImpl implements OtpService {
 
     private OtpSendResponse createFakeSessionResponse() {
         String fakeSessionId = otpSessionIdGenerator.generateSessionId();
-        return new OtpSendResponse(fakeSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("error.otp_sent_if_exists"));
+        return new OtpSendResponse(fakeSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent_if_exists"));
     }
 
     private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile, String email, Long userId) {
@@ -195,7 +195,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private OtpSendResponse createSuccessResponse(String sessionId) {
-        return new OtpSendResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("error.otp_sent"));
+        return new OtpSendResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
     }
 
     @Override
@@ -203,17 +203,17 @@ public class OtpServiceImpl implements OtpService {
         Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
 
         if (sessionOpt.isEmpty()) {
-            throw new InvalidCredentialsException("error.invalid_otp");
+            throw new InvalidCredentialsException("error.otp.invalid");
         }
 
         OtpSessionPayload session = sessionOpt.get();
 
         if (session.locked()) {
-            throw new InvalidCredentialsException("error.otp_locked");
+            throw new InvalidCredentialsException("error.otp.locked");
         }
 
         if (session.verified()) {
-            throw new InvalidCredentialsException("error.otp_already_verified");
+            throw new InvalidCredentialsException("error.otp.already_verified");
         }
 
         boolean isValid = hashOtp(otpCode).equals(session.otpHash());
@@ -221,23 +221,23 @@ public class OtpServiceImpl implements OtpService {
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
 
         if (!result.isFound()) {
-            throw new InvalidCredentialsException("error.invalid_otp");
+            throw new InvalidCredentialsException("error.otp.invalid");
         }
 
         if (result.isLocked()) {
-            throw new InvalidCredentialsException("error.otp_locked");
+            throw new InvalidCredentialsException("error.otp.locked");
         }
 
         if (result.isAlreadyVerified()) {
-            throw new InvalidCredentialsException("error.otp_already_verified");
+            throw new InvalidCredentialsException("error.otp.already_verified");
         }
 
         if (result.isExpired()) {
-            throw new InvalidCredentialsException("error.invalid_otp");
+            throw new InvalidCredentialsException("error.otp.invalid");
         }
 
         if (!isValid) {
-            throw new InvalidCredentialsException("error.invalid_otp");
+            throw new InvalidCredentialsException("error.otp.invalid");
         }
 
         OtpSessionPayload verifiedSession = result.getSession();
@@ -254,7 +254,7 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, identifier)
-                .orElseThrow(() -> new InvalidCredentialsException("error.invalid_otp"));
+                .orElseThrow(() -> new InvalidCredentialsException("error.otp.invalid"));
 
         return verifyOtp(sessionId, otpCode);
     }
@@ -262,7 +262,7 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResult verifyOtpByUserId(Long userId, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, "user:" + userId)
-                .orElseThrow(() -> new InvalidCredentialsException("error.invalid_otp"));
+                .orElseThrow(() -> new InvalidCredentialsException("error.otp.invalid"));
 
         return verifyOtp(sessionId, otpCode);
     }
@@ -278,7 +278,7 @@ public class OtpServiceImpl implements OtpService {
             return new OtpVerifyResponse(
                     true,
                     registrationToken,
-                    getMessage("error.otp_verified"),
+                    getMessage("success.otp.verified"),
                     null,
                     null,
                     null,
@@ -289,7 +289,7 @@ public class OtpServiceImpl implements OtpService {
             return new OtpVerifyResponse(
                     true,
                     null,
-                    getMessage("error.otp_verified"),
+                    getMessage("success.otp.verified"),
                     resetToken,
                     null,
                     null,
@@ -297,7 +297,7 @@ public class OtpServiceImpl implements OtpService {
             );
         } else if (verificationResult.purpose() == OtpPurpose.REACTIVATION) {
             az.fitnest.identity.model.entity.User user = userRepository.findFirstByMobile(identifier)
-                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.user_not_found"));
+                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.resource.not_found"));
 
             user.setStatus(az.fitnest.identity.model.enums.UserStatus.ACTIVE);
             user.setDeactivationReason(null);
@@ -312,7 +312,7 @@ public class OtpServiceImpl implements OtpService {
             return new OtpVerifyResponse(
                     true,
                     null,
-                    "otp.verified",
+                    getMessage("success.otp.verified"),
                     null,
                     loginResponse.accessToken(),
                     loginResponse.refreshToken(),
@@ -322,14 +322,14 @@ public class OtpServiceImpl implements OtpService {
             return new OtpVerifyResponse(
                     true,
                     null,
-                    getMessage("error.otp_verified"),
+                    getMessage("success.otp.verified"),
                     null,
                     null,
-                    null,
+                    null,   
                     null
             );
         } else {
-            throw new InvalidCredentialsException("error.invalid_otp_purpose");
+            throw new InvalidCredentialsException("error.service.invalid_operation_context");
         }
     }
 

@@ -3,15 +3,15 @@ package az.fitnest.identity.controller;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.service.AuthService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.PasswordResetService;
 import az.fitnest.identity.service.RegistrationService;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.*;
 import az.fitnest.identity.mapper.UserResponseMapper;
-import az.fitnest.identity.criteria.UserContext;
-import az.fitnest.identity.model.entity.User;
-import az.fitnest.identity.exception.UnauthorizedException;
+import az.fitnest.identity.util.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -44,6 +44,7 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final RegistrationService registrationService;
     private final UserService userService;
+    private final MessageSource messageSource;
 
     @PostMapping("/login")
     @Operation(summary = "İstifadəçi girişi", description = "İstifadəçini mobil nömrə və şifrə ilə autentifikasiya edir.")
@@ -70,21 +71,13 @@ public class AuthController {
     @PostMapping("/logout")
     @Operation(summary = "İstifadəçi çıxışı")
     @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<Map<String, Object>>> logout(
+    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<SuccessResponse>> logout(
             @RequestHeader("Authorization") String authHeader,
             HttpServletRequest request) {
-        if (authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            authService.logout(token);
-        } else {
-            throw new UnauthorizedException("Invalid Authorization header");
-        }
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(Map.of(
-                "message", "Çıxış uğurla tamamlandı",
-                "status", 200,
-                "path", request.getRequestURI(),
-                "timestamp", OffsetDateTime.now()
-        )));
+        authService.logoutFromHeader(authHeader);
+        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(
+                SuccessResponse.of(getMessage("success.auth.logout"), request.getRequestURI())
+        ));
     }
 
     @PostMapping("/social/apple")
@@ -101,5 +94,9 @@ public class AuthController {
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
         HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);
+    }
+
+    private String getMessage(String code) {
+        return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
 }

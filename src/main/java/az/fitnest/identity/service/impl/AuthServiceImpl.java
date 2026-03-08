@@ -59,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
             );
             az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
             throw new az.fitnest.identity.exception.AccountDeactivatedException(
-                    "error.reactivation_required",
+                    "error.service.additional_verification_required",
                     otpResponse.otpSessionId()
             );
         }
@@ -82,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthenticationResult authenticate(String mobile, String password) {
         User user = userRepository.findFirstByMobile(mobile)
-                .orElseThrow(() -> new InvalidCredentialsException("error.invalid_credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("error.auth.invalid_credentials"));
 
         Instant now = Instant.now();
 
@@ -90,19 +90,19 @@ public class AuthServiceImpl implements AuthService {
             PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
             if (user.getPasswordHash() == null || !verification.matches()) {
                 userRepository.incrementFailedLoginAttempts(user.getId());
-                throw new InvalidCredentialsException("error.invalid_credentials");
+                throw new InvalidCredentialsException("error.auth.invalid_credentials");
             }
             return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
         }
 
         if (isAccountLocked(user, now)) {
-            throw new InvalidCredentialsException("Yanlış giriş məlumatları");
+            throw new InvalidCredentialsException("error.auth.invalid_credentials");
         }
 
         PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
         if (user.getPasswordHash() == null || !verification.matches()) {
             incrementFailedLoginAttempts(user.getId(), user.getFailedLoginAttempts(), now);
-            throw new InvalidCredentialsException("Yanlış giriş məlumatları");
+            throw new InvalidCredentialsException("error.auth.invalid_credentials");
         }
 
         if (verification.upgradeRecommended()) {
@@ -132,11 +132,11 @@ public class AuthServiceImpl implements AuthService {
             userId = jwtService.parseUserId(refreshToken, "refresh");
             expiration = jwtService.parseExpiration(refreshToken);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new UnauthorizedException("error.invalid_credentials");
+            throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
         if (expiration.isBefore(Instant.now())) {
-            throw new UnauthorizedException("error.invalid_credentials");
+            throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
         User user = internalRefresh(userId, refreshToken);
@@ -153,18 +153,18 @@ public class AuthServiceImpl implements AuthService {
 
     private User internalRefresh(Long userId, String refreshToken) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UnauthorizedException("Yanlış giriş məlumatları"));
+                .orElseThrow(() -> new UnauthorizedException("error.auth.invalid_credentials"));
 
         Instant now = Instant.now();
         if (user.isDeactivated() || user.isAccountLocked()) {
-            throw new UnauthorizedException("error.invalid_credentials");
+            throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
         String refreshTokenHash = tokenHasher.hash(refreshToken);
         int consumed = authTokenRepository.consumeRefreshToken(userId, refreshTokenHash, now);
 
         if (consumed == 0) {
-            throw new UnauthorizedException("Yanlış giriş məlumatları");
+            throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
         return user;
@@ -184,7 +184,17 @@ public class AuthServiceImpl implements AuthService {
 
             internalLogout(userId, accessToken);
         } catch (Exception e) {
+            // Ignore token parsing issues on logout
         }
+    }
+
+    @Override
+    public void logoutFromHeader(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("error.auth.invalid_header");
+        }
+        String token = authHeader.substring(7);
+        logout(token);
     }
 
     @Transactional

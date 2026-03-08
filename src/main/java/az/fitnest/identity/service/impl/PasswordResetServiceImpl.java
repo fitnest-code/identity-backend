@@ -41,7 +41,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Transactional
     public OtpSendResponse forgotPassword(ForgotPasswordRequest request) {
         if (request == null || !StringUtils.hasText(request.mobile())) {
-            return new OtpSendResponse(null, null, null, getMessage("error.otp_sent_if_exists"));
+            return new OtpSendResponse(null, null, null, getMessage("success.otp.sent_if_exists"));
         }
         String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
@@ -54,18 +54,18 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
         if (request == null || !StringUtils.hasText(request.resetToken()) ||
                 !StringUtils.hasText(request.newPassword())) {
-            throw new az.fitnest.identity.exception.ValidationException("error.invalid_request", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("error.request.invalid", "VALIDATION_ERROR");
         }
         String newPassword = request.newPassword();
         if (newPassword.length() < 8) {
-            throw new az.fitnest.identity.exception.ValidationException("error.password_min_length", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("error.service.password_min_length", "VALIDATION_ERROR");
         }
 
         String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
         User user = userRepository.findFirstByMobile(identifier)
-                .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.invalid_credentials"));
+                .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials"));
         if (passwordService.verifyPassword(newPassword, user.getPasswordHash()).matches()) {
-            throw new az.fitnest.identity.exception.ValidationException("error.password_must_be_different", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("error.service.password_must_be_different", "VALIDATION_ERROR");
         }
         String passwordHash = passwordService.hashPassword(newPassword);
         user.setPasswordHash(passwordHash);
@@ -81,7 +81,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         userRepository.save(user);
         resetPasswordTokenService.consume(request.resetToken());
         revokeAllUserTokens(user.getId());
-        return new ResetPasswordResponse(getMessage("error.password_reset_success"));
+        return new ResetPasswordResponse(getMessage("info.service.request_processed"));
     }
 
     private String getMessage(String code, Object... args) {
