@@ -216,7 +216,13 @@ public class OtpServiceImpl implements OtpService {
             throw new InvalidCredentialsException("error.otp_already_verified");
         }
 
-        boolean isValid = hashOtp(otpCode).equals(session.otpHash());
+        boolean isValid;
+        // DEV override: allow 1111 for mobile change
+        if (session.purpose() == OtpPurpose.MOBILE_CHANGE && "dev".equals(System.getProperty("spring.profiles.active")) && "1111".equals(otpCode)) {
+            isValid = true;
+        } else {
+            isValid = hashOtp(otpCode).equals(session.otpHash());
+        }
 
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
 
