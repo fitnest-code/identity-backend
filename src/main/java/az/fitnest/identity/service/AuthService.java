@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface AuthService {
-    LoginResponse login(LoginRequest request);
+    Object login(LoginRequest request);
 
     RefreshResponse refresh(String refreshToken);
 

@@ -21,6 +21,8 @@ import az.fitnest.identity.util.DeviceDetector;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenIssuanceService tokenIssuanceService;
     private final OtpService otpService;
     private final TokenHasher tokenHasher;
+    private final MessageSource messageSource;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
     private int maxFailedLoginAttempts;
@@ -47,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
     private int accountLockDurationMinutes;
 
     @Override
-    public LoginResponse login(LoginRequest request) {
+    public Object login(LoginRequest request) {
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
         AuthenticationResult result = authenticate(mobile, request.password());
 
@@ -58,10 +61,13 @@ public class AuthServiceImpl implements AuthService {
                     null
             );
             az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
-            throw new az.fitnest.identity.exception.AccountDeactivatedException(
-                    "error.service.additional_verification_required",
-                    otpResponse.otpSessionId()
+            az.fitnest.identity.dto.OtpSendResponse reactivationResponse = new az.fitnest.identity.dto.OtpSendResponse(
+                otpResponse.otpSessionId(),
+                otpResponse.expiresInSeconds(),
+                otpResponse.resendAvailableInSeconds(),
+                getMessage("success.otp.reactivation_sent")
             );
+            return reactivationResponse;
         }
 
         String activeJti = redisTokenService.getActiveSession(result.user().getId());
@@ -184,7 +190,6 @@ public class AuthServiceImpl implements AuthService {
 
             internalLogout(userId, accessToken);
         } catch (Exception e) {
-            // Ignore token parsing issues on logout
         }
     }
 
@@ -233,6 +238,10 @@ public class AuthServiceImpl implements AuthService {
     private enum AuthenticationStatus {SUCCESS, REACTIVATION_REQUIRED}
 
     private record AuthenticationResult(User user, AuthenticationStatus status) {
+    }
+
+    private String getMessage(String code) {
+        return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
 
 }
