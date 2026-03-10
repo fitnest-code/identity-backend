@@ -325,7 +325,7 @@ public class OtpServiceImpl implements OtpService {
                     getMessage("success.otp.verified"),
                     null,
                     null,
-                    null,   
+                    null,
                     null
             );
         } else {

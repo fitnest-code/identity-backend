@@ -75,5 +75,4 @@ public class LegalController {
         return ResponseEntity.ok(legalService.getUserConsentStatus(userId));
     }
 
-
 }
