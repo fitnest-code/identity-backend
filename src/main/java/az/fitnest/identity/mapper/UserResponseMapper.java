@@ -34,7 +34,8 @@ public final class UserResponseMapper {
                 user.getStatus() != null ? user.getStatus().name() : null,
                 user.isAccountLocked(),
                 user.getCreatedDate(),
-                consentRequired
+                consentRequired,
+                user.getRole() != null ? user.getRole().getName() : null
         );
     }
 }

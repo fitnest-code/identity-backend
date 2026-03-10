@@ -55,5 +55,9 @@ public record UserResponse(
 
     @JsonProperty("consent_required")
     @Schema(description = "Indicates if user consent is required for certain actions", example = "false")
-    boolean consentRequired
+    boolean consentRequired,
+
+    @JsonProperty("role")
+    @Schema(description = "User's role", example = "ROLE_USER")
+    String role
 ) {}
