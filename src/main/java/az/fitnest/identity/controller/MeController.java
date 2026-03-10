@@ -35,10 +35,11 @@ public class MeController {
 
     @Operation(summary = "Cari istifadəçini əldə edin", description = "Autentifikasiya olunmuş istifadəçinin hesab təfərrüatlarını qaytarır.")
     @GetMapping
-    public ResponseEntity<ApiResponse<UserResponse>> getMe() {
+    public ResponseEntity<ApiResponse<Map<String, UserResponse>>> getMe() {
         Long userId = UserContext.getRequiredUserId();
         User user = userService.getUserById(userId);
-        return ResponseEntity.ok(ApiResponse.success(UserResponseMapper.toResponse(user)));
+        Map<String, UserResponse> userMap = Map.of("user", UserResponseMapper.toResponse(user));
+        return ResponseEntity.ok(ApiResponse.success(userMap));
     }
 
     @Operation(summary = "E-poçt dəyişmə sorğusu", description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.")
