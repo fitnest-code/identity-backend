@@ -106,6 +106,20 @@ public class MeController {
         ));
     }
 
+    @PostMapping("/delete-account")
+    @Operation(summary = "Delete account", description = "Deletes the authenticated user's account immediately.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Account deleted successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<ApiResponse<SuccessResponse>> deleteAccount(HttpServletRequest request) {
+        Long userId = UserContext.getRequiredUserId();
+        userService.deleteAccount(userId);
+        return ResponseEntity.ok(ApiResponse.success(
+                SuccessResponse.of(getMessage("success.account.deleted"), request.getRequestURI())
+        ));
+    }
+
     private String getMessage(String code) {
         return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }

@@ -5,5 +5,6 @@ import az.fitnest.identity.model.enums.UserStatus;
 public enum UserStatus {
     ACTIVE,
     INACTIVE,
-    LOCKED
+    LOCKED,
+    DELETED
 }

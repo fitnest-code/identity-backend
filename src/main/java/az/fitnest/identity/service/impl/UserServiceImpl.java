@@ -29,11 +29,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -296,6 +298,39 @@ public class UserServiceImpl implements UserService {
         }
         user.setPasswordHash(passwordService.hashPassword(newPassword));
         userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAccount(Long userId) {
+        User user = getUserOrThrow(userId);
+        user.setStatus(UserStatus.DELETED);
+        user.setDeactivationReason("Account deleted");
+        user.setDeactivatedAt(java.time.Instant.now());
+        userRepository.save(user);
+        publishUserEvent("ACCOUNT_DELETED", userId);
+        // Remove tokens and sessions
+        List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
+        for (AuthToken token : tokens) {
+            if (token.getJti() != null) {
+                redisTokenService.revokeAccessToken(token.getJti());
+            }
+        }
+        redisTokenService.removeActiveSession(userId);
+        authTokenRepository.deleteByUserId(userId);
+    }
+
+    // Scheduled job to delete accounts where status is INACTIVE and deactivatedAt is older than 30 days
+    @Scheduled(cron = "0 0 2 * * *") // Runs daily at 2 AM
+    @Transactional
+    public void deleteInactiveAccountsAfter30Days() {
+        Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60); // 30 days
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            if (user.getStatus() == UserStatus.INACTIVE && user.getDeactivatedAt() != null && user.getDeactivatedAt().isBefore(threshold)) {
+                deleteAccount(user.getId());
+            }
+        }
     }
 
     private User getUserOrThrow(Long userId) {

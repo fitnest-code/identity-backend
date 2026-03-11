@@ -61,4 +61,6 @@ public interface UserService {
     az.fitnest.identity.dto.OtpSendResponse requestMobileChange(Long userId, String newMobile);
 
     User confirmMobileChange(Long userId, String otpSessionId, String otpCode);
+
+    void deleteAccount(Long userId);
 }

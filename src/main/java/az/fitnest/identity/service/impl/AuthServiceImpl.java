@@ -111,6 +111,10 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("error.auth.invalid_credentials");
         }
 
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new InvalidCredentialsException("error.auth.account_deleted");
+        }
+
         if (verification.upgradeRecommended()) {
             String newHash = passwordService.hashPassword(password);
             user.setPasswordHash(newHash);
