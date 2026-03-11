@@ -21,6 +21,9 @@ public final class UserResponseMapper {
             profileImageUrl = "/api/v1/me/profile/images/" + profileImageUrl;
         }
 
+        boolean accountLocked = user.getStatus() == UserStatus.LOCKED &&
+            user.getLockedUntil() != null && user.getLockedUntil().isAfter(java.time.Instant.now());
+
         return new UserResponse(
                 user.getId(),
                 user.getFirstName(),
@@ -32,7 +35,7 @@ public final class UserResponseMapper {
                 profileImageUrl,
                 user.getLanguage(),
                 user.getStatus() != null ? user.getStatus().name() : null,
-                user.isAccountLocked(),
+                accountLocked,
                 user.getCreatedDate(),
                 consentRequired,
                 user.getRole() != null ? user.getRole().getName() : null

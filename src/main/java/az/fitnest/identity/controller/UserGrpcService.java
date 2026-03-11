@@ -233,7 +233,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                 .setSetupRequired(user.isSetupRequired())
                 .setLanguage(user.getLanguage() != null ? user.getLanguage() : "")
                 .setStatus(user.getStatus() != null ? user.getStatus().name() : "")
-                .setAccountLocked(user.isAccountLocked())
+                .setAccountLocked(user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(java.time.Instant.now()))
                 .setSessionStatus(user.getSessionStatus() != null ? user.getSessionStatus().name() : "")
                 .setCreatedAt(createdDate)
                 .build();

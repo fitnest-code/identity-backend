@@ -70,10 +70,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String passwordHash = passwordService.hashPassword(newPassword);
         user.setPasswordHash(passwordHash);
 
-        if (user.isDeactivated()) {
+        if (user.getStatus() == UserStatus.INACTIVE) {
             user.setStatus(UserStatus.ACTIVE);
-            user.setDeactivationReason(null);
-            user.setDeactivatedAt(null);
             user.setFailedLoginAttempts(0);
             user.setLockedUntil(null);
         }

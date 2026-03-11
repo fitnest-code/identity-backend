@@ -92,27 +92,31 @@ public class AuthServiceImpl implements AuthService {
 
         Instant now = Instant.now();
 
-        if (user.isDeactivated()) {
-            PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
-            if (user.getPasswordHash() == null || !verification.matches()) {
-                userRepository.incrementFailedLoginAttempts(user.getId());
-                throw new InvalidCredentialsException("error.auth.invalid_credentials");
-            }
-            return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new InvalidCredentialsException("error.auth.account_deleted");
         }
 
-        if (isAccountLocked(user, now)) {
-            throw new InvalidCredentialsException("error.auth.invalid_credentials");
+        if (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
+            throw new InvalidCredentialsException("error.auth.account_locked");
+        }
+
+        if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null) {
+            if (user.getInactiveAt().plusSeconds(30 * 24 * 60 * 60).isAfter(now)) {
+                PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
+                if (user.getPasswordHash() == null || !verification.matches()) {
+                    userRepository.incrementFailedLoginAttempts(user.getId());
+                    throw new InvalidCredentialsException("error.auth.invalid_credentials");
+                }
+                return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
+            } else {
+                throw new InvalidCredentialsException("error.auth.account_deleted");
+            }
         }
 
         PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
         if (user.getPasswordHash() == null || !verification.matches()) {
             incrementFailedLoginAttempts(user.getId(), user.getFailedLoginAttempts(), now);
             throw new InvalidCredentialsException("error.auth.invalid_credentials");
-        }
-
-        if (user.getStatus() == UserStatus.DELETED) {
-            throw new InvalidCredentialsException("error.auth.account_deleted");
         }
 
         if (verification.upgradeRecommended()) {
@@ -166,7 +170,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UnauthorizedException("error.auth.invalid_credentials"));
 
         Instant now = Instant.now();
-        if (user.isDeactivated() || user.isAccountLocked()) {
+        if (user.getStatus() == UserStatus.INACTIVE || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))) {
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
@@ -236,7 +240,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private boolean isAccountLocked(User user, Instant now) {
-        return user.isAccountLocked();
+        return user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now);
     }
 
     private enum AuthenticationStatus {SUCCESS, REACTIVATION_REQUIRED}

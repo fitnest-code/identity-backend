@@ -49,7 +49,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             User user = userRepository.findById(socialAuth.getUserId())
                     .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
-            if (user.isDeactivated()) {
+            if (user.getStatus() == UserStatus.INACTIVE) {
                 User newUser = createUserForSocialLogin(
                         request.firstName(),
                         request.lastName(),
@@ -94,7 +94,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             User user = userRepository.findById(socialAuth.getUserId())
                     .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
-            if (user.isDeactivated()) {
+            if (user.getStatus() == UserStatus.INACTIVE) {
                 User newUser = createUserForSocialLogin(
                         request.firstName(),
                         request.lastName(),

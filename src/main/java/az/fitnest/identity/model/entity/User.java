@@ -76,11 +76,11 @@ public class User extends BaseAuditableEntity {
     @Column(name = "session_status")
     private SessionStatus sessionStatus = SessionStatus.NO_SESSIONS;
 
-    @Column(name = "deactivation_reason")
-    private String deactivationReason;
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
-    @Column(name = "deactivated_at")
-    private Instant deactivatedAt;
+    @Column(name = "inactive_at")
+    private Instant inactiveAt;
 
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
@@ -101,13 +101,5 @@ public class User extends BaseAuditableEntity {
 
     public boolean isSetupRequired() {
         return setupRequired;
-    }
-
-    public boolean isAccountLocked() {
-        return status == UserStatus.LOCKED && lockedUntil != null && lockedUntil.isAfter(Instant.now());
-    }
-
-    public boolean isDeactivated() {
-        return this.status == UserStatus.INACTIVE;
     }
 }

@@ -90,24 +90,8 @@ public class MeController {
         ));
     }
 
-    @PostMapping("/deactivate")
-    @Operation(summary = "Hesabı deaktiv edin", description = "Autentifikasiya olunmuş istifadəçinin hesabını deaktiv edir. Bu, yumşaq silinmədir (status INACTIVE olur).")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Hesab uğurla deaktiv edildi"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Autentifikasiya olunmayıb")
-    })
-    public ResponseEntity<ApiResponse<SuccessResponse>> deactivateAccount(
-            @RequestBody(required = false) az.fitnest.identity.dto.DeactivateAccountRequest body,
-            HttpServletRequest request) {
-        Long userId = UserContext.getRequiredUserId();
-        userService.deactivateAccount(userId, body);
-        return ResponseEntity.ok(ApiResponse.success(
-                SuccessResponse.of(getMessage("success.account.deactivated"), request.getRequestURI())
-        ));
-    }
-
     @PostMapping("/delete-account")
-    @Operation(summary = "Delete account", description = "Deletes the authenticated user's account immediately.")
+    @Operation(summary = "Delete account", description = "Marks the authenticated user's account as deleted. User can reactivate within 30 days.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Account deleted successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")

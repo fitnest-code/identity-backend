@@ -300,8 +300,7 @@ public class OtpServiceImpl implements OtpService {
                     .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.resource.not_found"));
 
             user.setStatus(az.fitnest.identity.model.enums.UserStatus.ACTIVE);
-            user.setDeactivationReason(null);
-            user.setDeactivatedAt(null);
+            user.setInactiveAt(null);
             user.setFailedLoginAttempts(0);
             user.setLockedUntil(null);
             userRepository.save(user);

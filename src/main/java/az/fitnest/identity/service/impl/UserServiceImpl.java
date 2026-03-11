@@ -257,9 +257,8 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
 
         user.setStatus(UserStatus.INACTIVE);
-        user.setDeactivationReason(reason);
-        user.setDeactivatedAt(java.time.Instant.now());
         user.setSessionStatus(az.fitnest.identity.model.enums.SessionStatus.NO_SESSIONS);
+        user.setInactiveAt(java.time.Instant.now());
         userRepository.save(user);
 
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
@@ -305,11 +304,9 @@ public class UserServiceImpl implements UserService {
     public void deleteAccount(Long userId) {
         User user = getUserOrThrow(userId);
         user.setStatus(UserStatus.DELETED);
-        user.setDeactivationReason("Account deleted");
-        user.setDeactivatedAt(java.time.Instant.now());
+        user.setInactiveAt(java.time.Instant.now());
         userRepository.save(user);
         publishUserEvent("ACCOUNT_DELETED", userId);
-        // Remove tokens and sessions
         List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
         for (AuthToken token : tokens) {
             if (token.getJti() != null) {
@@ -320,14 +317,13 @@ public class UserServiceImpl implements UserService {
         authTokenRepository.deleteByUserId(userId);
     }
 
-    // Scheduled job to delete accounts where status is INACTIVE and deactivatedAt is older than 30 days
-    @Scheduled(cron = "0 0 2 * * *") // Runs daily at 2 AM
+    @Scheduled(cron = "0 0 2 * * *")
     @Transactional
     public void deleteInactiveAccountsAfter30Days() {
-        Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60); // 30 days
+        Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60);
         List<User> users = userRepository.findAll();
         for (User user : users) {
-            if (user.getStatus() == UserStatus.INACTIVE && user.getDeactivatedAt() != null && user.getDeactivatedAt().isBefore(threshold)) {
+            if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null && user.getInactiveAt().isBefore(threshold)) {
                 deleteAccount(user.getId());
             }
         }
