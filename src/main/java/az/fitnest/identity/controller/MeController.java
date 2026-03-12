@@ -6,6 +6,7 @@ import az.fitnest.identity.dto.SuccessResponse;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import az.fitnest.identity.dto.UserResponse;
+import az.fitnest.identity.dto.MinimalIdentityResponse;
 import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.service.UserService;
@@ -35,11 +36,15 @@ public class MeController {
 
     @Operation(summary = "Cari istifadəçini əldə edin", description = "Autentifikasiya olunmuş istifadəçinin hesab təfərrüatlarını qaytarır.")
     @GetMapping
-    public ResponseEntity<ApiResponse<Map<String, UserResponse>>> getMe() {
+    public ResponseEntity<ApiResponse<MinimalIdentityResponse>> getMe() {
         Long userId = UserContext.getRequiredUserId();
         User user = userService.getUserById(userId);
-        Map<String, UserResponse> userMap = Map.of("user", UserResponseMapper.toResponse(user));
-        return ResponseEntity.ok(ApiResponse.success(userMap));
+        MinimalIdentityResponse response = new MinimalIdentityResponse(
+            user.getId(),
+            user.getMobile(),
+            user.getEmail()
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Operation(summary = "E-poçt dəyişmə sorğusu", description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.")
