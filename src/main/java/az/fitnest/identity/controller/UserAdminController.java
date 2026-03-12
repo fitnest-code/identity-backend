@@ -73,4 +73,6 @@ public class UserAdminController {
         userService.deactivateAllUsers();
         return ResponseEntity.noContent().build();
     }
+
+
 }

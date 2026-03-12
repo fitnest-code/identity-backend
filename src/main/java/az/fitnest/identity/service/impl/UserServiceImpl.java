@@ -313,6 +313,18 @@ public class UserServiceImpl implements UserService {
         authTokenRepository.deleteByUserId(userId);
     }
 
+    @Transactional
+    @Override
+    public void deleteRole(Long roleId) {
+        Role role = roleRepository.findById(roleId)
+            .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
+        // Prevent deletion if role is assigned to any user
+        if (userRepository.existsByRole(role)) {
+            throw new ConflictException("error.role.in_use", "ROLE_IN_USE");
+        }
+        roleRepository.deleteById(roleId);
+    }
+
     private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));

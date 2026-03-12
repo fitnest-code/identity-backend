@@ -4,6 +4,7 @@ import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.SessionStatus;
 import az.fitnest.identity.model.entity.User;
+import az.fitnest.identity.model.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -72,4 +73,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
         DELETE FROM User u WHERE u.id IN :ids
     """)
     int deleteUsersByIds(@Param("ids") java.util.List<Long> ids);
+
+    boolean existsByRole(Role role);
 }

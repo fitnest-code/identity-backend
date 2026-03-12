@@ -63,4 +63,6 @@ public interface UserService {
     User confirmMobileChange(Long userId, String otpSessionId, String otpCode);
 
     void deleteAccount(Long userId);
+
+    void deleteRole(Long roleId);
 }
