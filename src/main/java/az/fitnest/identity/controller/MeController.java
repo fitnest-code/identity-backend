@@ -25,7 +25,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/me")
+@RequestMapping("/api/v1/identity/me")
 @RequiredArgsConstructor
 @Tag(name = "Me", description = "Cari istifadəçi məlumatlarının idarə olunması üçün ucluqlar")
 @SecurityRequirement(name = "bearerAuth")
