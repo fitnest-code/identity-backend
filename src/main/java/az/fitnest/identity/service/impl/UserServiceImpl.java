@@ -369,7 +369,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponse> getAllUsersMapped(int page, int size) {
-        return userRepository.findAll(PageRequest.of(page - 1, size))
+        return userRepository.findAll(PageRequest.of(Math.max(0, page - 1), size))
                 .map(UserResponseMapper::toResponse);
     }
 
