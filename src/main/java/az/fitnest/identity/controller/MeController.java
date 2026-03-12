@@ -25,7 +25,6 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/identity/me")
 @RequiredArgsConstructor
 @Tag(name = "Me", description = "Cari istifadəçi məlumatlarının idarə olunması üçün ucluqlar")
 @SecurityRequirement(name = "bearerAuth")
@@ -35,7 +34,7 @@ public class MeController {
     private final MessageSource messageSource;
 
     @Operation(summary = "Cari istifadəçini əldə edin", description = "Autentifikasiya olunmuş istifadəçinin hesab təfərrüatlarını qaytarır.")
-    @GetMapping
+    @GetMapping("/api/v1/identity/me")
     public ResponseEntity<ApiResponse<MinimalIdentityResponse>> getMe() {
         Long userId = UserContext.getRequiredUserId();
         User user = userService.getUserById(userId);
@@ -48,7 +47,7 @@ public class MeController {
     }
 
     @Operation(summary = "E-poçt dəyişmə sorğusu", description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.")
-    @PostMapping("/change-email/request")
+    @PostMapping("/api/v1/me/change-email/request")
     public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> requestEmailChange(
             @RequestParam String newEmail) {
         Long userId = UserContext.getRequiredUserId();
@@ -57,7 +56,7 @@ public class MeController {
     }
 
     @Operation(summary = "E-poçt dəyişməsini təsdiqləyin", description = "OTP sessiya ID-si və OTP kodu vasitəsilə yeni e-poçt ünvanını təsdiqləyir.")
-    @PostMapping("/change-email/confirm")
+    @PostMapping("/api/v1/me/change-email/confirm")
     public ResponseEntity<ApiResponse<UserResponse>> confirmEmailChange(
             @Valid @RequestBody az.fitnest.identity.dto.OtpVerifyRequest request) {
         Long userId = UserContext.getRequiredUserId();
@@ -66,7 +65,7 @@ public class MeController {
     }
 
     @Operation(summary = "Mobil nömrə dəyişmə sorğusu", description = "Yeni mobil nömrəyə OTP kodu göndərir. Cavabda otp_session_id qaytarılır.")
-    @PostMapping("/change-mobile/request")
+    @PostMapping("/api/v1/me/change-mobile/request")
     public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> requestMobileChange(
             @RequestParam String newMobile) {
         Long userId = UserContext.getRequiredUserId();
@@ -75,7 +74,7 @@ public class MeController {
     }
 
     @Operation(summary = "Mobil nömrə dəyişməsini təsdiqləyin", description = "OTP sessiya ID-si və OTP kodu vasitəsilə yeni mobil nömrəni təsdiqləyir.")
-    @PostMapping("/change-mobile/confirm")
+    @PostMapping("/api/v1/me/change-mobile/confirm")
     public ResponseEntity<ApiResponse<UserResponse>> confirmMobileChange(
             @Valid @RequestBody az.fitnest.identity.dto.OtpVerifyRequest request) {
         Long userId = UserContext.getRequiredUserId();
@@ -83,7 +82,7 @@ public class MeController {
         return ResponseEntity.ok(ApiResponse.success(UserResponseMapper.toResponse(updated)));
     }
 
-    @PostMapping("/change-password")
+    @PostMapping("/api/v1/me/change-password")
     @Operation(summary = "Şifrəni dəyişdirin")
     public ResponseEntity<ApiResponse<SuccessResponse>> changePassword(
             @Valid @RequestBody az.fitnest.identity.dto.ChangePasswordRequest request,
@@ -95,7 +94,7 @@ public class MeController {
         ));
     }
 
-    @PostMapping("/delete-account")
+    @PostMapping("/api/v1/me/delete-account")
     @Operation(summary = "Delete account", description = "Marks the authenticated user's account as deleted. User can reactivate within 30 days.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Account deleted successfully"),
