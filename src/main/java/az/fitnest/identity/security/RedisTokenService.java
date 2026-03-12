@@ -62,11 +62,32 @@ public class RedisTokenService {
         redisTemplate.delete(sessionKey(userId));
     }
 
+    public void addSessionToIndex(Long userId, String jti, Duration ttl) {
+        String key = getSessionIndexKey(userId);
+        redisTemplate.opsForSet().add(key, jti);
+        redisTemplate.expire(key, ttl);
+    }
+
+    public void removeAllSessions(Long userId) {
+        String key = getSessionIndexKey(userId);
+        var jtIs = redisTemplate.opsForSet().members(key);
+        if (jtIs != null) {
+            for (String jti : jtIs) {
+                revokeAccessToken(jti);
+            }
+        }
+        redisTemplate.delete(key);
+    }
+
     private String accessKey(String token) {
         return accessPrefix + token;
     }
 
     private String sessionKey(Long userId) {
         return sessionPrefix + userId;
+    }
+
+    private String getSessionIndexKey(Long userId) {
+        return "user_sessions:" + userId;
     }
 }

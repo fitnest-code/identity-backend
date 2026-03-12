@@ -105,7 +105,6 @@ public class MeController {
                     SuccessResponse.of(getMessage("success.account.deleted"), request.getRequestURI())
             ));
         } catch (Exception e) {
-            // Log the error (could use a logger)
             String errorMsg = "Unexpected error during account deletion: " + e.getMessage();
             return ResponseEntity.status(500).body(ApiResponse.error(
                     az.fitnest.identity.dto.ApiError.builder()

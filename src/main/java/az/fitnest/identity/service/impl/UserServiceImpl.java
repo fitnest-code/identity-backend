@@ -35,6 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +45,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -93,10 +97,6 @@ public class UserServiceImpl implements UserService {
 
     private User createNewUserInternal(String firstName, String lastName, String passwordHash, String mobile) {
         mobile = MobileNumberUtils.normalize(mobile);
-        if (mobile != null && userRepository.findFirstByMobile(mobile).isPresent()) {
-            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
-        }
-
         User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
@@ -108,8 +108,11 @@ public class UserServiceImpl implements UserService {
                 .status(UserStatus.ACTIVE)
                 .role(roleRepository.findByName("ROLE_USER").orElse(null))
                 .build();
-
-        return userRepository.save(user);
+        try {
+            return userRepository.save(user);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
+        }
     }
 
     @CacheEvict(value = "users", key = "#userId")
@@ -261,14 +264,7 @@ public class UserServiceImpl implements UserService {
         user.setInactiveAt(java.time.Instant.now());
         userRepository.save(user);
 
-        List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
-        for (AuthToken token : tokens) {
-            if (token.getJti() != null) {
-                redisTokenService.revokeAccessToken(token.getJti());
-            }
-        }
-
-        redisTokenService.removeActiveSession(userId);
+        redisTokenService.removeAllSessions(userId);
 
         authTokenRepository.deleteByUserId(userId);
     }
@@ -276,12 +272,19 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public void deactivateAllUsers() {
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            if (user.getRole() != null && "ROLE_SUPER_ADMIN".equals(user.getRole().getName())) {
-                continue;
+        userRepository.deactivateAllNonAdmins(java.time.Instant.now());
+    }
+
+    @Scheduled(cron = "0 0 2 * * *")
+    public void deleteInactiveAccountsAfter30Days() {
+        Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60);
+        java.util.List<Long> userIds = userRepository.findInactiveUserIds(threshold);
+        for (Long userId : userIds) {
+            try {
+                deleteAccount(userId);
+            } catch (Exception ex) {
+                log.error("Failed to delete inactive account for userId {}", userId, ex);
             }
-            deactivateUser(user.getId(), "Super Admin Cleanup");
         }
     }
 
@@ -303,30 +306,12 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteAccount(Long userId) {
         User user = getUserOrThrow(userId);
-        user.setStatus(UserStatus.DELETED);
+        user.setStatus(UserStatus.INACTIVE);
         user.setInactiveAt(java.time.Instant.now());
         userRepository.save(user);
-        publishUserEvent("ACCOUNT_DELETED", userId);
-        List<AuthToken> tokens = authTokenRepository.findByUserId(userId);
-        for (AuthToken token : tokens) {
-            if (token.getJti() != null) {
-                redisTokenService.revokeAccessToken(token.getJti());
-            }
-        }
-        redisTokenService.removeActiveSession(userId);
+        publishUserEvent("ACCOUNT_DEACTIVATED", userId);
+        redisTokenService.removeAllSessions(userId);
         authTokenRepository.deleteByUserId(userId);
-    }
-
-    @Scheduled(cron = "0 0 2 * * *")
-    @Transactional
-    public void deleteInactiveAccountsAfter30Days() {
-        Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60);
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null && user.getInactiveAt().isBefore(threshold)) {
-                deleteAccount(user.getId());
-            }
-        }
     }
 
     private User getUserOrThrow(Long userId) {
@@ -374,10 +359,12 @@ public class UserServiceImpl implements UserService {
                 "userId", userId,
                 "timestamp", System.currentTimeMillis()
         );
-        try {
-            kafkaTemplate.send("user-events", event);
-        } catch (Exception e) {
-        }
+        kafkaTemplate.send("user-events", event)
+            .whenComplete((result, ex) -> {
+                if (ex != null) {
+                    log.error("Failed to publish user event", ex);
+                }
+            });
     }
 
     @Transactional(readOnly = true)

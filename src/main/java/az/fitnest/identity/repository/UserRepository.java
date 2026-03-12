@@ -51,4 +51,25 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.mobile = :mobile")
     Optional<User> findByMobileIncludingDeleted(@Param("mobile") String mobile);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE User u SET u.status = 'INACTIVE', u.inactiveAt = :now
+        WHERE u.status != 'INACTIVE' AND u.role.name != 'ROLE_SUPER_ADMIN'
+    """)
+    int deactivateAllNonAdmins(@Param("now") Instant now);
+
+    @Query("""
+        SELECT u.id FROM User u
+        WHERE u.status = 'INACTIVE' AND u.inactiveAt < :threshold
+    """)
+    java.util.List<Long> findInactiveUserIds(@Param("threshold") Instant threshold);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        DELETE FROM User u WHERE u.id IN :ids
+    """)
+    int deleteUsersByIds(@Param("ids") java.util.List<Long> ids);
 }
