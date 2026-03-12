@@ -58,14 +58,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
         String newPassword = request.newPassword();
         if (newPassword.length() < 8) {
-            throw new az.fitnest.identity.exception.ValidationException("error.service.password_min_length", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("error.service.password_invalid", "VALIDATION_ERROR");
         }
 
         String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
         User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials"));
         if (passwordService.verifyPassword(newPassword, user.getPasswordHash()).matches()) {
-            throw new az.fitnest.identity.exception.ValidationException("error.service.password_must_be_different", "VALIDATION_ERROR");
+            throw new az.fitnest.identity.exception.ValidationException("error.service.password_not_allowed", "VALIDATION_ERROR");
         }
         String passwordHash = passwordService.hashPassword(newPassword);
         user.setPasswordHash(passwordHash);

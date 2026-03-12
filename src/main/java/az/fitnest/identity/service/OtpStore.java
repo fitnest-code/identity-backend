@@ -10,6 +10,8 @@ import az.fitnest.identity.exception.InternalServerException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
@@ -79,6 +81,18 @@ public class OtpStore {
     private final RedisKeyBuilder redisKeyBuilder;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final MessageSource messageSource;
+
+    public OtpStore(StringRedisTemplate redisTemplate, ObjectMapper objectMapper, RedisKeyBuilder redisKeyBuilder, MessageSource messageSource) {
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+        this.redisKeyBuilder = redisKeyBuilder;
+        this.messageSource = messageSource;
+    }
+
+    private String getMessage(String key) {
+        return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
+    }
 
     public void saveOtpSession(String sessionId, OtpSessionPayload payload, long ttlSeconds) {
         try {
@@ -90,7 +104,7 @@ public class OtpStore {
                     TimeUnit.SECONDS
             );
         } catch (JsonProcessingException e) {
-            throw new InternalServerException("Failed to serialize OTP session");
+            throw new InternalServerException(getMessage("error.otp.serialize_failed"));
         }
     }
 
@@ -127,7 +141,7 @@ public class OtpStore {
         long ttlSeconds = getOtpSessionTtlSeconds(sessionId);
 
         if (ttlSeconds <= 0) {
-            throw new BadRequestException("OTP session not found or expired");
+            throw new BadRequestException(getMessage("error.otp.session_not_found"));
         }
 
         saveOtpSession(sessionId, payload, ttlSeconds);
@@ -163,20 +177,21 @@ public class OtpStore {
         String activePointerKey = redisKeyBuilder.activeSessionKey(purpose, email);
         String sessionKey = redisKeyBuilder.sessionKey(sessionId);
         String sessionKeyPrefix = redisKeyBuilder.getSessionKeyPrefix();
-
         try {
             String sessionJson = objectMapper.writeValueAsString(payload);
-
             List<String> keys = Arrays.asList(activePointerKey, sessionKey);
             List<String> args = Arrays.asList(sessionKeyPrefix, sessionJson, String.valueOf(ttlSeconds), sessionId);
-
             try {
                 redisTemplate.execute(SAVE_OTP_SESSION_SCRIPT, keys, args.toArray());
             } catch (Exception e) {
-                throw new InternalServerException("Failed to execute Redis script for saving OTP session: " + e.getMessage());
+                org.slf4j.LoggerFactory.getLogger(OtpStore.class)
+                    .error("Redis script error in saveOtpSessionAtomically", e);
+                throw new InternalServerException(getMessage("error.otp.processing_failed"));
             }
         } catch (JsonProcessingException e) {
-            throw new InternalServerException("Failed to serialize OTP session");
+            org.slf4j.LoggerFactory.getLogger(OtpStore.class)
+                .error("Serialization error in saveOtpSessionAtomically", e);
+            throw new InternalServerException(getMessage("error.otp.processing_failed"));
         }
     }
 
@@ -186,15 +201,15 @@ public class OtpStore {
 
     public VerifyOtpResult verifyOtpAndUpdate(String sessionId, int maxAttempts, boolean isValid) {
         String sessionKey = redisKeyBuilder.sessionKey(sessionId);
-
         List<String> keys = Arrays.asList(sessionKey);
         List<String> args = Arrays.asList(String.valueOf(maxAttempts), isValid ? "1" : "0");
-
         List<?> result;
         try {
             result = redisTemplate.execute(VERIFY_OTP_SCRIPT, keys, args.toArray());
         } catch (Exception e) {
-            throw new InternalServerException("Failed to execute Redis script for verifying OTP: " + e.getMessage());
+            org.slf4j.LoggerFactory.getLogger(OtpStore.class)
+                .error("Redis script error in verifyOtpAndUpdate", e);
+            throw new InternalServerException(getMessage("error.otp.processing_failed"));
         }
 
         return parseVerifyOtpResult(result);

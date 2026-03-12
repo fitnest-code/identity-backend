@@ -7,10 +7,10 @@ public class ResourceNotFoundException extends BaseException {
     private static final long serialVersionUID = 1L;
 
     public ResourceNotFoundException(String message) {
-        super(message, "RESOURCE_NOT_FOUND", HttpStatus.NOT_FOUND);
+        super(message, "error.resource.not_found", HttpStatus.NOT_FOUND);
     }
 
     public ResourceNotFoundException(String message, String errorCode) {
-        super(message, errorCode, HttpStatus.NOT_FOUND);
+        super(message, errorCode.startsWith("error.") ? errorCode : "error.resource.not_found", HttpStatus.NOT_FOUND);
     }
 }

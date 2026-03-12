@@ -7,10 +7,10 @@ public class InvalidCredentialsException extends BaseException {
     private static final long serialVersionUID = 1L;
 
     public InvalidCredentialsException(String message) {
-        super(message, "INVALID_CREDENTIALS", HttpStatus.UNAUTHORIZED);
+        super(message, "error.auth.invalid_credentials", HttpStatus.UNAUTHORIZED);
     }
 
     public InvalidCredentialsException(String message, String errorCode) {
-        super(message, errorCode, HttpStatus.UNAUTHORIZED);
+        super(message, errorCode.startsWith("error.") ? errorCode : "error.auth.invalid_credentials", HttpStatus.UNAUTHORIZED);
     }
 }

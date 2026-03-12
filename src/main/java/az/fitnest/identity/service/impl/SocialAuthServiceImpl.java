@@ -38,17 +38,21 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     @Transactional
     @Override
     public LoginResponse socialLoginApple(AppleSocialRequest request) {
-        AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.identityToken());
+        AppleTokenVerifier.AppleTokenClaims claims;
+        try {
+            claims = appleTokenVerifier.verify(request.identityToken());
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(SocialAuthServiceImpl.class)
+                .error("Apple social login failed", e);
+            throw new InvalidCredentialsException("error.auth.external_auth_failed");
+        }
         String providerId = claims.userId();
-
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(
                 SocialProvider.APPLE, providerId);
-
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
             User user = userRepository.findById(socialAuth.getUserId())
-                    .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
-
+                    .orElseThrow(() -> new InvalidCredentialsException("error.auth.invalid_credentials"));
             if (user.getStatus() == UserStatus.INACTIVE) {
                 User newUser = createUserForSocialLogin(
                         request.firstName(),
@@ -60,16 +64,13 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 socialAuthRepository.save(socialAuth);
                 return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
             }
-
             return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
-
         User newUser = createUserForSocialLogin(
                 request.firstName(),
                 request.lastName(),
                 request.fullName() != null ? request.fullName() : "User",
                 null);
-
         SocialAuth socialAuth = SocialAuth.builder()
                 .userId(newUser.getId())
                 .provider(SocialProvider.APPLE)

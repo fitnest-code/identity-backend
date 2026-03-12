@@ -7,7 +7,7 @@ public class OtpRateLimitedException extends BaseException {
     private final long waitTimeSeconds;
 
     public OtpRateLimitedException(String message, long waitTimeSeconds) {
-        super(message, "RATE_LIMIT_EXCEEDED", HttpStatus.TOO_MANY_REQUESTS);
+        super(message, "error.otp.rate_limit_generic", HttpStatus.TOO_MANY_REQUESTS);
         this.waitTimeSeconds = waitTimeSeconds;
     }
 
