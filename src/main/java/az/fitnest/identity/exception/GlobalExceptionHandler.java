@@ -121,14 +121,23 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OtpVerificationException.class)
     public ResponseEntity<ApiResponse<Void>> handleOtpVerificationException(OtpVerificationException exception, WebRequest request) {
         logger.error("OTP verification error: {}", exception.getMessage(), exception);
+        String code = exception.getErrorCode();
+        HttpStatus status;
+        if (code.equals("error.otp.invalid") || code.equals("error.otp.locked") || code.equals("error.otp.already_verified")) {
+            status = HttpStatus.UNAUTHORIZED;
+        } else if (code.equals("error.otp.rate_limit_generic")) {
+            status = HttpStatus.TOO_MANY_REQUESTS;
+        } else {
+            status = HttpStatus.BAD_REQUEST;
+        }
         ApiError apiError = ApiError.builder()
-                .code(exception.getErrorCode())
-                .message(getMessage(exception.getErrorCode()))
-                .status(HttpStatus.BAD_REQUEST.value())
+                .code(code)
+                .message(getMessage(code))
+                .status(status.value())
                 .path(request.getDescription(false).replace("uri=", ""))
                 .timestamp(OffsetDateTime.now())
                 .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(apiError));
+        return ResponseEntity.status(status).body(ApiResponse.error(apiError));
     }
 
     private String getMessage(String code) {
