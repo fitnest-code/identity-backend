@@ -94,14 +94,28 @@ public class MeController {
     @Operation(summary = "Delete account", description = "Marks the authenticated user's account as deleted. User can reactivate within 30 days.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Account deleted successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     public ResponseEntity<ApiResponse<SuccessResponse>> deleteAccount(HttpServletRequest request) {
         Long userId = UserContext.getRequiredUserId();
-        userService.deleteAccount(userId);
-        return ResponseEntity.ok(ApiResponse.success(
-                SuccessResponse.of(getMessage("success.account.deleted"), request.getRequestURI())
-        ));
+        try {
+            userService.deleteAccount(userId);
+            return ResponseEntity.ok(ApiResponse.success(
+                    SuccessResponse.of(getMessage("success.account.deleted"), request.getRequestURI())
+            ));
+        } catch (Exception e) {
+            // Log the error (could use a logger)
+            String errorMsg = "Unexpected error during account deletion: " + e.getMessage();
+            return ResponseEntity.status(500).body(ApiResponse.error(
+                    az.fitnest.identity.dto.ApiError.builder()
+                        .code("INTERNAL_SERVER_ERROR")
+                        .message(errorMsg)
+                        .status(500)
+                        .path(request.getRequestURI())
+                        .build()
+            ));
+        }
     }
 
     private String getMessage(String code) {
