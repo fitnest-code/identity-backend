@@ -118,6 +118,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(apiError));
     }
 
+    @ExceptionHandler(OtpVerificationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOtpVerificationException(OtpVerificationException exception, WebRequest request) {
+        logger.error("OTP verification error: {}", exception.getMessage(), exception);
+        ApiError apiError = ApiError.builder()
+                .code(exception.getErrorCode())
+                .message(getMessage(exception.getErrorCode()))
+                .status(HttpStatus.BAD_REQUEST.value())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .timestamp(OffsetDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(apiError));
+    }
+
     private String getMessage(String code) {
         try {
             return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());

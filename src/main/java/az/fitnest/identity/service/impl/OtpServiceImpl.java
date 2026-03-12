@@ -11,6 +11,7 @@ import az.fitnest.identity.dto.OtpVerifyResponse;
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.OtpRateLimitedException;
+import az.fitnest.identity.exception.OtpVerificationException;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.SmsService;
 import az.fitnest.identity.repository.UserRepository;
@@ -203,17 +204,17 @@ public class OtpServiceImpl implements OtpService {
         Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
 
         if (sessionOpt.isEmpty()) {
-            throw new InvalidCredentialsException("error.otp.invalid");
+            throw new OtpVerificationException("error.otp.invalid");
         }
 
         OtpSessionPayload session = sessionOpt.get();
 
         if (session.locked()) {
-            throw new InvalidCredentialsException("error.otp.locked");
+            throw new OtpVerificationException("error.otp.locked");
         }
 
         if (session.verified()) {
-            throw new InvalidCredentialsException("error.otp.already_verified");
+            throw new OtpVerificationException("error.otp.already_verified");
         }
 
         boolean isValid = hashOtp(otpCode).equals(session.otpHash());
@@ -221,23 +222,23 @@ public class OtpServiceImpl implements OtpService {
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
 
         if (!result.isFound()) {
-            throw new InvalidCredentialsException("error.otp.invalid");
+            throw new OtpVerificationException("error.otp.invalid");
         }
 
         if (result.isLocked()) {
-            throw new InvalidCredentialsException("error.otp.locked");
+            throw new OtpVerificationException("error.otp.locked");
         }
 
         if (result.isAlreadyVerified()) {
-            throw new InvalidCredentialsException("error.otp.already_verified");
+            throw new OtpVerificationException("error.otp.already_verified");
         }
 
         if (result.isExpired()) {
-            throw new InvalidCredentialsException("error.otp.invalid");
+            throw new OtpVerificationException("error.otp.invalid");
         }
 
         if (!isValid) {
-            throw new InvalidCredentialsException("error.otp.invalid");
+            throw new OtpVerificationException("error.otp.invalid");
         }
 
         OtpSessionPayload verifiedSession = result.getSession();
@@ -254,7 +255,7 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResult verifyOtpByIdentifier(String identifier, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, identifier)
-                .orElseThrow(() -> new InvalidCredentialsException("error.otp.invalid"));
+                .orElseThrow(() -> new OtpVerificationException("error.otp.invalid"));
 
         return verifyOtp(sessionId, otpCode);
     }
@@ -262,7 +263,7 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationResult verifyOtpByUserId(Long userId, OtpPurpose purpose, String otpCode) {
         String sessionId = otpStore.getActiveSessionPointer(purpose, "user:" + userId)
-                .orElseThrow(() -> new InvalidCredentialsException("error.otp.invalid"));
+                .orElseThrow(() -> new OtpVerificationException("error.otp.invalid"));
 
         return verifyOtp(sessionId, otpCode);
     }

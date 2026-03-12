@@ -11,6 +11,6 @@ public class InvalidCredentialsException extends BaseException {
     }
 
     public InvalidCredentialsException(String message, String errorCode) {
-        super(message, errorCode.startsWith("error.") ? errorCode : "error.auth.invalid_credentials", HttpStatus.UNAUTHORIZED);
+        super(message, errorCode.startsWith("error.auth.") ? errorCode : "error.auth.invalid_credentials", HttpStatus.UNAUTHORIZED);
     }
 }
