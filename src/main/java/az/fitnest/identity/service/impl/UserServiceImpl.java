@@ -23,7 +23,6 @@ import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.util.TokenHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -69,7 +68,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    @Cacheable(value = "users", key = "#userId")
+    // Removed @Cacheable to always fetch latest user data
     @Transactional(readOnly = true)
     @Override
     public User getUserById(Long userId) {
