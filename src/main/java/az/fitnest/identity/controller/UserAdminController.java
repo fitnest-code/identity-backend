@@ -34,13 +34,15 @@ public class UserAdminController {
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String query) {
-        // Parse query string for id, name, surname, email, mobile
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Long packageID) {
+        // Parse query string for id, name, surname, email, mobile, packageID
         Long id = null;
         String name = null;
         String surname = null;
         String email = null;
         String mobile = null;
+        Long parsedPackageID = packageID;
         if (query != null && !query.isBlank()) {
             String[] parts = query.split(";");
             for (String part : parts) {
@@ -64,11 +66,14 @@ public class UserAdminController {
                         case "mobile":
                             mobile = value;
                             break;
+                        case "packageid":
+                            try { parsedPackageID = Long.parseLong(value); } catch (NumberFormatException ignored) {}
+                            break;
                     }
                 }
             }
         }
-        return ResponseEntity.ok(userService.searchUsers(page, size, id, name, surname, email, mobile));
+        return ResponseEntity.ok(userService.searchUsers(page, size, id, name, surname, email, mobile, parsedPackageID));
     }
 
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -67,14 +68,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
         SELECT u.id FROM User u
         WHERE u.status = 'INACTIVE' AND u.inactiveAt < :threshold
     """)
-    java.util.List<Long> findInactiveUserIds(@Param("threshold") Instant threshold);
+    List<Long> findInactiveUserIds(@Param("threshold") Instant threshold);
 
     @Modifying
     @Transactional
     @Query("""
         DELETE FROM User u WHERE u.id IN :ids
     """)
-    int deleteUsersByIds(@Param("ids") java.util.List<Long> ids);
+    int deleteUsersByIds(@Param("ids") List<Long> ids);
 
     boolean existsByRole(Role role);
 
@@ -85,11 +86,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
           AND (:surname IS NULL OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :surname, '%')))
           AND (:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')))
           AND (:mobile IS NULL OR u.mobile LIKE CONCAT('%', :mobile, '%'))
+          AND (:packageID IS NULL OR u.packageId = :packageID)
     """)
     Page<User> searchUsers(@Param("id") Long id,
                           @Param("name") String name,
                           @Param("surname") String surname,
                           @Param("email") String email,
                           @Param("mobile") String mobile,
+                          @Param("packageID") Long packageID,
                           Pageable pageable);
+
+    Page<User> findByIdIn(List<Long> userIds, Pageable pageable);
 }

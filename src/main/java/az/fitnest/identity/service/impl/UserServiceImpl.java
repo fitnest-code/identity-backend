@@ -1,5 +1,6 @@
 package az.fitnest.identity.service.impl;
 
+import az.fitnest.identity.client.PackageGrpcClient;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.util.MobileNumberUtils;
@@ -55,6 +56,7 @@ public class UserServiceImpl implements UserService {
     private final ApplicationEventPublisher localEventPublisher;
     private final PasswordService passwordService;
     private final OtpService otpService;
+    private final PackageGrpcClient packageGrpcClient;
 
     @Transactional
     @Override
@@ -395,9 +397,17 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile) {
+    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile, Long packageID) {
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
+        if (packageID != null) {
+            List<Long> userIds = packageGrpcClient.getUserIdsByPackageId(packageID);
+            if (userIds.isEmpty()) {
+                return Page.empty(pageable);
+            }
+            return userRepository.findByIdIn(userIds, pageable)
+                    .map(UserResponseMapper::toResponse);
+        }
+        return userRepository.searchUsers(id, name, surname, email, mobile, null, pageable)
                 .map(UserResponseMapper::toResponse);
     }
 
