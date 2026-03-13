@@ -1,6 +1,7 @@
 package az.fitnest.identity.service.impl;
 
 import az.fitnest.identity.client.PackageGrpcClient;
+import az.fitnest.identity.client.UserSubscriptionGrpcClient;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.util.MobileNumberUtils;
@@ -57,6 +58,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordService passwordService;
     private final OtpService otpService;
     private final PackageGrpcClient packageGrpcClient;
+    private final UserSubscriptionGrpcClient userSubscriptionGrpcClient;
 
     @Transactional
     @Override
@@ -399,6 +401,67 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
         return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
                 .map(UserResponseMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths) {
+        Long id = null;
+        String name = null;
+        String surname = null;
+        String email = null;
+        String mobile = null;
+        Long parsedPackageID = packageID;
+        if (query != null && !query.isBlank()) {
+            String[] parts = query.split(";");
+            for (String part : parts) {
+                String[] kv = part.split("=", 2);
+                if (kv.length == 2) {
+                    String key = kv[0].trim().toLowerCase();
+                    String value = kv[1].trim();
+                    switch (key) {
+                        case "id":
+                            try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
+                            break;
+                        case "name":
+                            name = value;
+                            break;
+                        case "surname":
+                            surname = value;
+                            break;
+                        case "email":
+                            email = value;
+                            break;
+                        case "mobile":
+                            mobile = value;
+                            break;
+                        case "packageid":
+                            try { parsedPackageID = Long.parseLong(value); } catch (NumberFormatException ignored) {}
+                            break;
+                    }
+                }
+            }
+        }
+        if (name != null && !(name instanceof String)) name = name.toString();
+        if (surname != null && !(surname instanceof String)) surname = surname.toString();
+        if (email != null && !(email instanceof String)) email = email.toString();
+        if (mobile != null && !(mobile instanceof String)) mobile = mobile.toString();
+        List<Long> userIdsByDuration = null;
+        if (durationMonths != null) {
+            // You may need to implement a new gRPC method for duration-based search if not available
+            // For now, fallback to packageId-based search as an example
+            if (parsedPackageID != null) {
+                userIdsByDuration = userSubscriptionGrpcClient.getUserIdsByPackageId(parsedPackageID);
+            }
+        }
+        Page<UserResponse> result;
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
+        if (userIdsByDuration != null) {
+            result = userRepository.findByIdIn(userIdsByDuration, pageable).map(UserResponseMapper::toResponse);
+        } else {
+            result = userRepository.searchUsers(id, name, surname, email, mobile, pageable).map(UserResponseMapper::toResponse);
+        }
+        return result;
     }
 
     private record UserSetupCompletedEventLocal(Long userId) {

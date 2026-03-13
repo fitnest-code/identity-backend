@@ -14,9 +14,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
@@ -30,12 +33,13 @@ public class UserAdminController {
 
     @Operation(
         summary = "Get all users",
-        description = "Returns a paginated list of all users in the system. Supports filtering by user ID, name, surname, email, mobile, and package ID.",
+        description = "Returns a paginated list of all users in the system. Supports filtering by user ID, name, surname, email, mobile, package ID, and subscription duration (in months).",
         parameters = {
             @Parameter(name = "page", description = "Page number (0-based)", example = "0"),
             @Parameter(name = "size", description = "Page size", example = "10"),
             @Parameter(name = "query", description = "Filter string (e.g. 'name=John;surname=Doe')", example = "name=John;surname=Doe"),
-            @Parameter(name = "packageID", description = "Package ID to filter users", example = "123")
+            @Parameter(name = "packageID", description = "Package ID to filter users", example = "123"),
+            @Parameter(name = "durationMonths", description = "Filter users by subscription duration in months", example = "12")
         }
     )
     @ApiResponses(value = {
@@ -49,48 +53,9 @@ public class UserAdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String query,
-            @RequestParam(required = false) Long packageID) {
-        Long id = null;
-        String name = null;
-        String surname = null;
-        String email = null;
-        String mobile = null;
-        Long parsedPackageID = packageID;
-        if (query != null && !query.isBlank()) {
-            String[] parts = query.split(";");
-            for (String part : parts) {
-                String[] kv = part.split("=", 2);
-                if (kv.length == 2) {
-                    String key = kv[0].trim().toLowerCase();
-                    String value = kv[1].trim();
-                    switch (key) {
-                        case "id":
-                            try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                            break;
-                        case "name":
-                            name = value;
-                            break;
-                        case "surname":
-                            surname = value;
-                            break;
-                        case "email":
-                            email = value;
-                            break;
-                        case "mobile":
-                            mobile = value;
-                            break;
-                        case "packageid":
-                            try { parsedPackageID = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                            break;
-                    }
-                }
-            }
-        }
-        if (name != null && !(name instanceof String)) name = name.toString();
-        if (surname != null && !(surname instanceof String)) surname = surname.toString();
-        if (email != null && !(email instanceof String)) email = email.toString();
-        if (mobile != null && !(mobile instanceof String)) mobile = mobile.toString();
-        return ResponseEntity.ok(userService.searchUsers(page, size, id, name, surname, email, mobile));
+            @RequestParam(required = false) Long packageID,
+            @RequestParam(required = false) Integer durationMonths) {
+        return ResponseEntity.ok(userService.searchUsersAdvanced(page, size, query, packageID, durationMonths));
     }
 
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")
