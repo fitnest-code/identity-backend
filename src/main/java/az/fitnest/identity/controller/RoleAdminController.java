@@ -4,6 +4,7 @@ import az.fitnest.identity.model.entity.Role;
 import az.fitnest.identity.service.impl.UserServiceImpl;
 import az.fitnest.identity.repository.RoleRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -13,11 +14,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/roles")
 @RequiredArgsConstructor
+@Tag(name = "Rol İdarəetmə Admin", description = "Sistem rollarının idarə olunması üçün admin endpointləri.")
 public class RoleAdminController {
     private final RoleRepository roleRepository;
     private final UserServiceImpl userService;
 
-    @Operation(summary = "Create a new role")
+    @Operation(summary = "Yeni rol yaradın", description = "Yeni sistem rolu yaradılır.")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping
     public ResponseEntity<Role> createRole(@RequestParam String name) {
@@ -30,14 +32,14 @@ public class RoleAdminController {
         return ResponseEntity.ok(saved);
     }
 
-    @Operation(summary = "Get all roles")
+    @Operation(summary = "Bütün rolları əldə edin", description = "Sistemdəki bütün rolları qaytarır.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<Role>> getAllRoles() {
         return ResponseEntity.ok(roleRepository.findAll());
     }
 
-    @Operation(summary = "Get role by ID")
+    @Operation(summary = "Rol ID ilə əldə edin", description = "Rol ID-si ilə rolu qaytarır.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{roleId}")
     public ResponseEntity<Role> getRoleById(@PathVariable Long roleId) {
@@ -46,7 +48,7 @@ public class RoleAdminController {
             .orElse(ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Update role name")
+    @Operation(summary = "Rol adını yeniləyin", description = "Rol adını yeniləyir.")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PutMapping("/{roleId}")
     public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @RequestParam String name) {
@@ -61,7 +63,7 @@ public class RoleAdminController {
         return ResponseEntity.ok(updated);
     }
 
-    @Operation(summary = "Delete role")
+    @Operation(summary = "Rol silin", description = "Rolu silir.")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/{roleId}")
     public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {

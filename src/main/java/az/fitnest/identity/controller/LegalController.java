@@ -33,7 +33,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/legal")
 @RequiredArgsConstructor
-@Tag(name = "Legal & Consents", description = "Hüquqi sənədlərə baxmaq və istifadəçi razılıqlarını idarə etmək üçün ucluqlar")
+@Tag(name = "Hüquqi & Razılıqlar", description = "Hüquqi sənədlərə baxmaq və istifadəçi razılıqlarını idarə etmək üçün endpointlər.")
 public class LegalController {
 
     private final LegalService legalService;

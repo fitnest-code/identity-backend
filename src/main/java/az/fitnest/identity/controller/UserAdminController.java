@@ -24,7 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
-@Tag(name = "User Management Admin", description = "Admin endpoints for managing users, roles, rate limits, and user search. All endpoints require ADMIN or SUPER_ADMIN roles.")
+@Tag(name = "İstifadəçi İdarəetmə Admin", description = "İstifadəçilərin, rolların, limitlərin və axtarışın idarə olunması üçün admin endpointləri. Bütün endpointlər üçün ADMIN və ya SUPER_ADMIN rolu tələb olunur.")
 @SecurityRequirement(name = "bearerAuth")
 public class UserAdminController {
 

@@ -21,14 +21,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/legal")
 @RequiredArgsConstructor
-@Tag(name = "Legal Management Admin", description = "Hüquqi sənədlərin (Məxfilik Siyasəti, İstifadə Şərtləri) və istifadəçi razılıqlarının idarə olunması üçün administrativ ucluqlar.")
+@Tag(name = "Hüquqi İdarəetmə Admin", description = "Hüquqi sənədlərin (Məxfilik Siyasəti, İstifadə Şərtləri) və istifadəçi razılıqlarının idarə olunması üçün admin endpointləri.")
 @SecurityRequirement(name = "bearerAuth")
 @PreAuthorize("hasRole('ADMIN')")
 public class LegalAdminController {
 
     private final LegalService legalService;
 
-    @Operation(summary = "Yeni hüquqi sənəd yaradın", description = "Yeni məxfilik siyasəti və ya istifadə şərtləri versiyası yaradır.")
+    @Operation(summary = "Yeni hüquqi sənəd yaradın", description = "Yeni məxfilik siyasəti və ya istifadə şərtləri versiyası yaradılır.")
     @PostMapping("/documents")
     public ResponseEntity<Void> createDocument(@Valid @RequestBody CreateLegalDocumentRequest request) {
         legalService.createDocument(request);
@@ -44,13 +44,13 @@ public class LegalAdminController {
         return ResponseEntity.ok(legalService.getAllDocuments(type, language, active));
     }
 
-    @Operation(summary = "Sənədi ID-si ilə əldə edin")
+    @Operation(summary = "Sənədi ID-si ilə əldə edin", description = "Sənədi ID-si ilə əldə edir.")
     @GetMapping("/documents/{id}")
     public ResponseEntity<AdminLegalDocumentResponse> getDocumentById(@PathVariable Long id) {
         return ResponseEntity.ok(legalService.getDocumentById(id));
     }
 
-    @Operation(summary = "Sənədi yeniləyin")
+    @Operation(summary = "Sənədi yeniləyin", description = "Sənədi yeniləyir.")
     @PutMapping("/documents/{id}")
     public ResponseEntity<AdminLegalDocumentResponse> updateDocument(
             @PathVariable Long id,
@@ -58,7 +58,7 @@ public class LegalAdminController {
         return ResponseEntity.ok(legalService.updateDocument(id, request));
     }
 
-    @Operation(summary = "Sənədi silin")
+    @Operation(summary = "Sənədi silin", description = "Sənədi silir.")
     @DeleteMapping("/documents/{id}")
     public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
         legalService.deleteDocument(id);
@@ -72,7 +72,7 @@ public class LegalAdminController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Sənədi deaktivləşdirin")
+    @Operation(summary = "Sənədi deaktivləşdirin", description = "Sənədi deaktiv edir.")
     @PostMapping("/documents/{id}/deactivate")
     public ResponseEntity<Void> deactivateDocument(@PathVariable Long id) {
         legalService.deactivateDocument(id);

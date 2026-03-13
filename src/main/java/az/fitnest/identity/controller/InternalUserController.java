@@ -12,6 +12,8 @@ import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.model.entity.User;
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,17 +23,20 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/internal/users")
 @RequiredArgsConstructor
 @Hidden
+@Tag(name = "Daxili İstifadəçi", description = "Daxili istifadəçi idarəetməsi üçün endpointlər. Sistem daxili istifadə üçün nəzərdə tutulub.")
 public class InternalUserController {
 
     private final UserService userService;
 
     @GetMapping("/{userId}")
+    @Operation(summary = "İstifadəçini ID ilə əldə edin", description = "İstifadəçi ID-si ilə istifadəçi məlumatlarını qaytarır.")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
         User user = userService.getUserById(userId);
         return ResponseEntity.ok(toUserResponse(user));
     }
 
     @PutMapping("/{userId}")
+    @Operation(summary = "İstifadəçi profilini yeniləyin", description = "İstifadəçi profilini yeniləyir.")
     public ResponseEntity<UserResponse> updateUserProfile(
             @PathVariable Long userId,
             @RequestBody @Valid UpdateUserProfileRequest request) {
@@ -45,6 +50,7 @@ public class InternalUserController {
     }
 
     @PutMapping("/{userId}/profile-image")
+    @Operation(summary = "Profil şəklini yeniləyin", description = "İstifadəçinin profil şəklini yeniləyir.")
     public ResponseEntity<UserResponse> updateProfileImage(
             @PathVariable Long userId,
             @RequestBody UpdateProfileImageRequest request) {
@@ -53,6 +59,7 @@ public class InternalUserController {
     }
 
     @PutMapping("/{userId}/setup-required")
+    @Operation(summary = "Setup statusunu yeniləyin", description = "İstifadəçinin setupRequired statusunu yeniləyir.")
     public ResponseEntity<UserResponse> updateSetupRequired(
             @PathVariable Long userId,
             @RequestBody UpdateSetupRequiredRequest request) {
@@ -61,6 +68,7 @@ public class InternalUserController {
     }
 
     @PutMapping("/{userId}/language")
+    @Operation(summary = "Dil kodunu yeniləyin", description = "İstifadəçinin dil kodunu yeniləyir.")
     public ResponseEntity<UserResponse> updateLanguage(
             @PathVariable Long userId,
             @RequestBody @Valid az.fitnest.identity.dto.UpdateLanguageRequest request) {
@@ -69,6 +77,7 @@ public class InternalUserController {
     }
 
     @PutMapping("/{userId}/session-status")
+    @Operation(summary = "Sessiya statusunu yeniləyin", description = "İstifadəçinin sessiya statusunu yeniləyir.")
     public ResponseEntity<UserResponse> updateSessionStatus(
             @PathVariable Long userId,
             @RequestBody @Valid UpdateSessionStatusRequest request) {
@@ -77,6 +86,7 @@ public class InternalUserController {
     }
 
     @DeleteMapping("/{userId}")
+    @Operation(summary = "İstifadəçini deaktiv edin", description = "İstifadəçini deaktiv edir.")
     public ResponseEntity<Void> deactivateUser(
             @PathVariable Long userId,
             @RequestParam(name = "reason", required = false) String reason) {

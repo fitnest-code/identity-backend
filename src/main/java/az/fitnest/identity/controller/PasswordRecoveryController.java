@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth/password-recovery")
 @RequiredArgsConstructor
-@Tag(name = "Password Recovery", description = "Şifrənin bərpası üçün ucluqlar")
+@Tag(name = "Şifrə Bərpası", description = "Şifrəni bərpa etmək üçün endpointlər.")
 public class PasswordRecoveryController {
 
     private final PasswordResetService passwordResetService;
 
     @PostMapping("/forgot-password")
-    @Operation(summary = "Şifrəni unutmuşam")
+    @Operation(summary = "Şifrəni unutmuşam", description = "Şifrəni bərpa etmək üçün OTP göndərir.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OTP uğurla göndərildi", content = @Content(schema = @Schema(implementation = OtpSendResponse.class))),
             @ApiResponse(responseCode = "400", description = "Yanlış sorğu və ya doğrulama uğursuz oldu")
@@ -35,7 +35,7 @@ public class PasswordRecoveryController {
     }
 
     @PostMapping("/reset-password")
-    @Operation(summary = "Şifrəni sıfırlayın")
+    @Operation(summary = "Şifrəni sıfırlayın", description = "OTP və yeni şifrə ilə şifrəni sıfırlayır.")
     public ResponseEntity<az.fitnest.identity.dto.ApiResponse<ResetPasswordResponse>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(passwordResetService.resetPassword(request)));
     }

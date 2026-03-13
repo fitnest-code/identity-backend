@@ -21,19 +21,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth/otp")
 @RequiredArgsConstructor
-@Tag(name = "OTP", description = "Endpoints for sending and verifying OTP codes for registration, password reset, and account reactivation.")
+@Tag(name = "OTP", description = "Qeydiyyat, şifrə sıfırlama və hesab reaktivasiya üçün OTP göndərmə və doğrulama endpointləri.")
 public class OtpController {
 
     private final OtpService otpService;
 
     @Operation(
             summary = "OTP-ni doğrulayın",
-            description = "İstifadəçi tərəfindən təqdim olunan OTP kodunu doğrulayır. " +
-                    "Uğurlu doğrulamadan sonra məqsəddən asılı olaraq: " +
-                    "- QEYDİYYAT: qeydiyyat tokeni verir. " +
-                    "- ŞİFRƏ_SIFIRLAMA: sıfırlama tokeni verir. " +
-                    "- REAKTİVASİYA: hesabı yenidən aktivləşdirir və giriş tokenlərini verir. " +
-                    "Sessiya bloklanmazdan əvvəl maksimum 5 doğrulama cəhdinə icazə verilir."
+            description = "İstifadəçi tərəfindən təqdim olunan OTP kodunu doğrulayır. Uğurlu doğrulamadan sonra məqsəddən asılı olaraq: - QEYDİYYAT: qeydiyyat tokeni verir. - ŞİFRƏ_SIFIRLAMA: sıfırlama tokeni verir. - REAKTİVASİYA: hesabı yenidən aktivləşdirir və giriş tokenlərini verir. Sessiya bloklanmazdan əvvəl maksimum 5 doğrulama cəhdinə icazə verilir."
     )
     @ApiResponses(value = {
             @ApiResponse(

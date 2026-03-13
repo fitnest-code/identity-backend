@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Registration", description = "Endpoints for user registration and completion of registration.")
+@Tag(name = "Qeydiyyat", description = "İstifadəçi qeydiyyatı və qeydiyyatın tamamlanması üçün endpointlər.")
 @RestController
 @RequestMapping("/api/v1/auth/registration")
 @RequiredArgsConstructor
@@ -22,13 +22,13 @@ public class RegistrationController {
     private final RegistrationService registrationService;
 
     @PostMapping("/register")
-    @Operation(summary = "Qeydiyyatı başladın")
+    @Operation(summary = "Qeydiyyatı başladın", description = "Yeni istifadəçi qeydiyyatını başladır və OTP göndərir.")
     public ResponseEntity<ApiResponse<OtpSendResponse>> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(ApiResponse.success(registrationService.startRegistration(request)));
     }
 
     @PostMapping("/register/complete")
-    @Operation(summary = "Qeydiyyatı tamamlayın")
+    @Operation(summary = "Qeydiyyatı tamamlayın", description = "OTP və istifadəçi məlumatları ilə qeydiyyatı tamamlayır.")
     public ResponseEntity<ApiResponse<LoginResponse>> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(registrationService.completeRegistration(request)));
     }
