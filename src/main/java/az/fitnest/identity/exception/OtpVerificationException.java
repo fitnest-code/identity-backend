@@ -8,4 +8,3 @@ public class OtpVerificationException extends BaseException {
         super(errorCode, errorCode, HttpStatus.BAD_REQUEST);
     }
 }
-

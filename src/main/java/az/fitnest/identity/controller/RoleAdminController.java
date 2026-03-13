@@ -22,7 +22,7 @@ public class RoleAdminController {
     @PostMapping
     public ResponseEntity<Role> createRole(@RequestParam String name) {
         if (roleRepository.findByName(name).isPresent()) {
-            return ResponseEntity.status(409).build(); // Conflict
+            return ResponseEntity.status(409).build();
         }
         Role role = new Role();
         role.setName(name);
@@ -54,7 +54,7 @@ public class RoleAdminController {
             .orElse(null);
         if (role == null) return ResponseEntity.notFound().build();
         if (roleRepository.findByName(name).isPresent()) {
-            return ResponseEntity.status(409).build(); // Conflict
+            return ResponseEntity.status(409).build();
         }
         role.setName(name);
         Role updated = roleRepository.save(role);
@@ -69,4 +69,3 @@ public class RoleAdminController {
         return ResponseEntity.noContent().build();
     }
 }
-

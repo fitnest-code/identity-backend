@@ -7,4 +7,3 @@ public record MinimalIdentityResponse(
     @JsonProperty("mobile") String mobile,
     @JsonProperty("email") String email
 ) {}
-

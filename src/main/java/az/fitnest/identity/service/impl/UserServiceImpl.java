@@ -70,7 +70,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    // Removed @Cacheable to always fetch latest user data
     @Transactional(readOnly = true)
     @Override
     public User getUserById(Long userId) {
@@ -320,7 +319,6 @@ public class UserServiceImpl implements UserService {
     public void deleteRole(Long roleId) {
         Role role = roleRepository.findById(roleId)
             .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
-        // Prevent deletion if role is assigned to any user
         if (userRepository.existsByRole(role)) {
             throw new ConflictException("error.role.in_use", "ROLE_IN_USE");
         }
@@ -397,17 +395,9 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile, Long packageID) {
+    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile) {
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        if (packageID != null) {
-            List<Long> userIds = packageGrpcClient.getUserIdsByPackageId(packageID);
-            if (userIds.isEmpty()) {
-                return Page.empty(pageable);
-            }
-            return userRepository.findByIdIn(userIds, pageable)
-                    .map(UserResponseMapper::toResponse);
-        }
-        return userRepository.searchUsers(id, name, surname, email, mobile, null, pageable)
+        return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
                 .map(UserResponseMapper::toResponse);
     }
 

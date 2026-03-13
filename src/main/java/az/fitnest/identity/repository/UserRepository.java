@@ -86,14 +86,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
           AND (:surname IS NULL OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :surname, '%')))
           AND (:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')))
           AND (:mobile IS NULL OR u.mobile LIKE CONCAT('%', :mobile, '%'))
-          AND (:packageID IS NULL OR u.packageId = :packageID)
     """)
     Page<User> searchUsers(@Param("id") Long id,
                           @Param("name") String name,
                           @Param("surname") String surname,
                           @Param("email") String email,
                           @Param("mobile") String mobile,
-                          @Param("packageID") Long packageID,
                           Pageable pageable);
 
     Page<User> findByIdIn(List<Long> userIds, Pageable pageable);

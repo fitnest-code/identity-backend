@@ -66,5 +66,5 @@ public interface UserService {
 
     void deleteRole(Long roleId);
 
-    Page<az.fitnest.identity.dto.UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile, Long packageID);
+    Page<az.fitnest.identity.dto.UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile);
 }

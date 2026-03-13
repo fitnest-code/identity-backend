@@ -36,7 +36,6 @@ public class UserAdminController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String query,
             @RequestParam(required = false) Long packageID) {
-        // Parse query string for id, name, surname, email, mobile, packageID
         Long id = null;
         String name = null;
         String surname = null;
@@ -73,7 +72,7 @@ public class UserAdminController {
                 }
             }
         }
-        return ResponseEntity.ok(userService.searchUsers(page, size, id, name, surname, email, mobile, parsedPackageID));
+        return ResponseEntity.ok(userService.searchUsers(page, size, id, name, surname, email, mobile));
     }
 
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")
@@ -112,6 +111,5 @@ public class UserAdminController {
         userService.deactivateAllUsers();
         return ResponseEntity.noContent().build();
     }
-
 
 }
