@@ -9,6 +9,7 @@ option java_outer_classname = "UserSubscriptionProto";
 service UserSubscriptionService {
   rpc GetActiveSubscription(GetActiveSubscriptionRequest) returns (ActiveSubscriptionResponse);
   rpc GetUserIdsByPackageId(GetUserIdsByPackageIdRequest) returns (GetUserIdsByPackageIdResponse);
+  rpc GetUserIdsByDurationMonths(GetUserIdsByDurationMonthsRequest) returns (GetUserIdsByPackageIdResponse);
 }
 
 message GetActiveSubscriptionRequest {
@@ -28,3 +29,6 @@ message GetUserIdsByPackageIdResponse {
   repeated int64 user_ids = 1;
 }
 
+message GetUserIdsByDurationMonthsRequest {
+  int32 duration_months = 1;
+}

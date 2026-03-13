@@ -24,6 +24,10 @@ public class UserSubscriptionGrpcClient {
     }
 
     public List<Long> getUserIdsByDurationMonths(int durationMonths) {
-        throw new UnsupportedOperationException("Not implemented: getUserIdsByDurationMonths");
+        az.fitnest.order.grpc.GetUserIdsByDurationMonthsRequest request = az.fitnest.order.grpc.GetUserIdsByDurationMonthsRequest.newBuilder()
+                .setDurationMonths(durationMonths)
+                .build();
+        az.fitnest.order.grpc.GetUserIdsByPackageIdResponse response = stub.getUserIdsByDurationMonths(request);
+        return response.getUserIdsList().stream().map(Long::valueOf).collect(Collectors.toList());
     }
 }
