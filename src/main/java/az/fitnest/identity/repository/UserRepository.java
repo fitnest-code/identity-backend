@@ -77,6 +77,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     """)
     int deleteUsersByIds(@Param("ids") List<Long> ids);
 
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM User u WHERE u.status = 'INACTIVE' AND u.inactiveAt < :threshold")
+    void deleteInactiveUsersBefore(@Param("threshold") Instant threshold);
+
     boolean existsByRole(Role role);
 
     @Query("""

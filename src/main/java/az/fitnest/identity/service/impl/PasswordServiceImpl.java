@@ -1,6 +1,7 @@
 package az.fitnest.identity.service.impl;
 
 import az.fitnest.identity.model.enums.UserStatus;
+import az.fitnest.identity.repository.UserRepository;
 
 import az.fitnest.identity.dto.PasswordVerificationResult;
 import az.fitnest.identity.service.PasswordService;
@@ -16,6 +17,7 @@ public class PasswordServiceImpl implements PasswordService {
     private static final int MAX_PASSWORD_LENGTH = 128;
 
     private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
 
     @Override
     public String hashPassword(String rawPassword) {
@@ -38,6 +40,24 @@ public class PasswordServiceImpl implements PasswordService {
         } catch (Exception e) {
             return new PasswordVerificationResult(false, false);
         }
+    }
+
+    @Override
+    public boolean isStrongPassword(String password) {
+        if (password == null) return false;
+        // Minimum 8 characters, at least one digit, one uppercase, one lowercase, one special char
+        return password.length() >= 8 &&
+               password.matches(".*[A-Z].*") &&
+               password.matches(".*[a-z].*") &&
+               password.matches(".*\\d.*") &&
+               password.matches(".*[^A-Za-z0-9].*");
+    }
+
+    @Override
+    public boolean isPasswordReused(Long userId, String newPassword) {
+        az.fitnest.identity.model.entity.User user = userRepository.findById(userId).orElse(null);
+        if (user == null) return false;
+        return passwordEncoder.matches(newPassword, user.getPasswordHash());
     }
 
     private void validatePassword(String rawPassword) {

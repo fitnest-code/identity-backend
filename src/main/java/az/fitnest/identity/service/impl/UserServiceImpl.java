@@ -1,6 +1,5 @@
 package az.fitnest.identity.service.impl;
 
-import az.fitnest.identity.client.PackageGrpcClient;
 import az.fitnest.identity.client.UserSubscriptionGrpcClient;
 import az.fitnest.identity.model.enums.UserStatus;
 
@@ -22,7 +21,6 @@ import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.OtpSendRequest;
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.service.OtpService;
-import az.fitnest.identity.util.TokenHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +43,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-@Service
 @RequiredArgsConstructor
+@Service
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
@@ -57,8 +57,16 @@ public class UserServiceImpl implements UserService {
     private final ApplicationEventPublisher localEventPublisher;
     private final PasswordService passwordService;
     private final OtpService otpService;
-    private final PackageGrpcClient packageGrpcClient;
     private final UserSubscriptionGrpcClient userSubscriptionGrpcClient;
+
+    // Preload default user role with null safety
+    private Role defaultUserRole;
+
+    @PostConstruct
+    public void initDefaultRole() {
+        this.defaultUserRole = roleRepository.findByName("ROLE_USER")
+            .orElseThrow(() -> new IllegalStateException("ROLE_USER missing"));
+    }
 
     @Transactional
     @Override
@@ -87,18 +95,24 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public User createNewUser(String firstName, String lastName, String passwordHash, String mobile) {
-        return createNewUserInternal(normalizeNamePart(firstName), normalizeNamePart(lastName), passwordHash, mobile);
+        String normalizedMobile = MobileNumberUtils.normalize(mobile);
+        if (normalizedMobile == null || normalizedMobile.isBlank()) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_MOBILE");
+        }
+        return createNewUserInternal(normalizeNamePart(firstName), normalizeNamePart(lastName), passwordHash, normalizedMobile);
     }
 
-    @Transactional
     @Override
     public User createNewUserWithFullName(String fullName, String passwordHash, String mobile) {
-        NameParts nameParts = splitFullName(fullName);
-        return createNewUserInternal(nameParts.firstName(), nameParts.lastName(), passwordHash, mobile);
+        String normalizedMobile = MobileNumberUtils.normalize(mobile);
+        if (normalizedMobile == null || normalizedMobile.isBlank()) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_MOBILE");
+        }
+        NameParts parts = splitFullName(fullName);
+        return createNewUserInternal(parts.firstName(), parts.lastName(), passwordHash, normalizedMobile);
     }
 
     private User createNewUserInternal(String firstName, String lastName, String passwordHash, String mobile) {
-        mobile = MobileNumberUtils.normalize(mobile);
         User user = User.builder()
                 .firstName(firstName)
                 .lastName(lastName)
@@ -108,7 +122,7 @@ public class UserServiceImpl implements UserService {
                 .setupRequired(true)
                 .failedLoginAttempts(0)
                 .status(UserStatus.ACTIVE)
-                .role(roleRepository.findByName("ROLE_USER").orElse(null))
+                .role(defaultUserRole)
                 .build();
         try {
             return userRepository.save(user);
@@ -122,35 +136,36 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateUserProfile(Long userId, UpdateUserProfileCommand command) {
         User user = getUserOrThrow(userId);
-
         String firstName = command.firstName();
         String lastName = command.lastName();
-
         boolean namePartsProvided = firstName != null || lastName != null;
         if (namePartsProvided) {
             NameParts parts = resolveNameParts(firstName, lastName, null);
             user.setFirstName(parts.firstName());
             user.setLastName(parts.lastName());
         }
+        // publish local event after commit
+        localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
+        return user;
+    }
 
-        User saved = userRepository.save(user);
-        publishUserEvent("USER_UPDATED", userId);
-        return saved;
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleUserUpdated(UserUpdatedEvent event) {
+        publishUserEvent("USER_UPDATED", event.userId());
     }
 
     @Override
     @Transactional
     public az.fitnest.identity.dto.OtpSendResponse requestEmailChange(Long userId, String newEmail) {
         User user = getUserOrThrow(userId);
-        if (newEmail.equalsIgnoreCase(user.getEmail())) {
-            throw new ConflictException("error.resource.conflict", "RESOURCE_CONFLICT");
-        }
-        if (userRepository.findFirstByEmail(newEmail.toLowerCase()).isPresent()) {
-            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_EMAIL");
-        }
-
+        boolean canChange = !newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.findFirstByEmail(newEmail.toLowerCase()).isEmpty();
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail);
-        return otpService.sendOtpByUserId(userId, otpRequest);
+        if (canChange) {
+            return otpService.sendOtpByUserId(userId, otpRequest);
+        } else {
+            // Always return success, but do not send OTP
+            return new az.fitnest.identity.dto.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
+        }
     }
 
     @Override
@@ -176,15 +191,14 @@ public class UserServiceImpl implements UserService {
     public az.fitnest.identity.dto.OtpSendResponse requestMobileChange(Long userId, String newMobile) {
         User user = getUserOrThrow(userId);
         String normalizedMobile = MobileNumberUtils.normalize(newMobile);
-        if (normalizedMobile.equals(user.getMobile())) {
-            throw new ConflictException("error.resource.conflict", "RESOURCE_CONFLICT");
-        }
-        if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
-            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
-        }
-
+        boolean canChange = !normalizedMobile.equals(user.getMobile()) && userRepository.findFirstByMobile(normalizedMobile).isEmpty();
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null);
-        return otpService.sendOtpByUserId(userId, otpRequest);
+        if (canChange) {
+            return otpService.sendOtpByUserId(userId, otpRequest);
+        } else {
+            // Always return success, but do not send OTP
+            return new az.fitnest.identity.dto.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
+        }
     }
 
     @Override
@@ -235,6 +249,7 @@ public class UserServiceImpl implements UserService {
         try {
             eventPublisher.publishSetupCompleted(event.userId());
         } catch (Exception e) {
+            log.error("Failed to publish setup completed event for userId {}", event.userId(), e);
         }
     }
 
@@ -244,7 +259,7 @@ public class UserServiceImpl implements UserService {
     public User updateLanguage(Long userId, String language) {
         User user = getUserOrThrow(userId);
         user.setLanguage(language);
-        return userRepository.save(user);
+        return user;
     }
 
     @CacheEvict(value = "users", key = "#userId")
@@ -278,16 +293,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Scheduled(cron = "0 0 2 * * *")
+    @Transactional
     public void deleteInactiveAccountsAfter30Days() {
         Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60);
-        java.util.List<Long> userIds = userRepository.findInactiveUserIds(threshold);
-        for (Long userId : userIds) {
-            try {
-                deleteAccount(userId);
-            } catch (Exception ex) {
-                log.error("Failed to delete inactive account for userId {}", userId, ex);
-            }
-        }
+        userRepository.deleteInactiveUsersBefore(threshold);
     }
 
     @Transactional
@@ -300,20 +309,43 @@ public class UserServiceImpl implements UserService {
         if (!newPassword.equals(confirmNewPassword)) {
             throw new az.fitnest.identity.exception.ValidationException("error.validation", "VALIDATION_ERROR");
         }
+        if (!passwordService.isStrongPassword(newPassword)) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "WEAK_PASSWORD");
+        }
+        if (passwordService.isPasswordReused(userId, newPassword)) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "PASSWORD_REUSED");
+        }
         user.setPasswordHash(passwordService.hashPassword(newPassword));
         userRepository.save(user);
+        localEventPublisher.publishEvent(new PasswordChangedEvent(userId));
     }
 
-    @Override
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handlePasswordChanged(PasswordChangedEvent event) {
+        redisTokenService.removeAllSessions(event.userId());
+    }
+
+    @CacheEvict(value = "users", key = "#userId")
     @Transactional
+    @Override
     public void deleteAccount(Long userId) {
         User user = getUserOrThrow(userId);
         user.setStatus(UserStatus.INACTIVE);
         user.setInactiveAt(java.time.Instant.now());
         userRepository.save(user);
         publishUserEvent("ACCOUNT_DEACTIVATED", userId);
-        redisTokenService.removeAllSessions(userId);
-        authTokenRepository.deleteByUserId(userId);
+        // Redis and token cleanup moved to after commit
+        localEventPublisher.publishEvent(new UserAccountDeletedEventLocal(userId));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleUserAccountDeleted(UserAccountDeletedEventLocal event) {
+        try {
+            redisTokenService.removeAllSessions(event.userId());
+            authTokenRepository.deleteByUserId(event.userId());
+        } catch (Exception e) {
+            log.error("Failed to cleanup after account deletion for userId {}", event.userId(), e);
+        }
     }
 
     @Transactional
@@ -325,6 +357,14 @@ public class UserServiceImpl implements UserService {
             throw new ConflictException("error.role.in_use", "ROLE_IN_USE");
         }
         roleRepository.deleteById(roleId);
+    }
+
+    @Transactional
+    @Override
+    public User updateSessionStatus(Long userId, az.fitnest.identity.model.enums.SessionStatus sessionStatus) {
+        User user = getUserOrThrow(userId);
+        user.setSessionStatus(sessionStatus);
+        return userRepository.save(user);
     }
 
     private User getUserOrThrow(Long userId) {
@@ -367,12 +407,8 @@ public class UserServiceImpl implements UserService {
     }
 
     private void publishUserEvent(String eventType, Long userId) {
-        Map<String, Object> event = Map.of(
-                "eventType", eventType,
-                "userId", userId,
-                "timestamp", System.currentTimeMillis()
-        );
-        kafkaTemplate.send("user-events", event)
+        UserEvent event = new UserEvent(eventType, userId, System.currentTimeMillis());
+        kafkaTemplate.send("user-events", userId.toString(), event)
             .whenComplete((result, ex) -> {
                 if (ex != null) {
                     log.error("Failed to publish user event", ex);
@@ -383,21 +419,15 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponse> getAllUsersMapped(int page, int size) {
+        size = Math.min(size, 100);
         return userRepository.findAll(PageRequest.of(Math.max(0, page - 1), size))
                 .map(UserResponseMapper::toResponse);
-    }
-
-    @Transactional
-    @Override
-    public User updateSessionStatus(Long userId, az.fitnest.identity.model.enums.SessionStatus sessionStatus) {
-        User user = getUserById(userId);
-        user.setSessionStatus(sessionStatus);
-        return userRepository.save(user);
     }
 
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile) {
+        size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
         return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
                 .map(UserResponseMapper::toResponse);
@@ -406,62 +436,60 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths) {
+        size = Math.min(size, 100);
         Long id = null;
         String name = null;
         String surname = null;
         String email = null;
         String mobile = null;
-        Long parsedPackageID = packageID;
+        String genericSearch = null;
         if (query != null && !query.isBlank()) {
-            String[] parts = query.split(";");
-            for (String part : parts) {
-                String[] kv = part.split("=", 2);
-                if (kv.length == 2) {
-                    String key = kv[0].trim().toLowerCase();
-                    String value = kv[1].trim();
-                    switch (key) {
-                        case "id":
-                            try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                            break;
-                        case "name":
-                            name = value;
-                            break;
-                        case "surname":
-                            surname = value;
-                            break;
-                        case "email":
-                            email = value;
-                            break;
-                        case "mobile":
-                            mobile = value;
-                            break;
-                        case "packageid":
-                            try { parsedPackageID = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                            break;
+            if (!query.contains("=")) {
+                genericSearch = query.trim();
+            } else {
+                String[] parts = query.split(";");
+                for (String part : parts) {
+                    String[] kv = part.split("=", 2);
+                    if (kv.length == 2) {
+                        String key = kv[0].trim().toLowerCase();
+                        String value = kv[1].trim();
+                        switch (key) {
+                            case "id":
+                                try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
+                                break;
+                            case "name":
+                                name = value;
+                                break;
+                            case "surname":
+                                surname = value;
+                                break;
+                            case "email":
+                                email = value;
+                                break;
+                            case "mobile":
+                                mobile = value;
+                                break;
+                        }
                     }
                 }
             }
         }
-        if (name != null && !(name instanceof String)) name = name.toString();
-        if (surname != null && !(surname instanceof String)) surname = surname.toString();
-        if (email != null && !(email instanceof String)) email = email.toString();
-        if (mobile != null && !(mobile instanceof String)) mobile = mobile.toString();
-        List<Long> userIdsByDuration = null;
-        if (durationMonths != null) {
-            // You may need to implement a new gRPC method for duration-based search if not available
-            // For now, fallback to packageId-based search as an example
-            if (parsedPackageID != null) {
-                userIdsByDuration = userSubscriptionGrpcClient.getUserIdsByPackageId(parsedPackageID);
-            }
+        if (genericSearch != null) {
+            name = genericSearch;
+            surname = genericSearch;
+            email = genericSearch;
+            mobile = genericSearch;
         }
-        Page<UserResponse> result;
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        if (userIdsByDuration != null) {
-            result = userRepository.findByIdIn(userIdsByDuration, pageable).map(UserResponseMapper::toResponse);
-        } else {
-            result = userRepository.searchUsers(id, name, surname, email, mobile, pageable).map(UserResponseMapper::toResponse);
-        }
-        return result;
+        // Removed cross-service call and huge IN query
+        return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
+                .map(UserResponseMapper::toResponse);
+    }
+
+    private record UserEvent(String eventType, Long userId, long timestamp) {}
+    private record UserUpdatedEvent(Long userId) {}
+    private record PasswordChangedEvent(Long userId) {}
+    private record UserAccountDeletedEventLocal(Long userId) {
     }
 
     private record UserSetupCompletedEventLocal(Long userId) {

@@ -9,4 +9,8 @@ public interface PasswordService {
     String hashPassword(String rawPassword);
 
     PasswordVerificationResult verifyPassword(String rawPassword, String passwordHash);
+
+    boolean isStrongPassword(String password);
+
+    boolean isPasswordReused(Long userId, String newPassword);
 }
