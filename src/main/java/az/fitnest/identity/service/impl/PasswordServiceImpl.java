@@ -10,53 +10,71 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.regex.Pattern;
+
 @Service
 @RequiredArgsConstructor
 public class PasswordServiceImpl implements PasswordService {
 
+    private static final Logger log = LoggerFactory.getLogger(PasswordServiceImpl.class);
+    private static final int MIN_PASSWORD_LENGTH = 10;
     private static final int MAX_PASSWORD_LENGTH = 128;
+    private static final Pattern UPPERCASE = Pattern.compile("[A-Z]");
+    private static final Pattern LOWERCASE = Pattern.compile("[a-z]");
+    private static final Pattern DIGIT = Pattern.compile("\\d");
+    private static final Pattern SPECIAL = Pattern.compile("[^A-Za-z0-9]");
+    private static final Pattern WHITESPACE = Pattern.compile("\\s");
 
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
     @Override
     public String hashPassword(String rawPassword) {
-        validatePassword(rawPassword);
-        return passwordEncoder.encode(rawPassword);
+        if (rawPassword == null) {
+            throw new IllegalArgumentException("Password cannot be null");
+        }
+        String trimmed = rawPassword.trim();
+        validatePassword(trimmed);
+        return passwordEncoder.encode(trimmed);
     }
 
     @Override
     public PasswordVerificationResult verifyPassword(String rawPassword, String passwordHash) {
         if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(passwordHash)) {
+            log.warn("Password or hash is empty");
             return new PasswordVerificationResult(false, false);
         }
-
+        String trimmed = rawPassword.trim();
         try {
-            boolean matches = passwordEncoder.matches(rawPassword, passwordHash);
-
+            boolean matches = passwordEncoder.matches(trimmed, passwordHash);
             boolean upgradeRecommended = matches && passwordEncoder.upgradeEncoding(passwordHash);
-
             return new PasswordVerificationResult(matches, upgradeRecommended);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            log.warn("Password hash format invalid", e);
             return new PasswordVerificationResult(false, false);
         }
     }
 
     @Override
     public boolean isStrongPassword(String password) {
-        if (password == null) return false;
-        return password.length() >= 8 &&
-               password.matches(".*[A-Z].*") &&
-               password.matches(".*[a-z].*") &&
-               password.matches(".*\\d.*") &&
-               password.matches(".*[^A-Za-z0-9].*");
+        if (password == null || password.length() < MIN_PASSWORD_LENGTH) return false;
+        if (WHITESPACE.matcher(password).find()) return false;
+        return UPPERCASE.matcher(password).find() &&
+               LOWERCASE.matcher(password).find() &&
+               DIGIT.matcher(password).find() &&
+               SPECIAL.matcher(password).find();
     }
 
     @Override
     public boolean isPasswordReused(Long userId, String newPassword) {
         az.fitnest.identity.model.entity.User user = userRepository.findById(userId).orElse(null);
-        if (user == null) return false;
-        return passwordEncoder.matches(newPassword, user.getPasswordHash());
+        if (user == null) {
+            log.warn("User not found for password reuse check: userId={}", userId);
+            return false;
+        }
+        return passwordEncoder.matches(newPassword.trim(), user.getPasswordHash());
     }
 
     private void validatePassword(String rawPassword) {
@@ -65,6 +83,12 @@ public class PasswordServiceImpl implements PasswordService {
         }
         if (rawPassword.length() > MAX_PASSWORD_LENGTH) {
             throw new IllegalArgumentException("Password exceeds maximum allowed length");
+        }
+        if (rawPassword.length() < MIN_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("Password does not meet minimum length");
+        }
+        if (WHITESPACE.matcher(rawPassword).find()) {
+            throw new IllegalArgumentException("Password must not contain whitespace");
         }
     }
 }
