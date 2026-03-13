@@ -64,19 +64,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     """)
     int deactivateAllNonAdmins(@Param("now") Instant now);
 
-    /**
-     * Batch-friendly version: paginates inactive user IDs for deletion.
-     */
     @Query("""
         SELECT u.id FROM User u
         WHERE u.status = 'INACTIVE' AND u.inactiveAt < :threshold
     """)
     Page<Long> findInactiveUserIds(@Param("threshold") Instant threshold, Pageable pageable);
 
-    /**
-     * Batch deletion for large datasets. Deletes inactive users in batches of batchSize.
-     * Avoids memory and locking issues.
-     */
     @Modifying
     @Transactional
     default void deleteInactiveUsersBeforeBatch(Instant threshold, int batchSize) {
@@ -136,18 +129,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findByIdIn(List<Long> userIds, Pageable pageable);
 
-    // --- Performance Recommendations ---
-    // For searchUsersAdvanced/searchUsers: Add DB indexes on firstName, lastName, email, mobile, status, inactiveAt.
-    // For frequent search combinations, use composite indexes.
-    // For LIKE queries on large tables, consider full-text search or native SQL.
-    // For markNoSessionsIfNone: Ensure AuthToken.userId is indexed.
-    // For existsByRole: Consider caching if called frequently.
-    // For very large selects: Use Spring Data Stream<User> or Scroll for batch processing.
-    // Example index DDL (PostgreSQL):
-    // CREATE INDEX idx_user_firstname ON user (first_name);
-    // CREATE INDEX idx_user_lastname ON user (last_name);
-    // CREATE INDEX idx_user_email ON user (email);
-    // CREATE INDEX idx_user_mobile ON user (mobile);
-    // CREATE INDEX idx_user_status_inactiveat ON user (status, inactive_at);
-    // CREATE INDEX idx_authtoken_userid ON authtoken (user_id);
 }

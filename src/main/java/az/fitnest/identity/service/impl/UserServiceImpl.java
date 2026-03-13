@@ -292,7 +292,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteInactiveAccountsAfter30Days() {
         Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60);
-        int batchSize = 1000; // Safe batch size for large deletes
+        int batchSize = 1000;
         userRepository.deleteInactiveUsersBeforeBatch(threshold, batchSize);
     }
 
@@ -497,7 +497,6 @@ public class UserServiceImpl implements UserService {
                 log.warn("Duration months filtering not implemented in gRPC client.");
             }
         }
-        // Manual pagination after filtering
         int start = Math.min(page * size, filteredUsers.size());
         int end = Math.min(start + size, filteredUsers.size());
         List<UserResponse> pagedResponses = filteredUsers.subList(start, end).stream()

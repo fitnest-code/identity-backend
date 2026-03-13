@@ -32,13 +32,6 @@ public class UserSubscriptionGrpcClient {
     }
 
     public List<Long> getUserIdsByDurationMonths(int durationMonths) {
-        // You must implement this method in the gRPC service and proto
-        // Example:
-        // GetUserIdsByDurationMonthsRequest request = GetUserIdsByDurationMonthsRequest.newBuilder()
-        //     .setDurationMonths(durationMonths)
-        //     .build();
-        // GetUserIdsByDurationMonthsResponse response = stub.getUserIdsByDurationMonths(request);
-        // return response.getUserIdsList().stream().map(Long::valueOf).collect(Collectors.toList());
         throw new UnsupportedOperationException("Not implemented: getUserIdsByDurationMonths");
     }
 }
