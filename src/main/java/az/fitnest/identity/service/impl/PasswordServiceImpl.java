@@ -6,6 +6,8 @@ import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.dto.PasswordVerificationResult;
 import az.fitnest.identity.service.PasswordService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -29,11 +31,12 @@ public class PasswordServiceImpl implements PasswordService {
 
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final MessageSource messageSource;
 
     @Override
     public String hashPassword(String rawPassword) {
         if (rawPassword == null) {
-            throw new IllegalArgumentException("Password cannot be null");
+            throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
         String trimmed = rawPassword.trim();
         validatePassword(trimmed);
@@ -79,16 +82,20 @@ public class PasswordServiceImpl implements PasswordService {
 
     private void validatePassword(String rawPassword) {
         if (!StringUtils.hasText(rawPassword)) {
-            throw new IllegalArgumentException("Password cannot be null or empty");
+            throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
         if (rawPassword.length() > MAX_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException("Password exceeds maximum allowed length");
+            throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
         if (rawPassword.length() < MIN_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException("Password does not meet minimum length");
+            throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
         if (WHITESPACE.matcher(rawPassword).find()) {
-            throw new IllegalArgumentException("Password must not contain whitespace");
+            throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
+    }
+
+    private String getMessage(String code) {
+        return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
 }
