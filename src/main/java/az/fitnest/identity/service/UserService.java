@@ -69,4 +69,6 @@ public interface UserService {
     Page<az.fitnest.identity.dto.UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile);
 
     Page<az.fitnest.identity.dto.UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths);
+
+    Page<az.fitnest.identity.dto.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths);
 }

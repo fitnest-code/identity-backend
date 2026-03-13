@@ -33,29 +33,29 @@ public class UserAdminController {
 
     @Operation(
         summary = "Bütün istifadəçiləri əldə edin",
-        description = "Sistemdəki bütün istifadəçilərin səhifələnmiş siyahısını qaytarır. İstifadəçi ID-si, ad, soyad, email, mobil, paket ID-si və abunə müddəti (aylarla) üzrə filtrləmə dəstəklənir.",
+        description = "Sistemdəki bütün istifadəçilərin səhifələnmiş siyahısını qaytarır. İstifadəçi ID-si, ad, soyad, email, mobil, status və abunə statusu üzrə filtrləmə dəstəklənir.",
         parameters = {
             @Parameter(name = "page", description = "Səhifə nömrəsi (0-dan başlayır)", example = "0"),
             @Parameter(name = "size", description = "Səhifə ölçüsü", example = "10"),
             @Parameter(name = "query", description = "Filtr sətiri. Adi mətn (məsələn, 'kamal') və ya açar-dəyər cütləri (məsələn, 'name=Kamal;surname=Aliyev;email=kamal@example.com;mobile=0501234567') dəstəklənir.", example = "kamal və ya name=Kamal;surname=Aliyev;email=kamal@example.com;mobile=0501234567"),
-            @Parameter(name = "packageID", description = "İstifadəçiləri paket ID-sinə görə filtr edin", example = "123"),
-            @Parameter(name = "durationMonths", description = "Abunə müddətinə görə filtr edin (aylarla)", example = "12")
+            @Parameter(name = "packageID", description = "İstifadəçiləri paket ID-sinə görə filtr edin", example = "5"),
+            @Parameter(name = "durationMonths", description = "Abunə müddətinə görə filtr edin (aylarla)", example = "5")
         }
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "İstifadəçilər uğurla əldə edildi", content = @Content(schema = @Schema(implementation = UserResponse.class))),
+        @ApiResponse(responseCode = "200", description = "İstifadəçilər uğurla əldə edildi", content = @Content(schema = @Schema(implementation = az.fitnest.identity.dto.AdminUserResponse.class))),
         @ApiResponse(responseCode = "401", description = "İcazə verilmir. Giriş tələb olunur.", content = @Content),
         @ApiResponse(responseCode = "403", description = "Qadağandır. Yetərli səlahiyyət yoxdur.", content = @Content)
     })
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<Page<UserResponse>> getAllUsers(
+    public ResponseEntity<Page<az.fitnest.identity.dto.AdminUserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String query,
             @RequestParam(required = false) Long packageID,
             @RequestParam(required = false) Integer durationMonths) {
-        return ResponseEntity.ok(userService.searchUsersAdvanced(page, size, query, packageID, durationMonths));
+        return ResponseEntity.ok(userService.getAdminUsers(page, size, query, packageID, durationMonths));
     }
 
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")

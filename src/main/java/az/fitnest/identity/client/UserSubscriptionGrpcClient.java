@@ -30,4 +30,11 @@ public class UserSubscriptionGrpcClient {
         az.fitnest.order.grpc.GetUserIdsByPackageIdResponse response = stub.getUserIdsByDurationMonths(request);
         return response.getUserIdsList().stream().map(Long::valueOf).collect(Collectors.toList());
     }
+
+    public az.fitnest.order.grpc.ActiveSubscriptionResponse getActiveSubscription(Long userId) {
+        az.fitnest.order.grpc.GetActiveSubscriptionRequest request = az.fitnest.order.grpc.GetActiveSubscriptionRequest.newBuilder()
+                .setUserId(userId)
+                .build();
+        return stub.getActiveSubscription(request);
+    }
 }

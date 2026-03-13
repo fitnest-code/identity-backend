@@ -511,6 +511,101 @@ public class UserServiceImpl implements UserService {
         return new org.springframework.data.domain.PageImpl<>(pagedResponses, pageable, filteredUsers.size());
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public Page<az.fitnest.identity.dto.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths) {
+        size = Math.min(size, 100);
+        Long id = null;
+        String name = null;
+        String surname = null;
+        String email = null;
+        String mobile = null;
+        String genericSearch = null;
+        if (query != null && !query.isBlank()) {
+            if (!query.contains("=")) {
+                genericSearch = query.trim();
+            } else {
+                String[] parts = query.split(";");
+                for (String part : parts) {
+                    String[] kv = part.split("=", 2);
+                    if (kv.length == 2) {
+                        String key = kv[0].trim().toLowerCase();
+                        String value = kv[1].trim();
+                        switch (key) {
+                            case "id":
+                                try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
+                                break;
+                            case "name":
+                                name = value;
+                                break;
+                            case "surname":
+                                surname = value;
+                                break;
+                            case "email":
+                                email = value;
+                                break;
+                            case "mobile":
+                                mobile = value;
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        if (genericSearch != null) {
+            name = genericSearch;
+            surname = genericSearch;
+            email = genericSearch;
+            mobile = genericSearch;
+        }
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
+        Page<User> userPage = userRepository.searchUsersAdvanced(id, name, surname, email, mobile, pageable);
+        List<User> filteredUsers = userPage.getContent();
+        if (packageID != null) {
+            try {
+                List<Long> packageUserIds = userSubscriptionGrpcClient.getUserIdsByPackageId(packageID);
+                filteredUsers = filteredUsers.stream()
+                    .filter(user -> packageUserIds.contains(user.getId()))
+                    .toList();
+            } catch (Exception e) {
+                log.error("Failed to fetch user IDs by package ID {} via gRPC. Skipping package filter.", packageID, e);
+            }
+        }
+        if (durationMonths != null) {
+            try {
+                List<Long> durationUserIds = userSubscriptionGrpcClient.getUserIdsByDurationMonths(durationMonths);
+                filteredUsers = filteredUsers.stream()
+                    .filter(user -> durationUserIds.contains(user.getId()))
+                    .toList();
+            } catch (UnsupportedOperationException e) {
+                log.warn("Duration months filtering not implemented in gRPC client.");
+            } catch (Exception e) {
+                log.error("Failed to fetch user IDs by duration months {} via gRPC. Skipping duration filter.", durationMonths, e);
+            }
+        }
+        List<az.fitnest.identity.dto.AdminUserResponse> adminResponses = filteredUsers.stream()
+            .map(user -> {
+                az.fitnest.order.grpc.ActiveSubscriptionResponse sub = null;
+                try {
+                    sub = userSubscriptionGrpcClient.getActiveSubscription(user.getId());
+                } catch (Exception e) {
+                    log.warn("Failed to fetch subscription info for user {}", user.getId(), e);
+                }
+                String subscriptionStatus = (sub != null && sub.getSubscriptionStatus() != null && !sub.getSubscriptionStatus().isEmpty()) ? sub.getSubscriptionStatus() : null;
+                return new az.fitnest.identity.dto.AdminUserResponse(
+                    user.getId(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getMobile(),
+                    user.getEmail(),
+                    user.getStatus() != null ? user.getStatus().name() : null,
+                    subscriptionStatus
+                );
+            })
+            .toList();
+        return new org.springframework.data.domain.PageImpl<>(adminResponses, pageable, userPage.getTotalElements());
+    }
+
     private record UserEvent(String eventType, Long userId, long timestamp) {}
     private record UserUpdatedEvent(Long userId) {}
     private record PasswordChangedEvent(Long userId) {}
