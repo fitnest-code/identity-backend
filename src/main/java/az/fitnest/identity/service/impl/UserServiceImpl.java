@@ -441,8 +441,6 @@ public class UserServiceImpl implements UserService {
         String email = null;
         String mobile = null;
         String genericSearch = null;
-        Long parsedPackageID = packageID;
-        Integer parsedDurationMonths = durationMonths;
         if (query != null && !query.isBlank()) {
             if (!query.contains("=")) {
                 genericSearch = query.trim();
@@ -469,12 +467,6 @@ public class UserServiceImpl implements UserService {
                             case "mobile":
                                 mobile = value;
                                 break;
-                            case "packageid":
-                                try { parsedPackageID = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                                break;
-                            case "durationmonths":
-                                try { parsedDurationMonths = Integer.parseInt(value); } catch (NumberFormatException ignored) {}
-                                break;
                         }
                     }
                 }
@@ -487,8 +479,31 @@ public class UserServiceImpl implements UserService {
             mobile = genericSearch;
         }
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        return userRepository.searchUsersAdvanced(id, name, surname, email, mobile, parsedPackageID, parsedDurationMonths, pageable)
-                .map(UserResponseMapper::toResponse);
+        Page<User> userPage = userRepository.searchUsersAdvanced(id, name, surname, email, mobile, pageable);
+        List<User> filteredUsers = userPage.getContent();
+        if (packageID != null) {
+            List<Long> packageUserIds = userSubscriptionGrpcClient.getUserIdsByPackageId(packageID);
+            filteredUsers = filteredUsers.stream()
+                .filter(user -> packageUserIds.contains(user.getId()))
+                .toList();
+        }
+        if (durationMonths != null) {
+            try {
+                List<Long> durationUserIds = userSubscriptionGrpcClient.getUserIdsByDurationMonths(durationMonths);
+                filteredUsers = filteredUsers.stream()
+                    .filter(user -> durationUserIds.contains(user.getId()))
+                    .toList();
+            } catch (UnsupportedOperationException e) {
+                log.warn("Duration months filtering not implemented in gRPC client.");
+            }
+        }
+        // Manual pagination after filtering
+        int start = Math.min(page * size, filteredUsers.size());
+        int end = Math.min(start + size, filteredUsers.size());
+        List<UserResponse> pagedResponses = filteredUsers.subList(start, end).stream()
+            .map(UserResponseMapper::toResponse)
+            .toList();
+        return new org.springframework.data.domain.PageImpl<>(pagedResponses, pageable, filteredUsers.size());
     }
 
     private record UserEvent(String eventType, Long userId, long timestamp) {}
