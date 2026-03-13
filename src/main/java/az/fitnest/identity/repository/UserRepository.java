@@ -104,14 +104,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByRole(Role role);
 
-    @Query("""
-        SELECT u FROM User u
-        WHERE (:id IS NULL OR u.id = :id)
-          AND (:name IS NULL OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :name, '%')))
-          AND (:surname IS NULL OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :surname, '%')))
-          AND (:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')))
-          AND (:mobile IS NULL OR u.mobile LIKE CONCAT('%', :mobile, '%'))
-    """)
+    @Query(value = """
+        SELECT * FROM users u1_0
+        WHERE (:id IS NULL OR u1_0.user_id = :id)
+          AND (:name IS NULL OR lower(CAST(u1_0.first_name AS text)) LIKE lower('%' || :name || '%'))
+          AND (:surname IS NULL OR lower(CAST(u1_0.last_name AS text)) LIKE lower('%' || :surname || '%'))
+          AND (:email IS NULL OR lower(CAST(u1_0.email AS text)) LIKE lower('%' || :email || '%'))
+          AND (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
+    """, nativeQuery = true)
     Page<User> searchUsersAdvanced(@Param("id") Long id,
                               @Param("name") String name,
                               @Param("surname") String surname,
@@ -119,14 +119,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
                               @Param("mobile") String mobile,
                               Pageable pageable);
 
-    @Query("""
-        SELECT u FROM User u
-        WHERE (:id IS NULL OR u.id = :id)
-          AND (:name IS NULL OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :name, '%')))
-          AND (:surname IS NULL OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :surname, '%')))
-          AND (:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')))
-          AND (:mobile IS NULL OR u.mobile LIKE CONCAT('%', :mobile, '%'))
-    """)
+    @Query(value = """
+        SELECT * FROM users u1_0
+        WHERE (:id IS NULL OR u1_0.user_id = :id)
+          AND (:name IS NULL OR lower(CAST(u1_0.first_name AS text)) LIKE lower('%' || :name || '%'))
+          AND (:surname IS NULL OR lower(CAST(u1_0.last_name AS text)) LIKE lower('%' || :surname || '%'))
+          AND (:email IS NULL OR lower(CAST(u1_0.email AS text)) LIKE lower('%' || :email || '%'))
+          AND (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
+    """, nativeQuery = true)
     Page<User> searchUsers(@Param("id") Long id,
                       @Param("name") String name,
                       @Param("surname") String surname,
