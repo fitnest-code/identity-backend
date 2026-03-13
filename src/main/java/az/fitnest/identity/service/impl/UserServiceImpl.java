@@ -393,6 +393,14 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile) {
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
+        return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
+                .map(UserResponseMapper::toResponse);
+    }
+
     private record UserSetupCompletedEventLocal(Long userId) {
     }
 

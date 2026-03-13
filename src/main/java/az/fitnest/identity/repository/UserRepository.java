@@ -5,6 +5,8 @@ import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.model.enums.SessionStatus;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.model.entity.Role;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -75,4 +77,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     int deleteUsersByIds(@Param("ids") java.util.List<Long> ids);
 
     boolean existsByRole(Role role);
+
+    @Query("""
+        SELECT u FROM User u
+        WHERE (:id IS NULL OR u.id = :id)
+          AND (:name IS NULL OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :name, '%')))
+          AND (:surname IS NULL OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :surname, '%')))
+          AND (:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')))
+          AND (:mobile IS NULL OR u.mobile LIKE CONCAT('%', :mobile, '%'))
+    """)
+    Page<User> searchUsers(@Param("id") Long id,
+                          @Param("name") String name,
+                          @Param("surname") String surname,
+                          @Param("email") String email,
+                          @Param("mobile") String mobile,
+                          Pageable pageable);
 }

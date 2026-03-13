@@ -33,8 +33,42 @@ public class UserAdminController {
     @GetMapping
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(userService.getAllUsersMapped(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String query) {
+        // Parse query string for id, name, surname, email, mobile
+        Long id = null;
+        String name = null;
+        String surname = null;
+        String email = null;
+        String mobile = null;
+        if (query != null && !query.isBlank()) {
+            String[] parts = query.split(";");
+            for (String part : parts) {
+                String[] kv = part.split("=", 2);
+                if (kv.length == 2) {
+                    String key = kv[0].trim().toLowerCase();
+                    String value = kv[1].trim();
+                    switch (key) {
+                        case "id":
+                            try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
+                            break;
+                        case "name":
+                            name = value;
+                            break;
+                        case "surname":
+                            surname = value;
+                            break;
+                        case "email":
+                            email = value;
+                            break;
+                        case "mobile":
+                            mobile = value;
+                            break;
+                    }
+                }
+            }
+        }
+        return ResponseEntity.ok(userService.searchUsers(page, size, id, name, surname, email, mobile));
     }
 
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")
