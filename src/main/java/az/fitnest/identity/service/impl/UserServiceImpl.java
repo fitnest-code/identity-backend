@@ -47,6 +47,7 @@ import java.util.Map;
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final java.util.regex.Pattern NAME_PART_PATTERN = java.util.regex.Pattern.compile("\\S+");
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -143,8 +144,9 @@ public class UserServiceImpl implements UserService {
             user.setFirstName(parts.firstName());
             user.setLastName(parts.lastName());
         }
+        User saved = userRepository.save(user);
         localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
-        return user;
+        return saved;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -170,16 +172,13 @@ public class UserServiceImpl implements UserService {
     public User confirmEmailChange(Long userId, String otpSessionId, String otpCode) {
         User user = getUserOrThrow(userId);
         var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
-
         if (verificationResult.purpose() != OtpPurpose.EMAIL_CHANGE) {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
-
         String newEmail = verificationResult.email();
-
-        user.setEmail(newEmail.toLowerCase());
+        user.setEmail(newEmail.trim().toLowerCase());
         User saved = userRepository.save(user);
-        publishUserEvent("USER_UPDATED", userId);
+        localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
         return saved;
     }
 
@@ -255,7 +254,8 @@ public class UserServiceImpl implements UserService {
     public User updateLanguage(Long userId, String language) {
         User user = getUserOrThrow(userId);
         user.setLanguage(language);
-        return user;
+        User saved = userRepository.save(user);
+        return saved;
     }
 
     @CacheEvict(value = "users", key = "#userId")
@@ -292,7 +292,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteInactiveAccountsAfter30Days() {
         Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60);
-        userRepository.deleteInactiveUsersBefore(threshold);
+        int batchSize = 1000; // Safe batch size for large deletes
+        userRepository.deleteInactiveUsersBeforeBatch(threshold, batchSize);
     }
 
     @Transactional
@@ -398,7 +399,9 @@ public class UserServiceImpl implements UserService {
             return null;
         }
         String v = value.trim();
-        return v.isEmpty() ? null : v;
+        if (v.isEmpty()) return null;
+        java.util.regex.Matcher matcher = NAME_PART_PATTERN.matcher(v);
+        return matcher.find() ? matcher.group() : null;
     }
 
     private void publishUserEvent(String eventType, Long userId) {
@@ -438,6 +441,8 @@ public class UserServiceImpl implements UserService {
         String email = null;
         String mobile = null;
         String genericSearch = null;
+        Long parsedPackageID = packageID;
+        Integer parsedDurationMonths = durationMonths;
         if (query != null && !query.isBlank()) {
             if (!query.contains("=")) {
                 genericSearch = query.trim();
@@ -464,6 +469,12 @@ public class UserServiceImpl implements UserService {
                             case "mobile":
                                 mobile = value;
                                 break;
+                            case "packageid":
+                                try { parsedPackageID = Long.parseLong(value); } catch (NumberFormatException ignored) {}
+                                break;
+                            case "durationmonths":
+                                try { parsedDurationMonths = Integer.parseInt(value); } catch (NumberFormatException ignored) {}
+                                break;
                         }
                     }
                 }
@@ -476,7 +487,7 @@ public class UserServiceImpl implements UserService {
             mobile = genericSearch;
         }
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
+        return userRepository.searchUsersAdvanced(id, name, surname, email, mobile, parsedPackageID, parsedDurationMonths, pageable)
                 .map(UserResponseMapper::toResponse);
     }
 

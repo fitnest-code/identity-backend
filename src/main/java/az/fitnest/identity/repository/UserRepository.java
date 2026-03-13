@@ -64,11 +64,31 @@ public interface UserRepository extends JpaRepository<User, Long> {
     """)
     int deactivateAllNonAdmins(@Param("now") Instant now);
 
+    /**
+     * Batch-friendly version: paginates inactive user IDs for deletion.
+     */
     @Query("""
         SELECT u.id FROM User u
         WHERE u.status = 'INACTIVE' AND u.inactiveAt < :threshold
     """)
-    List<Long> findInactiveUserIds(@Param("threshold") Instant threshold);
+    Page<Long> findInactiveUserIds(@Param("threshold") Instant threshold, Pageable pageable);
+
+    /**
+     * Batch deletion for large datasets. Deletes inactive users in batches of batchSize.
+     * Avoids memory and locking issues.
+     */
+    @Modifying
+    @Transactional
+    default void deleteInactiveUsersBeforeBatch(Instant threshold, int batchSize) {
+        Page<Long> page;
+        do {
+            page = findInactiveUserIds(threshold, org.springframework.data.domain.PageRequest.of(0, batchSize));
+            List<Long> ids = page.getContent();
+            if (!ids.isEmpty()) {
+                deleteUsersByIds(ids);
+            }
+        } while (!page.isEmpty());
+    }
 
     @Modifying
     @Transactional
@@ -91,13 +111,47 @@ public interface UserRepository extends JpaRepository<User, Long> {
           AND (:surname IS NULL OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :surname, '%')))
           AND (:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')))
           AND (:mobile IS NULL OR u.mobile LIKE CONCAT('%', :mobile, '%'))
+          AND (:packageID IS NULL OR u.packageId = :packageID)
+          AND (:durationMonths IS NULL OR u.subscriptionDurationMonths = :durationMonths)
+    """)
+    Page<User> searchUsersAdvanced(@Param("id") Long id,
+                              @Param("name") String name,
+                              @Param("surname") String surname,
+                              @Param("email") String email,
+                              @Param("mobile") String mobile,
+                              @Param("packageID") Long packageID,
+                              @Param("durationMonths") Integer durationMonths,
+                              Pageable pageable);
+
+    @Query("""
+        SELECT u FROM User u
+        WHERE (:id IS NULL OR u.id = :id)
+          AND (:name IS NULL OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :name, '%')))
+          AND (:surname IS NULL OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :surname, '%')))
+          AND (:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%')))
+          AND (:mobile IS NULL OR u.mobile LIKE CONCAT('%', :mobile, '%'))
     """)
     Page<User> searchUsers(@Param("id") Long id,
-                          @Param("name") String name,
-                          @Param("surname") String surname,
-                          @Param("email") String email,
-                          @Param("mobile") String mobile,
-                          Pageable pageable);
+                      @Param("name") String name,
+                      @Param("surname") String surname,
+                      @Param("email") String email,
+                      @Param("mobile") String mobile,
+                      Pageable pageable);
 
     Page<User> findByIdIn(List<Long> userIds, Pageable pageable);
+
+    // --- Performance Recommendations ---
+    // For searchUsersAdvanced/searchUsers: Add DB indexes on firstName, lastName, email, mobile, status, inactiveAt.
+    // For frequent search combinations, use composite indexes.
+    // For LIKE queries on large tables, consider full-text search or native SQL.
+    // For markNoSessionsIfNone: Ensure AuthToken.userId is indexed.
+    // For existsByRole: Consider caching if called frequently.
+    // For very large selects: Use Spring Data Stream<User> or Scroll for batch processing.
+    // Example index DDL (PostgreSQL):
+    // CREATE INDEX idx_user_firstname ON user (first_name);
+    // CREATE INDEX idx_user_lastname ON user (last_name);
+    // CREATE INDEX idx_user_email ON user (email);
+    // CREATE INDEX idx_user_mobile ON user (mobile);
+    // CREATE INDEX idx_user_status_inactiveat ON user (status, inactive_at);
+    // CREATE INDEX idx_authtoken_userid ON authtoken (user_id);
 }
