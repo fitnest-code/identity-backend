@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth/otp")
 @RequiredArgsConstructor
-@Tag(name = "OTP", description = "OTP kodlarının göndərilməsi və doğrulanması üçün ucluqlar")
+@Tag(name = "OTP", description = "Endpoints for sending and verifying OTP codes for registration, password reset, and account reactivation.")
 public class OtpController {
 
     private final OtpService otpService;

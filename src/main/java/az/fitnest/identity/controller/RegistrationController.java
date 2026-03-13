@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Registration", description = "Endpoints for user registration and completion of registration.")
 @RestController
 @RequestMapping("/api/v1/auth/registration")
 @RequiredArgsConstructor
-@Tag(name = "Registration", description = "İstifadəçi qeydiyyatı üçün ucluqlar")
 public class RegistrationController {
 
     private final RegistrationService registrationService;

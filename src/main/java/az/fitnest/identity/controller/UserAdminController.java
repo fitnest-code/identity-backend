@@ -21,14 +21,28 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
-@Tag(name = "User Management Admin", description = "İstifadəçiləri idarə etmək və administrativ tənzimləmələri həyata keçirmək üçün ucluqlar.")
+@Tag(name = "User Management Admin", description = "Admin endpoints for managing users, roles, rate limits, and user search. All endpoints require ADMIN or SUPER_ADMIN roles.")
 @SecurityRequirement(name = "bearerAuth")
 public class UserAdminController {
 
     private final UserService userService;
     private final RateLimitAdminService rateLimitAdminService;
 
-    @Operation(summary = "Bütün istifadəçiləri əldə edin", description = "Sistemdəki bütün istifadəçilərin siyahısını səhifələnmiş şəkildə qaytarır. ADMIN rolu tələb olunur.")
+    @Operation(
+        summary = "Get all users",
+        description = "Returns a paginated list of all users in the system. Supports filtering by user ID, name, surname, email, mobile, and package ID.",
+        parameters = {
+            @Parameter(name = "page", description = "Page number (0-based)", example = "0"),
+            @Parameter(name = "size", description = "Page size", example = "10"),
+            @Parameter(name = "query", description = "Filter string (e.g. 'name=John;surname=Doe')", example = "name=John;surname=Doe"),
+            @Parameter(name = "packageID", description = "Package ID to filter users", example = "123")
+        }
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = UserResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Unauthorized. Authentication required.", content = @Content),
+        @ApiResponse(responseCode = "403", description = "Forbidden. Insufficient permissions.", content = @Content)
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<UserResponse>> getAllUsers(

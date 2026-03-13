@@ -26,7 +26,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Me", description = "Cari istifadəçi məlumatlarının idarə olunması üçün ucluqlar")
+@Tag(name = "Me", description = "Endpoints for managing and retrieving information about the currently authenticated user.")
 @SecurityRequirement(name = "bearerAuth")
 public class MeController {
 

@@ -33,10 +33,10 @@ import org.springframework.web.bind.annotation.*;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
+@Tag(name = "Authentication", description = "Endpoints for user authentication, login, logout, token refresh, and password management.")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication", description = "İstifadəçi autentifikasiyası, qeydiyyatı və şifrə idarəolunması üçün ucluqlar")
 public class AuthController {
 
     private final AuthService authService;
