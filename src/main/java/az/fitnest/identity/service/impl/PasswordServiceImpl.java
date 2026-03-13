@@ -45,7 +45,6 @@ public class PasswordServiceImpl implements PasswordService {
     @Override
     public boolean isStrongPassword(String password) {
         if (password == null) return false;
-        // Minimum 8 characters, at least one digit, one uppercase, one lowercase, one special char
         return password.length() >= 8 &&
                password.matches(".*[A-Z].*") &&
                password.matches(".*[a-z].*") &&

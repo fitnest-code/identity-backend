@@ -59,7 +59,6 @@ public class UserServiceImpl implements UserService {
     private final OtpService otpService;
     private final UserSubscriptionGrpcClient userSubscriptionGrpcClient;
 
-    // Preload default user role with null safety
     private Role defaultUserRole;
 
     @PostConstruct
@@ -144,7 +143,6 @@ public class UserServiceImpl implements UserService {
             user.setFirstName(parts.firstName());
             user.setLastName(parts.lastName());
         }
-        // publish local event after commit
         localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
         return user;
     }
@@ -163,7 +161,6 @@ public class UserServiceImpl implements UserService {
         if (canChange) {
             return otpService.sendOtpByUserId(userId, otpRequest);
         } else {
-            // Always return success, but do not send OTP
             return new az.fitnest.identity.dto.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
         }
     }
@@ -196,7 +193,6 @@ public class UserServiceImpl implements UserService {
         if (canChange) {
             return otpService.sendOtpByUserId(userId, otpRequest);
         } else {
-            // Always return success, but do not send OTP
             return new az.fitnest.identity.dto.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
         }
     }
@@ -334,7 +330,6 @@ public class UserServiceImpl implements UserService {
         user.setInactiveAt(java.time.Instant.now());
         userRepository.save(user);
         publishUserEvent("ACCOUNT_DEACTIVATED", userId);
-        // Redis and token cleanup moved to after commit
         localEventPublisher.publishEvent(new UserAccountDeletedEventLocal(userId));
     }
 
@@ -481,7 +476,6 @@ public class UserServiceImpl implements UserService {
             mobile = genericSearch;
         }
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        // Removed cross-service call and huge IN query
         return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
                 .map(UserResponseMapper::toResponse);
     }

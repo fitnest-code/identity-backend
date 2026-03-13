@@ -31,4 +31,3 @@ public class UserSubscriptionGrpcClient {
         return response.getUserIdsList().stream().map(Long::valueOf).collect(Collectors.toList());
     }
 }
-
