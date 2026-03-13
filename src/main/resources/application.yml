@@ -373,6 +373,9 @@ grpc:
         trust-cert-collection: ${GRPC_TRUST_CERT:}
         client-cert-chain: ${GRPC_CLIENT_CERT:}
         client-private-key: ${GRPC_CLIENT_KEY:}
+    order-service:
+      address: 'static://${ORDER_SERVICE_GRPC_HOST:localhost}:${ORDER_SERVICE_GRPC_PORT:9090}'
+      negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
   notifications:
     deadline-ms: 10000
     keep-alive-time: 30s
@@ -386,8 +389,3 @@ eureka:
     enabled: true
     locations: classpath:db/migration
 
-order:
-  service:
-    grpc:
-      host: ${ORDER_SERVICE_GRPC_HOST}
-      port: ${ORDER_SERVICE_GRPC_PORT}

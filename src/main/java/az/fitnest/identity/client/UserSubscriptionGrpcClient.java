@@ -3,9 +3,7 @@ package az.fitnest.identity.client;
 import az.fitnest.order.grpc.UserSubscriptionServiceGrpc;
 import az.fitnest.order.grpc.GetUserIdsByPackageIdRequest;
 import az.fitnest.order.grpc.GetUserIdsByPackageIdResponse;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import org.springframework.beans.factory.annotation.Value;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -13,15 +11,9 @@ import java.util.stream.Collectors;
 
 @Component
 public class UserSubscriptionGrpcClient {
-    private final UserSubscriptionServiceGrpc.UserSubscriptionServiceBlockingStub stub;
 
-    public UserSubscriptionGrpcClient(@Value("${order.service.grpc.host}") String host,
-                                      @Value("${order.service.grpc.port}") int port) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext()
-                .build();
-        stub = UserSubscriptionServiceGrpc.newBlockingStub(channel);
-    }
+    @GrpcClient("order-service")
+    private UserSubscriptionServiceGrpc.UserSubscriptionServiceBlockingStub stub;
 
     public List<Long> getUserIdsByPackageId(long packageId) {
         GetUserIdsByPackageIdRequest request = GetUserIdsByPackageIdRequest.newBuilder()
