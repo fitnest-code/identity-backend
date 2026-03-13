@@ -32,20 +32,20 @@ public class UserAdminController {
     private final RateLimitAdminService rateLimitAdminService;
 
     @Operation(
-        summary = "Get all users",
-        description = "Returns a paginated list of all users in the system. Supports filtering by user ID, name, surname, email, mobile, package ID, and subscription duration (in months).",
+        summary = "Bütün istifadəçiləri əldə edin",
+        description = "Sistemdəki bütün istifadəçilərin səhifələnmiş siyahısını qaytarır. İstifadəçi ID-si, ad, soyad, email, mobil, paket ID-si və abunə müddəti (aylarla) üzrə filtrləmə dəstəklənir.",
         parameters = {
-            @Parameter(name = "page", description = "Page number (0-based)", example = "0"),
-            @Parameter(name = "size", description = "Page size", example = "10"),
-            @Parameter(name = "query", description = "Filter string (e.g. 'name=John;surname=Doe')", example = "name=John;surname=Doe"),
-            @Parameter(name = "packageID", description = "Package ID to filter users", example = "123"),
-            @Parameter(name = "durationMonths", description = "Filter users by subscription duration in months", example = "12")
+            @Parameter(name = "page", description = "Səhifə nömrəsi (0-dan başlayır)", example = "0"),
+            @Parameter(name = "size", description = "Səhifə ölçüsü", example = "10"),
+            @Parameter(name = "query", description = "Filtr sətiri. Adi mətn (məsələn, 'kamal') və ya açar-dəyər cütləri (məsələn, 'name=Kamal;surname=Aliyev;email=kamal@example.com;mobile=0501234567') dəstəklənir.", example = "kamal və ya name=Kamal;surname=Aliyev;email=kamal@example.com;mobile=0501234567"),
+            @Parameter(name = "packageID", description = "İstifadəçiləri paket ID-sinə görə filtr edin", example = "123"),
+            @Parameter(name = "durationMonths", description = "Abunə müddətinə görə filtr edin (aylarla)", example = "12")
         }
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = UserResponse.class))),
-        @ApiResponse(responseCode = "401", description = "Unauthorized. Authentication required.", content = @Content),
-        @ApiResponse(responseCode = "403", description = "Forbidden. Insufficient permissions.", content = @Content)
+        @ApiResponse(responseCode = "200", description = "İstifadəçilər uğurla əldə edildi", content = @Content(schema = @Schema(implementation = UserResponse.class))),
+        @ApiResponse(responseCode = "401", description = "İcazə verilmir. Giriş tələb olunur.", content = @Content),
+        @ApiResponse(responseCode = "403", description = "Qadağandır. Yetərli səlahiyyət yoxdur.", content = @Content)
     })
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
