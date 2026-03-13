@@ -513,7 +513,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<az.fitnest.identity.dto.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths) {
+    public Page<az.fitnest.identity.dto.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type) {
         size = Math.min(size, 100);
         Long id = null;
         String name = null;
@@ -581,6 +581,16 @@ public class UserServiceImpl implements UserService {
                 log.warn("Duration months filtering not implemented in gRPC client.");
             } catch (Exception e) {
                 log.error("Failed to fetch user IDs by duration months {} via gRPC. Skipping duration filter.", durationMonths, e);
+            }
+        }
+        if (type != null && !type.isBlank()) {
+            try {
+                List<Long> typeUserIds = userSubscriptionGrpcClient.getUserIdsByType(type);
+                filteredUsers = filteredUsers.stream()
+                    .filter(user -> typeUserIds.contains(user.getId()))
+                    .toList();
+            } catch (Exception e) {
+                log.error("Failed to fetch user IDs by type {} via gRPC. Skipping type filter.", type, e);
             }
         }
         List<az.fitnest.identity.dto.AdminUserResponse> adminResponses = filteredUsers.stream()

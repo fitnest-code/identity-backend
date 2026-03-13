@@ -39,7 +39,8 @@ public class UserAdminController {
             @Parameter(name = "size", description = "Səhifə ölçüsü", example = "10"),
             @Parameter(name = "query", description = "Filtr sətiri. Adi mətn (məsələn, 'kamal') və ya açar-dəyər cütləri (məsələn, 'name=Kamal;surname=Aliyev;email=kamal@example.com;mobile=0501234567') dəstəklənir.", example = "kamal və ya name=Kamal;surname=Aliyev;email=kamal@example.com;mobile=0501234567"),
             @Parameter(name = "packageID", description = "İstifadəçiləri paket ID-sinə görə filtr edin", example = "5"),
-            @Parameter(name = "durationMonths", description = "Abunə müddətinə görə filtr edin (aylarla)", example = "5")
+            @Parameter(name = "durationMonths", description = "Abunə müddətinə görə filtr edin (aylarla)", example = "5"),
+            @Parameter(name = "type", description = "Abunə növünə görə filtr edin (all, active, expired, upgraded, last_7_days)", example = "active")
         }
     )
     @ApiResponses(value = {
@@ -54,8 +55,9 @@ public class UserAdminController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String query,
             @RequestParam(required = false) Long packageID,
-            @RequestParam(required = false) Integer durationMonths) {
-        return ResponseEntity.ok(userService.getAdminUsers(page, size, query, packageID, durationMonths));
+            @RequestParam(required = false) Integer durationMonths,
+            @RequestParam(required = false) String type) {
+        return ResponseEntity.ok(userService.getAdminUsers(page, size, query, packageID, durationMonths, type));
     }
 
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")
