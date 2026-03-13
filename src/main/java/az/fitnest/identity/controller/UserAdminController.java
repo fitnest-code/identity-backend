@@ -72,6 +72,10 @@ public class UserAdminController {
                 }
             }
         }
+        if (name != null && !(name instanceof String)) name = name.toString();
+        if (surname != null && !(surname instanceof String)) surname = surname.toString();
+        if (email != null && !(email instanceof String)) email = email.toString();
+        if (mobile != null && !(mobile instanceof String)) mobile = mobile.toString();
         return ResponseEntity.ok(userService.searchUsers(page, size, id, name, surname, email, mobile));
     }
 
