@@ -482,10 +482,14 @@ public class UserServiceImpl implements UserService {
         Page<User> userPage = userRepository.searchUsersAdvanced(id, name, surname, email, mobile, pageable);
         List<User> filteredUsers = userPage.getContent();
         if (packageID != null) {
-            List<Long> packageUserIds = userSubscriptionGrpcClient.getUserIdsByPackageId(packageID);
-            filteredUsers = filteredUsers.stream()
-                .filter(user -> packageUserIds.contains(user.getId()))
-                .toList();
+            try {
+                List<Long> packageUserIds = userSubscriptionGrpcClient.getUserIdsByPackageId(packageID);
+                filteredUsers = filteredUsers.stream()
+                    .filter(user -> packageUserIds.contains(user.getId()))
+                    .toList();
+            } catch (Exception e) {
+                log.error("Failed to fetch user IDs by package ID {} via gRPC. Skipping package filter.", packageID, e);
+            }
         }
         if (durationMonths != null) {
             try {
@@ -495,6 +499,8 @@ public class UserServiceImpl implements UserService {
                     .toList();
             } catch (UnsupportedOperationException e) {
                 log.warn("Duration months filtering not implemented in gRPC client.");
+            } catch (Exception e) {
+                log.error("Failed to fetch user IDs by duration months {} via gRPC. Skipping duration filter.", durationMonths, e);
             }
         }
         int start = Math.min(page * size, filteredUsers.size());
