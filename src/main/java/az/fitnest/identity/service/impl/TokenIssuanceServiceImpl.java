@@ -7,6 +7,7 @@ import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.model.entity.AuthToken;
 import az.fitnest.identity.model.entity.User;
+import az.fitnest.identity.mapper.LoginResponseMapper;
 import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
@@ -54,7 +55,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         boolean consentRequired = legalService.isConsentRequired(user.getId());
         UserResponse userResponse = UserResponseMapper.toResponse(user, consentRequired);
 
-        return new LoginResponse(accessToken, refreshToken, userResponse);
+        return LoginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
     }
 
     private void saveAuthToken(Long userId, String accessToken, String refreshToken, String jti, String deviceType,

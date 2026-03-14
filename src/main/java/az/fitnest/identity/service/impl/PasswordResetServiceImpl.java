@@ -37,11 +37,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final AuthTokenRepository authTokenRepository;
     private final RedisTokenService redisTokenService;
     private final org.springframework.context.MessageSource messageSource;
+    private final az.fitnest.identity.mapper.OtpSendResponseMapper otpSendResponseMapper;
+    private final az.fitnest.identity.mapper.ResetPasswordResponseMapper resetPasswordResponseMapper;
+
     @Override
     @Transactional
     public OtpSendResponse forgotPassword(ForgotPasswordRequest request) {
         if (request == null || !StringUtils.hasText(request.mobile())) {
-            return new OtpSendResponse(null, null, null, getMessage("success.otp.sent_if_exists"));
+            return otpSendResponseMapper.toResponse(null, null, null, getMessage("success.otp.sent_if_exists"));
         }
         String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
@@ -79,7 +82,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         userRepository.save(user);
         resetPasswordTokenService.consume(request.resetToken());
         revokeAllUserTokens(user.getId());
-        return new ResetPasswordResponse(getMessage("info.service.request_processed"));
+        return resetPasswordResponseMapper.toResponse(getMessage("info.service.request_processed"));
     }
 
     private String getMessage(String code, Object... args) {

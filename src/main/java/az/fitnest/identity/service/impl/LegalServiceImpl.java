@@ -20,6 +20,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import az.fitnest.identity.mapper.AdminConsentResponseMapper;
+import az.fitnest.identity.mapper.LegalDocumentResponseMapper;
+import az.fitnest.identity.mapper.UserConsentStatusResponseMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -45,12 +48,7 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
-        return new LegalDocumentResponse(
-                doc.getVersion(),
-                type == LegalDocumentType.PRIVACY_POLICY ? "Məxfilik Siyasəti" : "İstifadə Qaydaları",
-                doc.getContent(),
-                doc.getPublishedAt()
-        );
+        return LegalDocumentResponseMapper.toResponse(doc, type);
     }
 
     @Transactional
@@ -127,14 +125,7 @@ public class LegalServiceImpl implements LegalService {
             boolean isPrivacyUpToDate = latestPrivacyVersion != null && latestPrivacyVersion.equals(consent.getPrivacyPolicyVersion());
             boolean isTermsUpToDate = latestTermsVersion != null && latestTermsVersion.equals(consent.getTermsOfUseVersion());
 
-            return new UserConsentStatusResponse(
-                    new UserConsentStatusResponse.ConsentStatus(true, isPrivacyUpToDate),
-                    new UserConsentStatusResponse.ConsentStatus(true, isTermsUpToDate),
-                    true,
-                    isPrivacyUpToDate && isTermsUpToDate,
-                    consent.getPrivacyPolicyVersion(),
-                    consent.getAcceptedAt()
-            );
+            return UserConsentStatusResponseMapper.toResponse(consent, isPrivacyUpToDate, isTermsUpToDate);
         }
 
         return new UserConsentStatusResponse(
@@ -257,16 +248,7 @@ public class LegalServiceImpl implements LegalService {
             consents = userConsentRepository.findAllByOrderByAcceptedAtDesc(pageable);
         }
 
-        return consents.map(c -> new AdminConsentResponse(
-                c.getId(),
-                c.getUserId(),
-                c.getPrivacyPolicyVersion(),
-                c.getTermsOfUseVersion(),
-                c.getAcceptedAt(),
-                c.getIpAddress(),
-                c.getUserAgent(),
-                c.getPlatform()
-        ));
+        return consents.map(c -> AdminConsentResponseMapper.toResponse(c));
     }
 
     private String normalizeLanguage(String lang) {

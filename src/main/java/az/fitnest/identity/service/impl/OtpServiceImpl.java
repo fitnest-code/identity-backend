@@ -33,6 +33,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import az.fitnest.identity.mapper.OtpSendResponseMapper;
+import az.fitnest.identity.mapper.OtpVerifyResponseMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -128,7 +130,7 @@ public class OtpServiceImpl implements OtpService {
             smsService.sendSms(mobileNumber, "Your Fitnest verification code: " + otp);
         }
 
-        return createSuccessResponse(sessionId);
+        return OtpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
     }
 
     private boolean doesPurposeMatchExistence(OtpPurpose purpose, boolean exists) {
@@ -193,10 +195,6 @@ public class OtpServiceImpl implements OtpService {
         }
 
         return sessionId;
-    }
-
-    private OtpSendResponse createSuccessResponse(String sessionId) {
-        return new OtpSendResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
     }
 
     @Override
@@ -276,7 +274,7 @@ public class OtpServiceImpl implements OtpService {
 
         if (verificationResult.purpose() == OtpPurpose.REGISTRATION) {
             String registrationToken = registrationTokenService.issueForIdentifier(identifier);
-            return new OtpVerifyResponse(
+            return OtpVerifyResponseMapper.toResponse(
                     true,
                     registrationToken,
                     getMessage("success.otp.verified"),
@@ -287,7 +285,7 @@ public class OtpServiceImpl implements OtpService {
             );
         } else if (verificationResult.purpose() == OtpPurpose.PASSWORD_RESET) {
             String resetToken = resetPasswordTokenService.issueForIdentifier(identifier);
-            return new OtpVerifyResponse(
+            return OtpVerifyResponseMapper.toResponse(
                     true,
                     null,
                     getMessage("success.otp.verified"),
@@ -309,7 +307,7 @@ public class OtpServiceImpl implements OtpService {
             String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
             az.fitnest.identity.dto.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
 
-            return new OtpVerifyResponse(
+            return OtpVerifyResponseMapper.toResponse(
                     true,
                     null,
                     getMessage("success.otp.verified"),
@@ -319,7 +317,7 @@ public class OtpServiceImpl implements OtpService {
                     loginResponse.user()
             );
         } else if (verificationResult.purpose() == OtpPurpose.EMAIL_CHANGE || verificationResult.purpose() == OtpPurpose.MOBILE_CHANGE) {
-            return new OtpVerifyResponse(
+            return OtpVerifyResponseMapper.toResponse(
                     true,
                     null,
                     getMessage("success.otp.verified"),
