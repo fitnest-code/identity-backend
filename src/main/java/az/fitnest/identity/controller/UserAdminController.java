@@ -1,9 +1,11 @@
 package az.fitnest.identity.controller;
 
 import az.fitnest.identity.dto.response.AdminUserResponse;
+import az.fitnest.identity.dto.response.UserProfileDetailsResponse;
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.service.impl.RateLimitAdminService;
+import az.fitnest.identity.service.UserProfileGrpcClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,6 +32,7 @@ public class UserAdminController {
 
     private final UserService userService;
     private final RateLimitAdminService rateLimitAdminService;
+    private final UserProfileGrpcClient userProfileGrpcClient;
 
     @Operation(
         summary = "Bütün istifadəçiləri əldə edin",
@@ -95,6 +98,26 @@ public class UserAdminController {
     public ResponseEntity<Void> deactivateAllUsers() {
         userService.deactivateAllUsers();
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "İstifadəçi profil detallarını əldə edin", description = "İstifadəçi ID-si ilə profil detallarını qaytarır.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/{userId}/profile")
+    public ResponseEntity<UserProfileDetailsResponse> getUserProfileDetails(@PathVariable Long userId) {
+        var grpcResponse = userProfileGrpcClient.getUserProfileDetails(userId);
+        UserProfileDetailsResponse response = UserProfileDetailsResponse.builder()
+            .id(grpcResponse.getUserId())
+            .registrationDate(grpcResponse.getRegistrationDate())
+            .platform(grpcResponse.getPlatform())
+            .phoneNumber(grpcResponse.getPhoneNumber())
+            .email(grpcResponse.getEmail())
+            .birthDate(java.time.LocalDate.parse(grpcResponse.getBirthDate()))
+            .goal(grpcResponse.getGoal())
+            .height(grpcResponse.getHeight())
+            .weight(grpcResponse.getWeight())
+            .bmiIndex(grpcResponse.getBmiIndex())
+            .build();
+        return ResponseEntity.ok(response);
     }
 
 }
