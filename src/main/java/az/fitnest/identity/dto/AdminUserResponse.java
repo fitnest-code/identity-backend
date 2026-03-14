@@ -1,7 +1,9 @@
 package az.fitnest.identity.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@JsonInclude(JsonInclude.Include.ALWAYS)
 @Schema(description = "Admin üçün istifadəçi məlumatları")
 public record AdminUserResponse(
     @Schema(description = "İstifadəçi ID-si", example = "123")
