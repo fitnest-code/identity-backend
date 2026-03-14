@@ -57,4 +57,3 @@ public record ErrorWrapperResponse(
             String issue
     ) {}
 }
-

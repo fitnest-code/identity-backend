@@ -17,4 +17,3 @@ public class FieldIssueResponse {
         return issue;
     }
 }
-

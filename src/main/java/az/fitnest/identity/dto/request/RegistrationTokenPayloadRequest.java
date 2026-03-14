@@ -19,4 +19,3 @@ public class RegistrationTokenPayloadRequest {
         return purpose;
     }
 }
-

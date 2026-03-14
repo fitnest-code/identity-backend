@@ -47,4 +47,3 @@ public class ApiErrorResponse {
         return details;
     }
 }
-
