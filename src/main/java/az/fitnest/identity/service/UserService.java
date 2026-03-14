@@ -2,7 +2,7 @@ package az.fitnest.identity.service;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.dto.UpdateUserProfileCommand;
+import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
 import az.fitnest.identity.model.entity.AuthToken;
 import az.fitnest.identity.model.entity.Role;
 import az.fitnest.identity.model.entity.User;
@@ -34,7 +34,7 @@ public interface UserService {
 
     User createNewUserWithFullName(String fullName, String passwordHash, String mobile);
 
-    User updateUserProfile(Long userId, UpdateUserProfileCommand command);
+    User updateUserProfile(Long userId, UpdateUserProfileCommandRequest command);
 
     User updateProfileImageUrl(Long userId, String profileImageUrl);
 
@@ -70,5 +70,5 @@ public interface UserService {
 
     Page<az.fitnest.identity.dto.UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths);
 
-    Page<az.fitnest.identity.dto.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type);
+    Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type);
 }

@@ -1,6 +1,6 @@
 package az.fitnest.identity.controller;
 
-import az.fitnest.identity.dto.UserResponse;
+import az.fitnest.identity.dto.response.AdminUserResponse;
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.service.impl.RateLimitAdminService;
@@ -44,13 +44,13 @@ public class UserAdminController {
         }
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "İstifadəçilər uğurla əldə edildi", content = @Content(schema = @Schema(implementation = az.fitnest.identity.dto.AdminUserResponse.class))),
+        @ApiResponse(responseCode = "200", description = "İstifadəçilər uğurla əldə edildi", content = @Content(schema = @Schema(implementation = az.fitnest.identity.dto.response.AdminUserResponse.class))),
         @ApiResponse(responseCode = "401", description = "İcazə verilmir. Giriş tələb olunur.", content = @Content),
         @ApiResponse(responseCode = "403", description = "Qadağandır. Yetərli səlahiyyət yoxdur.", content = @Content)
     })
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<Page<az.fitnest.identity.dto.AdminUserResponse>> getAllUsers(
+    public ResponseEntity<Page<az.fitnest.identity.dto.response.AdminUserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String query,

@@ -33,6 +33,9 @@ import org.springframework.web.bind.annotation.*;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
+import az.fitnest.identity.dto.request.AppleSocialRequest;
+import az.fitnest.identity.dto.request.GoogleSocialRequest;
+
 @Tag(name = "Autentifikasiya", description = "İstifadəçi autentifikasiyası, giriş, çıxış, token yeniləmə və şifrə idarəetməsi üçün endpointlər.")
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -86,7 +89,7 @@ public class AuthController {
 
     @PostMapping("/social/apple")
     @Operation(summary = "Apple ilə sosial giriş")
-    public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody az.fitnest.identity.dto.AppleSocialRequest request) {
+    public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginApple(request);
         HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);
@@ -94,7 +97,7 @@ public class AuthController {
 
     @PostMapping("/social/google")
     @Operation(summary = "Google ilə sosial giriş")
-    public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody az.fitnest.identity.dto.GoogleSocialRequest request) {
+    public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
         HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);

@@ -1,12 +1,12 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 
-public record GoogleSocialRequest(
+public record AppleSocialRequest(
     @NotBlank
-    @JsonAlias("id_token")
-    String idToken,
+    @JsonAlias("identity_token")
+    String identityToken,
 
     @JsonAlias("full_name")
     String fullName,

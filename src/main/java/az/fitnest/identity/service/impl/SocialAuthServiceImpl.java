@@ -6,8 +6,8 @@ import az.fitnest.identity.service.GoogleTokenVerifier;
 import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.TokenIssuanceService;
 
-import az.fitnest.identity.dto.AppleSocialRequest;
-import az.fitnest.identity.dto.GoogleSocialRequest;
+import az.fitnest.identity.dto.request.AppleSocialRequest;
+import az.fitnest.identity.dto.request.GoogleSocialRequest;
 import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.repository.SocialAuthRepository;
 import az.fitnest.identity.model.enums.SocialProvider;

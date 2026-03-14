@@ -1,15 +1,13 @@
-package az.fitnest.identity.dto;
-
-import az.fitnest.identity.model.enums.UserStatus;
+package az.fitnest.identity.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-public record ErrorWrapper(
-        @JsonProperty("error") ErrorDetail error,
+public record ErrorWrapperResponse(
+        @JsonProperty("error") ErrorDetailResponse error,
         String code,
         String message,
         int status,
@@ -18,21 +16,21 @@ public record ErrorWrapper(
         String field,
         String issue
 ) {
-    public static ErrorWrapper fromErrorResponse(ErrorResponse errorResponse, int status) {
+    public static ErrorWrapperResponse fromErrorResponse(ErrorResponse errorResponse, int status) {
         Map<String, Object> details = null;
         if (errorResponse.details() != null && errorResponse.details().containsKey("validationErrors")) {
             @SuppressWarnings("unchecked")
             Map<String, String> validationErrors = (Map<String, String>) errorResponse.details().get("validationErrors");
             if (validationErrors != null) {
-                List<FieldIssue> issues = validationErrors.entrySet().stream()
-                        .map(entry -> new FieldIssue(entry.getKey(), entry.getValue()))
+                List<FieldIssueResponse> issues = validationErrors.entrySet().stream()
+                        .map(entry -> new FieldIssueResponse(entry.getKey(), entry.getValue()))
                         .toList();
                 details = Map.of("validationErrors", issues);
             }
         }
 
-        return new ErrorWrapper(
-                new ErrorDetail(
+        return new ErrorWrapperResponse(
+                new ErrorDetailResponse(
                         errorResponse.code(),
                         errorResponse.message(),
                         status,
@@ -44,18 +42,19 @@ public record ErrorWrapper(
         );
     }
 
-    public record ErrorDetail(
+    public record ErrorDetailResponse(
             String code,
             String message,
             int status,
             String path,
-            @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy")
+            @JsonFormat(pattern = "dd/MM/yyyy")
             LocalDateTime timestamp,
             Map<String, Object> details
     ) {}
 
-    public record FieldIssue(
+    public record FieldIssueResponse(
             String field,
             String issue
     ) {}
 }
+

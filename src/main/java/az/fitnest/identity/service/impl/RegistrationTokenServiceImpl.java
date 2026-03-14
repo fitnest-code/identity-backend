@@ -3,7 +3,7 @@ package az.fitnest.identity.service.impl;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
-import az.fitnest.identity.dto.RegistrationTokenPayload;
+import az.fitnest.identity.dto.request.RegistrationTokenPayloadRequest;
 import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.service.RegistrationTokenService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -34,7 +34,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
         String token = UUID.randomUUID().toString();
         String key = registrationKey(token);
 
-        RegistrationTokenPayload payload = new RegistrationTokenPayload(identifier, OtpPurpose.REGISTRATION);
+        RegistrationTokenPayloadRequest payload = new RegistrationTokenPayloadRequest(identifier, OtpPurpose.REGISTRATION);
         try {
             String payloadJson = objectMapper.writeValueAsString(payload);
             redisTemplate.opsForValue().set(key, payloadJson, ttlHours, TimeUnit.HOURS);
@@ -46,7 +46,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
     }
 
     @Override
-    public RegistrationTokenPayload requirePayload(String token) {
+    public RegistrationTokenPayloadRequest requirePayload(String token) {
         String key = registrationKey(token);
         String payloadJson = redisTemplate.opsForValue().get(key);
 
@@ -55,8 +55,8 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
         }
 
         try {
-            RegistrationTokenPayload payload = objectMapper.readValue(payloadJson, RegistrationTokenPayload.class);
-            if (payload.purpose() != OtpPurpose.REGISTRATION) {
+            RegistrationTokenPayloadRequest payload = objectMapper.readValue(payloadJson, RegistrationTokenPayloadRequest.class);
+            if (payload.getPurpose() != OtpPurpose.REGISTRATION) {
                 throw new UnauthorizedException("Yanlış qeydiyyat tokeni təyinatı");
             }
             return payload;
@@ -67,7 +67,7 @@ public class RegistrationTokenServiceImpl implements RegistrationTokenService {
 
     @Override
     public String requireIdentifier(String token) {
-        return requirePayload(token).identifier();
+        return requirePayload(token).getIdentifier();
     }
 
     @Override

@@ -4,7 +4,7 @@ import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.dto.UpdateSessionStatusRequest;
 import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.dto.UpdateUserProfileCommand;
+import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
 import az.fitnest.identity.dto.UpdateProfileImageRequest;
 import az.fitnest.identity.dto.UpdateSetupRequiredRequest;
 import az.fitnest.identity.dto.UpdateUserProfileRequest;
@@ -40,7 +40,7 @@ public class InternalUserController {
     public ResponseEntity<UserResponse> updateUserProfile(
             @PathVariable Long userId,
             @RequestBody @Valid UpdateUserProfileRequest request) {
-        User user = userService.updateUserProfile(userId, new UpdateUserProfileCommand(
+        User user = userService.updateUserProfile(userId, new UpdateUserProfileCommandRequest(
                 request.firstName(),
                 request.lastName(),
                 request.email(),

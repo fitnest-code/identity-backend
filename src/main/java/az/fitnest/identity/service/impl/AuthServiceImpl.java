@@ -2,7 +2,7 @@ package az.fitnest.identity.service.impl;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.dto.PasswordVerificationResult;
+import az.fitnest.identity.dto.response.PasswordVerificationResultResponse;
 import az.fitnest.identity.service.*;
 import az.fitnest.identity.util.TokenHasher;
 
@@ -102,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null) {
             if (user.getInactiveAt().plusSeconds(30 * 24 * 60 * 60).isAfter(now)) {
-                PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
+                PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
                 if (user.getPasswordHash() == null || !verification.matches()) {
                     userRepository.incrementFailedLoginAttempts(user.getId());
                     throw new InvalidCredentialsException("error.auth.invalid_credentials");
@@ -113,7 +113,7 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
-        PasswordVerificationResult verification = passwordService.verifyPassword(password, user.getPasswordHash());
+        PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
         if (user.getPasswordHash() == null || !verification.matches()) {
             incrementFailedLoginAttempts(user.getId(), user.getFailedLoginAttempts(), now);
             throw new InvalidCredentialsException("error.auth.invalid_credentials");

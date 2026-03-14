@@ -1,7 +1,7 @@
 package az.fitnest.identity.exception;
 
-import az.fitnest.identity.dto.ApiError;
 import az.fitnest.identity.dto.ApiResponse;
+import az.fitnest.identity.dto.response.ApiErrorResponse;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAccountDeactivatedException(AccountDeactivatedException exception, WebRequest request) {
         logger.error("Account deactivated: {}", exception.getMessage(), exception);
         Map<String, Object> details = new HashMap<>();
-        ApiError apiError = ApiError.builder()
+        ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code("error.account.deactivated")
                 .message(getMessage("error.auth.account_inactive"))
                 .status(HttpStatus.FORBIDDEN.value())
@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
         String errorCode = exception.getErrorCode();
         String safeCode = errorCode.startsWith("error.") ? errorCode : "error.server.internal";
         String message = getMessage(safeCode);
-        ApiError apiError = ApiError.builder()
+        ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code(safeCode)
                 .message(message)
                 .status(exception.getHttpStatus().value())
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
         for (FieldError error : result.getFieldErrors()) {
             validationErrors.put(error.getField(), getMessage("error.validation.invalid_field"));
         }
-        ApiError apiError = ApiError.builder()
+        ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code("error.validation")
                 .message(getMessage("error.validation"))
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException exception, WebRequest request) {
         logger.error("Invalid JSON: {}", exception.getMessage(), exception);
-        ApiError apiError = ApiError.builder()
+        ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code("error.request.invalid_json")
                 .message(getMessage("error.request.invalid_json"))
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -95,7 +95,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex, WebRequest request) {
         logger.error("Runtime exception: {}", ex.getMessage(), ex);
-        ApiError apiError = ApiError.builder()
+        ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code("error.server.unexpected")
                 .message(getMessage("error.server.unexpected"))
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -108,7 +108,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex, WebRequest request) {
         logger.error("Unhandled exception: {}", ex.getMessage(), ex);
-        ApiError apiError = ApiError.builder()
+        ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code("error.server.internal")
                 .message(getMessage("error.server.internal"))
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -130,7 +130,7 @@ public class GlobalExceptionHandler {
         } else {
             status = HttpStatus.BAD_REQUEST;
         }
-        ApiError apiError = ApiError.builder()
+        ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code(code)
                 .message(getMessage(code))
                 .status(status.value())

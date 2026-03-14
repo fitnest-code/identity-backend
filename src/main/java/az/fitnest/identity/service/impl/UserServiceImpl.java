@@ -4,7 +4,7 @@ import az.fitnest.identity.client.UserSubscriptionGrpcClient;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.util.MobileNumberUtils;
-import az.fitnest.identity.dto.UpdateUserProfileCommand;
+import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.model.entity.AuthToken;
 import az.fitnest.identity.model.entity.Role;
@@ -134,10 +134,10 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
     @Override
-    public User updateUserProfile(Long userId, UpdateUserProfileCommand command) {
+    public User updateUserProfile(Long userId, UpdateUserProfileCommandRequest command) {
         User user = getUserOrThrow(userId);
-        String firstName = command.firstName();
-        String lastName = command.lastName();
+        String firstName = command.getFirstName();
+        String lastName = command.getLastName();
         boolean namePartsProvided = firstName != null || lastName != null;
         if (namePartsProvided) {
             NameParts parts = resolveNameParts(firstName, lastName, null);
@@ -513,7 +513,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<az.fitnest.identity.dto.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type) {
+    public Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type) {
         size = Math.min(size, 100);
         Long id = null;
         String name = null;
@@ -593,7 +593,7 @@ public class UserServiceImpl implements UserService {
                 log.error("Failed to fetch user IDs by type {} via gRPC. Skipping type filter.", type, e);
             }
         }
-        List<az.fitnest.identity.dto.AdminUserResponse> adminResponses = filteredUsers.stream()
+        List<az.fitnest.identity.dto.response.AdminUserResponse> adminResponses = filteredUsers.stream()
             .map(user -> {
                 az.fitnest.order.grpc.ActiveSubscriptionResponse sub = null;
                 try {
@@ -602,7 +602,7 @@ public class UserServiceImpl implements UserService {
                     log.warn("Failed to fetch subscription info for user {}", user.getId(), e);
                 }
                 String subscriptionStatus = (sub != null && sub.getSubscriptionStatus() != null && !sub.getSubscriptionStatus().isEmpty()) ? sub.getSubscriptionStatus() : null;
-                return new az.fitnest.identity.dto.AdminUserResponse(
+                return new az.fitnest.identity.dto.response.AdminUserResponse(
                     user.getId(),
                     user.getFirstName(),
                     user.getLastName(),

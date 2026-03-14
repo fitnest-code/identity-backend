@@ -3,7 +3,7 @@ package az.fitnest.identity.service.impl;
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.repository.UserRepository;
 
-import az.fitnest.identity.dto.PasswordVerificationResult;
+import az.fitnest.identity.dto.response.PasswordVerificationResultResponse;
 import az.fitnest.identity.service.PasswordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -44,19 +44,19 @@ public class PasswordServiceImpl implements PasswordService {
     }
 
     @Override
-    public PasswordVerificationResult verifyPassword(String rawPassword, String passwordHash) {
+    public PasswordVerificationResultResponse verifyPassword(String rawPassword, String passwordHash) {
         if (!StringUtils.hasText(rawPassword) || !StringUtils.hasText(passwordHash)) {
             log.warn("Password or hash is empty");
-            return new PasswordVerificationResult(false, false);
+            return new PasswordVerificationResultResponse(false, false);
         }
         String trimmed = rawPassword.trim();
         try {
             boolean matches = passwordEncoder.matches(trimmed, passwordHash);
             boolean upgradeRecommended = matches && passwordEncoder.upgradeEncoding(passwordHash);
-            return new PasswordVerificationResult(matches, upgradeRecommended);
+            return new PasswordVerificationResultResponse(matches, upgradeRecommended);
         } catch (IllegalArgumentException e) {
             log.warn("Password hash format invalid", e);
-            return new PasswordVerificationResult(false, false);
+            return new PasswordVerificationResultResponse(false, false);
         }
     }
 

@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+import az.fitnest.identity.dto.response.ApiErrorResponse;
 
 @RestController
 @RequiredArgsConstructor
@@ -111,7 +112,7 @@ public class MeController {
         } catch (Exception e) {
             String errorMsg = "Unexpected error during account deletion: " + e.getMessage();
             return ResponseEntity.status(500).body(ApiResponse.error(
-                    az.fitnest.identity.dto.ApiError.builder()
+                    ApiErrorResponse.builder()
                         .code("INTERNAL_SERVER_ERROR")
                         .message(errorMsg)
                         .status(500)

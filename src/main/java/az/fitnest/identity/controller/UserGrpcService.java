@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.dto.UpdateUserProfileCommand;
+import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.user.grpc.UserServiceGrpc;
 import az.fitnest.user.grpc.GetUserByIdRequest;
@@ -52,7 +52,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void updateUserProfile(UpdateUserProfileRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
-            az.fitnest.identity.dto.UpdateUserProfileCommand command = new az.fitnest.identity.dto.UpdateUserProfileCommand(
+            az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest command = new az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest(
                     request.getFirstName(),
                     request.getLastName(),
                     request.getEmail(),

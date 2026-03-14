@@ -1,5 +1,6 @@
 package az.fitnest.identity.dto;
 
+import az.fitnest.identity.dto.response.ApiErrorResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Map;
@@ -7,13 +8,13 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(
     T data,
-    ApiError error
+    ApiErrorResponse error
 ) {
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(data, null);
     }
 
-    public static <T> ApiResponse<T> error(ApiError apiError) {
+    public static <T> ApiResponse<T> error(ApiErrorResponse apiError) {
         return new ApiResponse<>(null, apiError);
     }
 
