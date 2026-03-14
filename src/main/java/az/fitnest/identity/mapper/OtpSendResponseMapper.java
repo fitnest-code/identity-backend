@@ -1,10 +1,11 @@
 package az.fitnest.identity.mapper;
 
 import az.fitnest.identity.dto.OtpSendResponse;
+import org.springframework.stereotype.Component;
 
-public final class OtpSendResponseMapper {
-    private OtpSendResponseMapper() {}
-    public static OtpSendResponse toResponse(String sessionId, Integer ttl, Integer cooldown, String message) {
+@Component
+public class OtpSendResponseMapper {
+    public OtpSendResponse toResponse(String sessionId, Integer ttl, Integer cooldown, String message) {
         return new OtpSendResponse(sessionId, ttl, cooldown, message);
     }
 }

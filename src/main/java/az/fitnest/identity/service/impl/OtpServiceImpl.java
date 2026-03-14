@@ -53,6 +53,8 @@ public class OtpServiceImpl implements OtpService {
     private final EmailService emailService;
     private final Clock clock;
     private final org.springframework.context.MessageSource messageSource;
+    private final OtpSendResponseMapper otpSendResponseMapper;
+    private final OtpVerifyResponseMapper otpVerifyResponseMapper;
 
     @Value("${otp.ttl-seconds}")
     private int otpTtlSeconds;
@@ -130,7 +132,7 @@ public class OtpServiceImpl implements OtpService {
             smsService.sendSms(mobileNumber, "Your Fitnest verification code: " + otp);
         }
 
-        return OtpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
+        return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
     }
 
     private boolean doesPurposeMatchExistence(OtpPurpose purpose, boolean exists) {
@@ -274,7 +276,7 @@ public class OtpServiceImpl implements OtpService {
 
         if (verificationResult.purpose() == OtpPurpose.REGISTRATION) {
             String registrationToken = registrationTokenService.issueForIdentifier(identifier);
-            return OtpVerifyResponseMapper.toResponse(
+            return otpVerifyResponseMapper.toResponse(
                     true,
                     registrationToken,
                     getMessage("success.otp.verified"),
@@ -285,7 +287,7 @@ public class OtpServiceImpl implements OtpService {
             );
         } else if (verificationResult.purpose() == OtpPurpose.PASSWORD_RESET) {
             String resetToken = resetPasswordTokenService.issueForIdentifier(identifier);
-            return OtpVerifyResponseMapper.toResponse(
+            return otpVerifyResponseMapper.toResponse(
                     true,
                     null,
                     getMessage("success.otp.verified"),
@@ -307,7 +309,7 @@ public class OtpServiceImpl implements OtpService {
             String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
             az.fitnest.identity.dto.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
 
-            return OtpVerifyResponseMapper.toResponse(
+            return otpVerifyResponseMapper.toResponse(
                     true,
                     null,
                     getMessage("success.otp.verified"),
@@ -317,7 +319,7 @@ public class OtpServiceImpl implements OtpService {
                     loginResponse.user()
             );
         } else if (verificationResult.purpose() == OtpPurpose.EMAIL_CHANGE || verificationResult.purpose() == OtpPurpose.MOBILE_CHANGE) {
-            return OtpVerifyResponseMapper.toResponse(
+            return otpVerifyResponseMapper.toResponse(
                     true,
                     null,
                     getMessage("success.otp.verified"),
