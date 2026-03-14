@@ -59,6 +59,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordService passwordService;
     private final OtpService otpService;
     private final UserSubscriptionGrpcClient userSubscriptionGrpcClient;
+    private final UserResponseMapper userResponseMapper;
 
     private Role defaultUserRole;
 
@@ -419,7 +420,7 @@ public class UserServiceImpl implements UserService {
     public Page<UserResponse> getAllUsersMapped(int page, int size) {
         size = Math.min(size, 100);
         return userRepository.findAll(PageRequest.of(Math.max(0, page - 1), size))
-                .map(UserResponseMapper::toResponse);
+                .map(userResponseMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -428,7 +429,7 @@ public class UserServiceImpl implements UserService {
         size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
         return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
-                .map(UserResponseMapper::toResponse);
+                .map(userResponseMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -506,7 +507,7 @@ public class UserServiceImpl implements UserService {
         int start = Math.min(page * size, filteredUsers.size());
         int end = Math.min(start + size, filteredUsers.size());
         List<UserResponse> pagedResponses = filteredUsers.subList(start, end).stream()
-            .map(UserResponseMapper::toResponse)
+            .map(userResponseMapper::toResponse)
             .toList();
         return new org.springframework.data.domain.PageImpl<>(pagedResponses, pageable, filteredUsers.size());
     }

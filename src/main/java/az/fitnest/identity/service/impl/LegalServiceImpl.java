@@ -32,6 +32,10 @@ public class LegalServiceImpl implements LegalService {
 
     private final LegalDocumentRepository legalDocumentRepository;
 
+    private final LegalDocumentResponseMapper legalDocumentResponseMapper;
+    private final UserConsentStatusResponseMapper userConsentStatusResponseMapper;
+    private final AdminConsentResponseMapper adminConsentResponseMapper;
+
     @Override
     public LegalDocumentResponse getPrivacyPolicy(String lang, String format) {
         return getDocument(LegalDocumentType.PRIVACY_POLICY, lang);
@@ -48,7 +52,7 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
-        return LegalDocumentResponseMapper.toResponse(doc, type);
+        return legalDocumentResponseMapper.toResponse(doc, type);
     }
 
     @Transactional
@@ -125,7 +129,7 @@ public class LegalServiceImpl implements LegalService {
             boolean isPrivacyUpToDate = latestPrivacyVersion != null && latestPrivacyVersion.equals(consent.getPrivacyPolicyVersion());
             boolean isTermsUpToDate = latestTermsVersion != null && latestTermsVersion.equals(consent.getTermsOfUseVersion());
 
-            return UserConsentStatusResponseMapper.toResponse(consent, isPrivacyUpToDate, isTermsUpToDate);
+            return userConsentStatusResponseMapper.toResponse(consent, isPrivacyUpToDate, isTermsUpToDate);
         }
 
         return new UserConsentStatusResponse(
@@ -248,7 +252,7 @@ public class LegalServiceImpl implements LegalService {
             consents = userConsentRepository.findAllByOrderByAcceptedAtDesc(pageable);
         }
 
-        return consents.map(c -> AdminConsentResponseMapper.toResponse(c));
+        return consents.map(c -> adminConsentResponseMapper.toResponse(c));
     }
 
     private String normalizeLanguage(String lang) {

@@ -7,8 +7,6 @@ import az.fitnest.identity.dto.LoginResponse;
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.model.entity.AuthToken;
 import az.fitnest.identity.model.entity.User;
-import az.fitnest.identity.mapper.LoginResponseMapper;
-import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.LegalService;
@@ -22,6 +20,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import az.fitnest.identity.mapper.UserResponseMapper;
+import az.fitnest.identity.mapper.LoginResponseMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +32,8 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
     private final LegalService legalService;
     private final AuthTokenRepository authTokenRepository;
     private final TokenHasher tokenHasher;
+    private final UserResponseMapper userResponseMapper;
+    private final LoginResponseMapper loginResponseMapper;
 
     @Override
     public LoginResponse issueTokens(User user, String deviceType) {
@@ -53,9 +55,9 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
 
         boolean consentRequired = legalService.isConsentRequired(user.getId());
-        UserResponse userResponse = UserResponseMapper.toResponse(user, consentRequired);
+        UserResponse userResponse = userResponseMapper.toResponse(user, consentRequired);
 
-        return LoginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
+        return loginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
     }
 
     private void saveAuthToken(Long userId, String accessToken, String refreshToken, String jti, String deviceType,

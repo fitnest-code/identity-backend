@@ -2,20 +2,17 @@ package az.fitnest.identity.mapper;
 
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.dto.*;
-
 import az.fitnest.identity.dto.UserResponse;
 import az.fitnest.identity.model.entity.User;
+import org.springframework.stereotype.Component;
 
-public final class UserResponseMapper {
-
-    private UserResponseMapper() {
-    }
-
-    public static UserResponse toResponse(User user) {
+@Component
+public class UserResponseMapper {
+    public UserResponse toResponse(User user) {
         return toResponse(user, false);
     }
 
-    public static UserResponse toResponse(User user, boolean consentRequired) {
+    public UserResponse toResponse(User user, boolean consentRequired) {
         String profileImageUrl = user.getProfileImageUrl();
         if (profileImageUrl != null && !profileImageUrl.isBlank() && !profileImageUrl.startsWith("http")) {
             profileImageUrl = "/api/v1/me/profile/images/" + profileImageUrl;

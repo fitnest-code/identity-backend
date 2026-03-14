@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class InternalUserController {
 
     private final UserService userService;
+    private final UserResponseMapper userResponseMapper;
 
     @GetMapping("/{userId}")
     @Operation(summary = "İstifadəçini ID ilə əldə edin", description = "İstifadəçi ID-si ilə istifadəçi məlumatlarını qaytarır.")
@@ -95,6 +96,6 @@ public class InternalUserController {
     }
 
     private UserResponse toUserResponse(User user) {
-        return UserResponseMapper.toResponse(user);
+        return userResponseMapper.toResponse(user);
     }
 }

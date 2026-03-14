@@ -2,10 +2,11 @@ package az.fitnest.identity.mapper;
 
 import az.fitnest.identity.dto.UserConsentStatusResponse;
 import az.fitnest.identity.model.entity.UserConsent;
+import org.springframework.stereotype.Component;
 
-public final class UserConsentStatusResponseMapper {
-    private UserConsentStatusResponseMapper() {}
-    public static UserConsentStatusResponse toResponse(UserConsent consent, boolean privacyUpToDate, boolean termsUpToDate) {
+@Component
+public class UserConsentStatusResponseMapper {
+    public UserConsentStatusResponse toResponse(UserConsent consent, boolean privacyUpToDate, boolean termsUpToDate) {
         return new UserConsentStatusResponse(
             new UserConsentStatusResponse.ConsentStatus(privacyUpToDate, privacyUpToDate),
             new UserConsentStatusResponse.ConsentStatus(termsUpToDate, termsUpToDate),

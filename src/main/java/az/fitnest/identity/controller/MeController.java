@@ -33,6 +33,7 @@ public class MeController {
 
     private final UserService userService;
     private final MessageSource messageSource;
+    private final UserResponseMapper userResponseMapper;
 
     @Operation(summary = "Cari istifadəçini əldə edin", description = "Autentifikasiya olunmuş istifadəçinin hesab təfərrüatlarını qaytarır.")
     @GetMapping("/api/v1/identity/me")
@@ -62,7 +63,7 @@ public class MeController {
             @Valid @RequestBody az.fitnest.identity.dto.OtpVerifyRequest request) {
         Long userId = UserContext.getRequiredUserId();
         User updated = userService.confirmEmailChange(userId, request.otpSessionId(), request.otpCode());
-        return ResponseEntity.ok(ApiResponse.success(UserResponseMapper.toResponse(updated)));
+        return ResponseEntity.ok(ApiResponse.success(userResponseMapper.toResponse(updated)));
     }
 
     @Operation(summary = "Mobil nömrə dəyişmə sorğusu", description = "Yeni mobil nömrəyə OTP kodu göndərir. Cavabda otp_session_id qaytarılır.")
@@ -80,7 +81,7 @@ public class MeController {
             @Valid @RequestBody az.fitnest.identity.dto.OtpVerifyRequest request) {
         Long userId = UserContext.getRequiredUserId();
         User updated = userService.confirmMobileChange(userId, request.otpSessionId(), request.otpCode());
-        return ResponseEntity.ok(ApiResponse.success(UserResponseMapper.toResponse(updated)));
+        return ResponseEntity.ok(ApiResponse.success(userResponseMapper.toResponse(updated)));
     }
 
     @PostMapping("/api/v1/me/change-password")
