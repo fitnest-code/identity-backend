@@ -362,6 +362,15 @@ public class OtpServiceImpl implements OtpService {
             String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(), session.userPasswordHash(), mobile, session.email(), null);
             smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
             return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
+        } else if (purpose == OtpPurpose.REGISTRATION) {
+            String mobile = session.mobile();
+            if (mobile == null) {
+                throw new IllegalArgumentException("Missing mobile for resend");
+            }
+            String otp = "1111";
+            String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(), session.userPasswordHash(), mobile, session.email(), null);
+            smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
+            return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
         } else {
             throw new IllegalArgumentException("Unsupported purpose for resend");
         }

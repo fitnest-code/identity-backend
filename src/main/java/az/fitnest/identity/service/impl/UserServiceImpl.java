@@ -639,6 +639,21 @@ public class UserServiceImpl implements UserService {
         return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE);
     }
 
+    @Override
+    public az.fitnest.identity.dto.response.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request) {
+        if (request.getPurpose() == az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
+            String mobile = request.getMobile();
+            String otp = "1111";
+            return otpService.sendOtpByUserId(null, new az.fitnest.identity.dto.request.OtpSendRequest(
+                az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE,
+                mobile,
+                null
+            ));
+        } else {
+            return otpService.sendOtp(request);
+        }
+    }
+
     private record UserEvent(String eventType, Long userId, long timestamp) {}
     private record UserUpdatedEvent(Long userId) {}
     private record PasswordChangedEvent(Long userId) {}
