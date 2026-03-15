@@ -1,9 +1,9 @@
 package az.fitnest.identity.auth.adapter.service;
 
-import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.dto.OtpSendRequest;
-import az.fitnest.identity.dto.RegisterCompleteRequest;
-import az.fitnest.identity.dto.RegisterRequest;
+import az.fitnest.identity.dto.response.LoginResponse;
+import az.fitnest.identity.dto.request.OtpSendRequest;
+import az.fitnest.identity.dto.request.RegisterCompleteRequest;
+import az.fitnest.identity.dto.request.RegisterRequest;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.repository.UserRepository;
