@@ -1,4 +1,4 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.dto.response;
 
 import org.springframework.data.domain.Page;
 import java.util.List;

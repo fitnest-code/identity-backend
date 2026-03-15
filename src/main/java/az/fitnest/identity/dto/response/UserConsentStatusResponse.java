@@ -1,4 +1,4 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;

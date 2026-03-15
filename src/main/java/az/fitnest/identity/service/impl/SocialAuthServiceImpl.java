@@ -8,7 +8,7 @@ import az.fitnest.identity.service.TokenIssuanceService;
 
 import az.fitnest.identity.dto.request.AppleSocialRequest;
 import az.fitnest.identity.dto.request.GoogleSocialRequest;
-import az.fitnest.identity.dto.LoginResponse;
+import az.fitnest.identity.dto.response.LoginResponse;
 import az.fitnest.identity.repository.SocialAuthRepository;
 import az.fitnest.identity.model.enums.SocialProvider;
 import az.fitnest.identity.model.entity.SocialAuth;

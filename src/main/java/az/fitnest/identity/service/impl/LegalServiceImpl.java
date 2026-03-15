@@ -4,7 +4,8 @@ import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.repository.UserConsentRepository;
 import az.fitnest.identity.repository.LegalDocumentRepository;
-import az.fitnest.identity.dto.*;
+import az.fitnest.identity.dto.request.*;
+import az.fitnest.identity.dto.response.*;
 import az.fitnest.identity.model.enums.LegalDocumentType;
 import az.fitnest.identity.model.entity.LegalDocument;
 import az.fitnest.identity.model.entity.UserConsent;

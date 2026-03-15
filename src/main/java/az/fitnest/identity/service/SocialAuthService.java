@@ -5,7 +5,7 @@ import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.model.enums.SocialProvider;
 import az.fitnest.identity.dto.request.AppleSocialRequest;
 import az.fitnest.identity.dto.request.GoogleSocialRequest;
-import az.fitnest.identity.dto.LoginResponse;
+import az.fitnest.identity.dto.response.LoginResponse;
 import az.fitnest.identity.model.entity.SocialAuth;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;

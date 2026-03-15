@@ -154,7 +154,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void requestEmailChange(RequestEmailChangeRequest request, StreamObserver<az.fitnest.user.grpc.OtpSendResponseProto> responseObserver) {
         try {
-            az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.requestEmailChange(request.getUserId(), request.getNewEmail());
+            az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestEmailChange(request.getUserId(), request.getNewEmail());
             az.fitnest.user.grpc.OtpSendResponseProto response = az.fitnest.user.grpc.OtpSendResponseProto.newBuilder()
                     .setOtpSessionId(otpResponse.otpSessionId() != null ? otpResponse.otpSessionId() : "")
                     .setExpiresInSeconds(otpResponse.expiresInSeconds() != null ? otpResponse.expiresInSeconds() : 0)
@@ -189,7 +189,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     @Override
     public void requestMobileChange(RequestMobileChangeRequest request, StreamObserver<az.fitnest.user.grpc.OtpSendResponseProto> responseObserver) {
         try {
-            az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.requestMobileChange(request.getUserId(), request.getNewMobile());
+            az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestMobileChange(request.getUserId(), request.getNewMobile());
             az.fitnest.user.grpc.OtpSendResponseProto response = az.fitnest.user.grpc.OtpSendResponseProto.newBuilder()
                     .setOtpSessionId(otpResponse.otpSessionId() != null ? otpResponse.otpSessionId() : "")
                     .setExpiresInSeconds(otpResponse.expiresInSeconds() != null ? otpResponse.expiresInSeconds() : 0)

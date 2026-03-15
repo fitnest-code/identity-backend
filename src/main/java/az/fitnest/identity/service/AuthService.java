@@ -2,9 +2,9 @@ package az.fitnest.identity.service;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.dto.LoginRequest;
-import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.dto.RefreshResponse;
+import az.fitnest.identity.dto.request.LoginRequest;
+import az.fitnest.identity.dto.response.LoginResponse;
+import az.fitnest.identity.dto.response.RefreshResponse;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;

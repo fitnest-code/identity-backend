@@ -2,10 +2,10 @@ package az.fitnest.identity.controller;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.dto.OtpSendRequest;
-import az.fitnest.identity.dto.OtpVerifyRequest;
-import az.fitnest.identity.dto.OtpSendResponse;
-import az.fitnest.identity.dto.OtpVerifyResponse;
+import az.fitnest.identity.dto.request.OtpSendRequest;
+import az.fitnest.identity.dto.request.OtpVerifyRequest;
+import az.fitnest.identity.dto.response.OtpSendResponse;
+import az.fitnest.identity.dto.response.OtpVerifyResponse;
 import az.fitnest.identity.service.OtpService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -53,10 +53,10 @@ public class OtpController {
             )
     })
     @PostMapping("/verify")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<OtpVerifyResponse>> verifyOtp(
+    public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<OtpVerifyResponse>> verifyOtp(
             @Valid @RequestBody OtpVerifyRequest request
     ) {
         OtpVerifyResponse response = otpService.verifyOtpAndIssueToken(request);
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(response));
+        return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(response));
     }
 }

@@ -1,6 +1,6 @@
 package az.fitnest.identity.mapper;
 
-import az.fitnest.identity.dto.ResetPasswordResponse;
+import az.fitnest.identity.dto.response.ResetPasswordResponse;
 import org.springframework.stereotype.Component;
 
 @Component

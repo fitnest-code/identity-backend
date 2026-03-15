@@ -1,7 +1,7 @@
 package az.fitnest.identity.mapper;
 
-import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.dto.UserResponse;
+import az.fitnest.identity.dto.response.LoginResponse;
+import az.fitnest.identity.dto.response.UserResponse;
 import org.springframework.stereotype.Component;
 
 @Component

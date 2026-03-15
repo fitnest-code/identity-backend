@@ -44,21 +44,21 @@ public interface UserService {
 
     void deactivateUser(Long userId, String reason);
 
-    void deactivateAccount(Long userId, az.fitnest.identity.dto.DeactivateAccountRequest request);
+    void deactivateAccount(Long userId, az.fitnest.identity.dto.request.DeactivateAccountRequest request);
 
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
 
-    Page<az.fitnest.identity.dto.UserResponse> getAllUsersMapped(int page, int size);
+    Page<az.fitnest.identity.dto.response.UserResponse> getAllUsersMapped(int page, int size);
 
     void deactivateAllUsers();
 
     User updateSessionStatus(Long userId, az.fitnest.identity.model.enums.SessionStatus sessionStatus);
 
-    az.fitnest.identity.dto.OtpSendResponse requestEmailChange(Long userId, String newEmail);
+    az.fitnest.identity.dto.response.OtpSendResponse requestEmailChange(Long userId, String newEmail);
 
     User confirmEmailChange(Long userId, String otpSessionId, String otpCode);
 
-    az.fitnest.identity.dto.OtpSendResponse requestMobileChange(Long userId, String newMobile);
+    az.fitnest.identity.dto.response.OtpSendResponse requestMobileChange(Long userId, String newMobile);
 
     User confirmMobileChange(Long userId, String otpSessionId, String otpCode);
 
@@ -66,13 +66,13 @@ public interface UserService {
 
     void deleteRole(Long roleId);
 
-    Page<az.fitnest.identity.dto.UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile);
+    Page<az.fitnest.identity.dto.response.UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile);
 
-    Page<az.fitnest.identity.dto.UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths);
+    Page<az.fitnest.identity.dto.response.UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths);
 
     Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type);
 
-    az.fitnest.identity.dto.OtpSendResponse resendEmailChangeOtp(Long userId, String otpSessionId);
+    az.fitnest.identity.dto.response.OtpSendResponse resendEmailChangeOtp(Long userId, String otpSessionId);
 
-    az.fitnest.identity.dto.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId);
+    az.fitnest.identity.dto.response.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId);
 }

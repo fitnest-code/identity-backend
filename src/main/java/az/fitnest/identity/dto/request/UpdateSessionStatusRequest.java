@@ -1,4 +1,4 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.dto.request;
 
 import az.fitnest.identity.model.enums.SessionStatus;
 import jakarta.validation.constraints.NotNull;

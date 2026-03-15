@@ -9,7 +9,8 @@ import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.PasswordResetService;
 import az.fitnest.identity.service.RegistrationService;
 import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.dto.*;
+import az.fitnest.identity.dto.request.*;
+import az.fitnest.identity.dto.response.*;
 import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.util.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,7 +60,7 @@ public class AuthController {
     })
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         Object response = authService.login(request);
-        if (response instanceof az.fitnest.identity.dto.OtpSendResponse) {
+        if (response instanceof az.fitnest.identity.dto.response.OtpSendResponse) {
             return ResponseEntity.ok(response);
         }
         return ResponseEntity.ok(response);
@@ -78,11 +79,11 @@ public class AuthController {
     @PostMapping("/logout")
     @Operation(summary = "İstifadəçi çıxışı", description = "İstifadəçi sessiyasını sonlandırır.")
     @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<SuccessResponse>> logout(
+    public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<SuccessResponse>> logout(
             @RequestHeader("Authorization") String authHeader,
             HttpServletRequest request) {
         authService.logoutFromHeader(authHeader);
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(
+        return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(
                 SuccessResponse.of(getMessage("success.auth.logout"), request.getRequestURI())
         ));
     }

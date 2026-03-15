@@ -1,4 +1,4 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.dto.response;
 
 import java.time.OffsetDateTime;
 

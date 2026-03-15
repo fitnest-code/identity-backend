@@ -1,6 +1,6 @@
 package az.fitnest.identity.mapper;
 
-import az.fitnest.identity.dto.UserConsentStatusResponse;
+import az.fitnest.identity.dto.response.UserConsentStatusResponse;
 import az.fitnest.identity.model.entity.UserConsent;
 import org.springframework.stereotype.Component;
 

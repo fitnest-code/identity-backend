@@ -4,10 +4,10 @@ import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.entity.OtpSessionPayload;
 import az.fitnest.identity.model.entity.OtpVerificationResult;
-import az.fitnest.identity.dto.OtpSendRequest;
-import az.fitnest.identity.dto.OtpVerifyRequest;
-import az.fitnest.identity.dto.OtpSendResponse;
-import az.fitnest.identity.dto.OtpVerifyResponse;
+import az.fitnest.identity.dto.request.OtpSendRequest;
+import az.fitnest.identity.dto.request.OtpVerifyRequest;
+import az.fitnest.identity.dto.response.OtpSendResponse;
+import az.fitnest.identity.dto.response.OtpVerifyResponse;
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.OtpRateLimitedException;
@@ -97,12 +97,12 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile, Long userId) {
-        String rawMobile = request.mobile() != null ? request.mobile() : mobile;
-        String rawEmail = request.email();
+        String rawMobile = request.getMobile() != null ? request.getMobile() : mobile;
+        String rawEmail = request.getEmail();
         String mobileNumber = rawMobile != null ? az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile) : null;
         String email = rawEmail != null ? rawEmail.toLowerCase().trim() : null;
 
-        OtpPurpose purpose = request.purpose();
+        OtpPurpose purpose = request.getPurpose();
         String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobileNumber;
 
         if (identifier == null) {
@@ -307,7 +307,7 @@ public class OtpServiceImpl implements OtpService {
             userRepository.save(user);
 
             String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
-            az.fitnest.identity.dto.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
+            az.fitnest.identity.dto.response.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
 
             return otpVerifyResponseMapper.toResponse(
                     true,

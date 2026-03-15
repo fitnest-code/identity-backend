@@ -1,6 +1,6 @@
 package az.fitnest.identity.mapper;
 
-import az.fitnest.identity.dto.LegalDocumentResponse;
+import az.fitnest.identity.dto.response.LegalDocumentResponse;
 import az.fitnest.identity.model.entity.LegalDocument;
 import az.fitnest.identity.model.enums.LegalDocumentType;
 import org.springframework.stereotype.Component;

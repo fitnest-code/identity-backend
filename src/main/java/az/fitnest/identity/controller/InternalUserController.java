@@ -2,14 +2,14 @@ package az.fitnest.identity.controller;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.dto.UpdateSessionStatusRequest;
+import az.fitnest.identity.dto.request.UpdateSessionStatusRequest;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
-import az.fitnest.identity.dto.UpdateProfileImageRequest;
-import az.fitnest.identity.dto.UpdateSetupRequiredRequest;
-import az.fitnest.identity.dto.UpdateUserProfileRequest;
+import az.fitnest.identity.dto.request.UpdateProfileImageRequest;
+import az.fitnest.identity.dto.request.UpdateSetupRequiredRequest;
+import az.fitnest.identity.dto.request.UpdateUserProfileRequest;
 import az.fitnest.identity.mapper.UserResponseMapper;
-import az.fitnest.identity.dto.UserResponse;
+import az.fitnest.identity.dto.response.UserResponse;
 import az.fitnest.identity.model.entity.User;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -72,7 +72,7 @@ public class InternalUserController {
     @Operation(summary = "Dil kodunu yeniləyin", description = "İstifadəçinin dil kodunu yeniləyir.")
     public ResponseEntity<UserResponse> updateLanguage(
             @PathVariable Long userId,
-            @RequestBody @Valid az.fitnest.identity.dto.UpdateLanguageRequest request) {
+            @RequestBody @Valid az.fitnest.identity.dto.request.UpdateLanguageRequest request) {
         User user = userService.updateLanguage(userId, request.code());
         return ResponseEntity.ok(toUserResponse(user));
     }

@@ -3,11 +3,11 @@ package az.fitnest.identity.service.impl;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
-import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.dto.OtpSendRequest;
-import az.fitnest.identity.dto.OtpSendResponse;
-import az.fitnest.identity.dto.RegisterCompleteRequest;
-import az.fitnest.identity.dto.RegisterRequest;
+import az.fitnest.identity.dto.response.LoginResponse;
+import az.fitnest.identity.dto.request.OtpSendRequest;
+import az.fitnest.identity.dto.response.OtpSendResponse;
+import az.fitnest.identity.dto.request.RegisterCompleteRequest;
+import az.fitnest.identity.dto.request.RegisterRequest;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.repository.UserRepository;

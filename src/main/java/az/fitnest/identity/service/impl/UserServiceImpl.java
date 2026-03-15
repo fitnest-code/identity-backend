@@ -5,7 +5,7 @@ import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.util.MobileNumberUtils;
 import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
-import az.fitnest.identity.dto.UserResponse;
+import az.fitnest.identity.dto.response.UserResponse;
 import az.fitnest.identity.model.entity.AuthToken;
 import az.fitnest.identity.model.entity.Role;
 import az.fitnest.identity.model.entity.User;
@@ -18,7 +18,7 @@ import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.dto.OtpSendRequest;
+import az.fitnest.identity.dto.request.OtpSendRequest;
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.service.OtpService;
 import lombok.RequiredArgsConstructor;
@@ -157,14 +157,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public az.fitnest.identity.dto.OtpSendResponse requestEmailChange(Long userId, String newEmail) {
+    public az.fitnest.identity.dto.response.OtpSendResponse requestEmailChange(Long userId, String newEmail) {
         User user = getUserOrThrow(userId);
         boolean canChange = !newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.findFirstByEmail(newEmail.toLowerCase()).isEmpty();
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail);
         if (canChange) {
             return otpService.sendOtpByUserId(userId, otpRequest);
         } else {
-            return new az.fitnest.identity.dto.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
+            return new az.fitnest.identity.dto.response.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
         }
     }
 
@@ -185,7 +185,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public az.fitnest.identity.dto.OtpSendResponse requestMobileChange(Long userId, String newMobile) {
+    public az.fitnest.identity.dto.response.OtpSendResponse requestMobileChange(Long userId, String newMobile) {
         User user = getUserOrThrow(userId);
         String normalizedMobile = MobileNumberUtils.normalize(newMobile);
         boolean canChange = !normalizedMobile.equals(user.getMobile()) && userRepository.findFirstByMobile(normalizedMobile).isEmpty();
@@ -193,7 +193,7 @@ public class UserServiceImpl implements UserService {
         if (canChange) {
             return otpService.sendOtpByUserId(userId, otpRequest);
         } else {
-            return new az.fitnest.identity.dto.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
+            return new az.fitnest.identity.dto.response.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
         }
     }
 
@@ -262,7 +262,7 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
     @Override
-    public void deactivateAccount(Long userId, az.fitnest.identity.dto.DeactivateAccountRequest request) {
+    public void deactivateAccount(Long userId, az.fitnest.identity.dto.request.DeactivateAccountRequest request) {
         String reason = (request != null) ? request.getReason() : null;
         deactivateUser(userId, reason != null && !reason.isBlank() ? reason : "Self-deactivation");
     }
@@ -619,7 +619,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public az.fitnest.identity.dto.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId) {
+    public az.fitnest.identity.dto.response.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId) {
         User user = getUserOrThrow(userId);
         var session = otpService.verifyOtp(otpSessionId, "");
         if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE || !session.mobile().equals(user.getMobile())) {
@@ -630,7 +630,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public az.fitnest.identity.dto.OtpSendResponse resendEmailChangeOtp(Long userId, String otpSessionId) {
+    public az.fitnest.identity.dto.response.OtpSendResponse resendEmailChangeOtp(Long userId, String otpSessionId) {
         User user = getUserOrThrow(userId);
         var session = otpService.verifyOtp(otpSessionId, "");
         if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE || !session.email().equalsIgnoreCase(user.getEmail())) {

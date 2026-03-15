@@ -6,9 +6,9 @@ import az.fitnest.identity.dto.response.PasswordVerificationResultResponse;
 import az.fitnest.identity.service.*;
 import az.fitnest.identity.util.TokenHasher;
 
-import az.fitnest.identity.dto.LoginRequest;
-import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.dto.RefreshResponse;
+import az.fitnest.identity.dto.request.LoginRequest;
+import az.fitnest.identity.dto.response.LoginResponse;
+import az.fitnest.identity.dto.response.RefreshResponse;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
@@ -55,13 +55,13 @@ public class AuthServiceImpl implements AuthService {
         AuthenticationResult result = authenticate(mobile, request.password());
 
         if (result.status() == AuthenticationStatus.REACTIVATION_REQUIRED) {
-            az.fitnest.identity.dto.OtpSendRequest otpRequest = new az.fitnest.identity.dto.OtpSendRequest(
+            az.fitnest.identity.dto.request.OtpSendRequest otpRequest = new az.fitnest.identity.dto.request.OtpSendRequest(
                     az.fitnest.identity.model.enums.OtpPurpose.REACTIVATION,
                     result.user().getMobile(),
                     null
             );
-            az.fitnest.identity.dto.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
-            az.fitnest.identity.dto.OtpSendResponse reactivationResponse = new az.fitnest.identity.dto.OtpSendResponse(
+            az.fitnest.identity.dto.response.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
+            az.fitnest.identity.dto.response.OtpSendResponse reactivationResponse = new az.fitnest.identity.dto.response.OtpSendResponse(
                 otpResponse.otpSessionId(),
                 otpResponse.expiresInSeconds(),
                 otpResponse.resendAvailableInSeconds(),

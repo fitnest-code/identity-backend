@@ -1,7 +1,7 @@
 package az.fitnest.identity.mapper;
 
-import az.fitnest.identity.dto.OtpVerifyResponse;
-import az.fitnest.identity.dto.UserResponse;
+import az.fitnest.identity.dto.response.OtpVerifyResponse;
+import az.fitnest.identity.dto.response.UserResponse;
 import org.springframework.stereotype.Component;
 
 @Component

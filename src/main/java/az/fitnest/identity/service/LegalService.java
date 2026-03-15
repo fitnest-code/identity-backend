@@ -3,7 +3,8 @@ package az.fitnest.identity.service;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import az.fitnest.identity.model.enums.LegalDocumentType;
-import az.fitnest.identity.dto.*;
+import az.fitnest.identity.dto.request.*;
+import az.fitnest.identity.dto.response.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

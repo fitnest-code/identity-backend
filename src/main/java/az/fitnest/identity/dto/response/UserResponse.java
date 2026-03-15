@@ -1,12 +1,14 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import lombok.Builder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "User profile information returned in authentication responses")
+@Builder
 public record UserResponse(
     @JsonProperty("user_id")
     @Schema(description = "Unique identifier for the user", example = "12345")

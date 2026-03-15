@@ -1,4 +1,4 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.dto.response;
 
 import az.fitnest.identity.dto.response.ApiErrorResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;

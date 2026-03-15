@@ -1,6 +1,7 @@
 package az.fitnest.identity.controller;
 
-import az.fitnest.identity.dto.*;
+import az.fitnest.identity.dto.request.*;
+import az.fitnest.identity.dto.response.*;
 import az.fitnest.identity.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,13 +31,13 @@ public class PasswordRecoveryController {
             @ApiResponse(responseCode = "200", description = "OTP uğurla göndərildi", content = @Content(schema = @Schema(implementation = OtpSendResponse.class))),
             @ApiResponse(responseCode = "400", description = "Yanlış sorğu və ya doğrulama uğursuz oldu")
     })
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<OtpSendResponse>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(passwordResetService.forgotPassword(request)));
+    public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<OtpSendResponse>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(passwordResetService.forgotPassword(request)));
     }
 
     @PostMapping("/reset-password")
     @Operation(summary = "Şifrəni sıfırlayın", description = "OTP və yeni şifrə ilə şifrəni sıfırlayır.")
-    public ResponseEntity<az.fitnest.identity.dto.ApiResponse<ResetPasswordResponse>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        return ResponseEntity.ok(az.fitnest.identity.dto.ApiResponse.success(passwordResetService.resetPassword(request)));
+    public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<ResetPasswordResponse>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(passwordResetService.resetPassword(request)));
     }
 }

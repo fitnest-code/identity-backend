@@ -1,8 +1,14 @@
-package az.fitnest.identity.dto;
+package az.fitnest.identity.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record DeactivateAccountRequest(
-    @JsonProperty("reason")
-    String reason
-) {}
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class DeactivateAccountRequest {
+    private String reason;
+}

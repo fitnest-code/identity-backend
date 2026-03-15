@@ -1,6 +1,6 @@
 package az.fitnest.identity.exception;
 
-import az.fitnest.identity.dto.ApiResponse;
+import az.fitnest.identity.dto.response.ApiResponse;
 import az.fitnest.identity.dto.response.ApiErrorResponse;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;

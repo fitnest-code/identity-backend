@@ -1,8 +1,9 @@
 package az.fitnest.identity.mapper;
 
 import az.fitnest.identity.model.enums.UserStatus;
-import az.fitnest.identity.dto.*;
-import az.fitnest.identity.dto.UserResponse;
+import az.fitnest.identity.dto.request.*;
+import az.fitnest.identity.dto.response.*;
+import az.fitnest.identity.dto.response.UserResponse;
 import az.fitnest.identity.model.entity.User;
 import org.springframework.stereotype.Component;
 

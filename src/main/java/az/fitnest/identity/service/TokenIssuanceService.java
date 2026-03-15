@@ -2,8 +2,8 @@ package az.fitnest.identity.service;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
-import az.fitnest.identity.dto.LoginResponse;
-import az.fitnest.identity.dto.UserResponse;
+import az.fitnest.identity.dto.response.LoginResponse;
+import az.fitnest.identity.dto.response.UserResponse;
 import az.fitnest.identity.model.entity.AuthToken;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.mapper.UserResponseMapper;
