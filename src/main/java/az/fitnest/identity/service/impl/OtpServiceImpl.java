@@ -333,6 +333,40 @@ public class OtpServiceImpl implements OtpService {
         }
     }
 
+    @Override
+    public OtpSendResponse resendOtp(String sessionId, OtpPurpose purpose) {
+        Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
+        if (sessionOpt.isEmpty()) {
+            throw new OtpVerificationException("error.otp.invalid");
+        }
+        OtpSessionPayload session = sessionOpt.get();
+        long ttlSeconds = otpStore.getOtpSessionTtlSeconds(sessionId);
+        if (session.locked() || session.verified() || ttlSeconds <= 0) {
+            throw new OtpVerificationException("error.otp.invalid");
+        }
+        if (purpose == OtpPurpose.EMAIL_CHANGE) {
+            String email = session.email();
+            if (email == null) {
+                throw new IllegalArgumentException("Missing email for resend");
+            }
+            String otp = otpGenerator.generateOtp(purpose);
+            String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(), session.userPasswordHash(), session.mobile(), email, null);
+            emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
+            return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
+        } else if (purpose == OtpPurpose.MOBILE_CHANGE) {
+            String mobile = session.mobile();
+            if (mobile == null) {
+                throw new IllegalArgumentException("Missing mobile for resend");
+            }
+            String otp = "1111";
+            String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(), session.userPasswordHash(), mobile, session.email(), null);
+            smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
+            return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
+        } else {
+            throw new IllegalArgumentException("Unsupported purpose for resend");
+        }
+    }
+
     private String getMessage(String code, Object... args) {
         return messageSource.getMessage(code, args, org.springframework.context.i18n.LocaleContextHolder.getLocale());
     }

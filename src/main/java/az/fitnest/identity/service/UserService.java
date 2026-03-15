@@ -71,4 +71,8 @@ public interface UserService {
     Page<az.fitnest.identity.dto.UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths);
 
     Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type);
+
+    az.fitnest.identity.dto.OtpSendResponse resendEmailChangeOtp(Long userId, String otpSessionId);
+
+    az.fitnest.identity.dto.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId);
 }

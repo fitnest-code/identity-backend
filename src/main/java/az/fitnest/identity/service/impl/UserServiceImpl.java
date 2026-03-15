@@ -617,6 +617,28 @@ public class UserServiceImpl implements UserService {
         return new org.springframework.data.domain.PageImpl<>(adminResponses, pageable, userPage.getTotalElements());
     }
 
+    @Override
+    @Transactional
+    public az.fitnest.identity.dto.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId) {
+        User user = getUserOrThrow(userId);
+        var session = otpService.verifyOtp(otpSessionId, "");
+        if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE || !session.mobile().equals(user.getMobile())) {
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+        }
+        return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE);
+    }
+
+    @Override
+    @Transactional
+    public az.fitnest.identity.dto.OtpSendResponse resendEmailChangeOtp(Long userId, String otpSessionId) {
+        User user = getUserOrThrow(userId);
+        var session = otpService.verifyOtp(otpSessionId, "");
+        if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE || !session.email().equalsIgnoreCase(user.getEmail())) {
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+        }
+        return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE);
+    }
+
     private record UserEvent(String eventType, Long userId, long timestamp) {}
     private record UserUpdatedEvent(Long userId) {}
     private record PasswordChangedEvent(Long userId) {}

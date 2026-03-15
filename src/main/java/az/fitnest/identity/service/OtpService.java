@@ -21,4 +21,6 @@ public interface OtpService {
     OtpVerificationResult verifyOtpByUserId(Long userId, OtpPurpose purpose, String otpCode);
 
     OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request);
+
+    OtpSendResponse resendOtp(String sessionId, OtpPurpose purpose);
 }

@@ -123,6 +123,24 @@ public class MeController {
         }
     }
 
+    @Operation(summary = "E-poçt OTP-ni yenidən göndərin", description = "Cari istifadəçi üçün e-poçt dəyişmə OTP kodunu yenidən göndərir.")
+    @PostMapping("/api/v1/me/change-email/resend")
+    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> resendEmailChangeOtp(
+            @RequestParam String otpSessionId) {
+        Long userId = UserContext.getRequiredUserId();
+        az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.resendEmailChangeOtp(userId, otpSessionId);
+        return ResponseEntity.ok(ApiResponse.success(otpResponse));
+    }
+
+    @Operation(summary = "Mobil OTP-ni yenidən göndərin", description = "Cari istifadəçi üçün mobil dəyişmə OTP kodunu yenidən göndərir.")
+    @PostMapping("/api/v1/me/change-mobile/resend")
+    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> resendMobileChangeOtp(
+            @RequestParam String otpSessionId) {
+        Long userId = UserContext.getRequiredUserId();
+        az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.resendMobileChangeOtp(userId, otpSessionId);
+        return ResponseEntity.ok(ApiResponse.success(otpResponse));
+    }
+
     private String getMessage(String code) {
         return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
