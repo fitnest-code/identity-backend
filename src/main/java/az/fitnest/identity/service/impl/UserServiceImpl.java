@@ -263,7 +263,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public void deactivateAccount(Long userId, az.fitnest.identity.dto.DeactivateAccountRequest request) {
-        String reason = (request != null) ? request.reason() : null;
+        String reason = (request != null) ? request.getReason() : null;
         deactivateUser(userId, reason != null && !reason.isBlank() ? reason : "Self-deactivation");
     }
 
