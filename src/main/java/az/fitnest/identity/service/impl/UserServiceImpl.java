@@ -641,7 +641,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public az.fitnest.identity.dto.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request) {
+    public az.fitnest.identity.dto.response.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request) {
         if (request.getPurpose() == az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
             String mobile = request.getMobile();
             String otp = "1111";
