@@ -192,15 +192,17 @@ jwt:
 
 # OTP Configuration (simplified - remove duplicates)
 otp:
-  ttl-seconds: ${OTP_TTL_SECONDS:300}
-  max-verify-attempts: ${OTP_MAX_VERIFY_ATTEMPTS:3}
-  resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:30}
+  ttl-seconds: 180 # 3 minutes
+  max-verify-attempts: 3
+  resend-cooldown-seconds: 60 # 60 seconds
+  session-lock-seconds: 600 # 10 minutes
   rate-limit:
-    max-attempts: ${OTP_RATE_LIMIT_MAX_ATTEMPTS:5}
-    window-minutes: ${OTP_RATE_LIMIT_WINDOW_MINUTES:15}
-    cooldown-seconds: ${OTP_RATE_LIMIT_COOLDOWN_SECONDS:60}
-    min-cooldown-seconds: ${OTP_RATE_LIMIT_MIN_COOLDOWN_SECONDS:5}
-    error-message-threshold-seconds: ${OTP_RATE_LIMIT_ERROR_MESSAGE_THRESHOLD_SECONDS:30}
+    max-attempts: 3
+    window-minutes: 10
+    daily-max-attempts: 10
+    cooldown-seconds: 60
+    min-cooldown-seconds: 60
+    error-message-threshold-seconds: 30
   key-builder:
     pepper: ${OTP_KEY_BUILDER_PEPPER:change-me-in-production-pepper-123}
 

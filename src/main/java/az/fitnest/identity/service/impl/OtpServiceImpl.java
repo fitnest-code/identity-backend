@@ -71,6 +71,9 @@ public class OtpServiceImpl implements OtpService {
     @Value("${otp.rate-limit.error-message-threshold-seconds}")
     private int errorMessageThresholdSeconds;
 
+    @Value("${otp.session-lock-seconds}")
+    private int sessionLockSeconds;
+
     @PostConstruct
     private void validateConfiguration() {
         if (resendCooldownSeconds < minCooldownSeconds) {
@@ -123,7 +126,7 @@ public class OtpServiceImpl implements OtpService {
 
         invalidateActiveSession(purpose, identifier, userId);
 
-        String otp = otpGenerator.generateOtp(purpose);
+        String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
         String sessionId = createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
@@ -133,6 +136,14 @@ public class OtpServiceImpl implements OtpService {
         }
 
         return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
+    }
+
+    // Enforce OTP length to 4 digits in all OTP generation
+    private String enforceOtpLength(String otp) {
+        if (otp == null || !otp.matches("\\d{4}")) {
+            throw new IllegalStateException("OTP must be exactly 4 digits");
+        }
+        return otp;
     }
 
     private boolean doesPurposeMatchExistence(OtpPurpose purpose, boolean exists) {
@@ -188,6 +199,7 @@ public class OtpServiceImpl implements OtpService {
                 .userPasswordHash(userPasswordHash)
                 .mobile(mobile)
                 .email(email)
+                .lockedUntil(Instant.now(clock).plusSeconds(sessionLockSeconds))
                 .build();
 
         String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobile;
@@ -349,7 +361,7 @@ public class OtpServiceImpl implements OtpService {
             if (email == null) {
                 throw new IllegalArgumentException("Missing email for resend");
             }
-            String otp = otpGenerator.generateOtp(purpose);
+            String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
             String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(), session.userPasswordHash(), session.mobile(), email, null);
             emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
             return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
