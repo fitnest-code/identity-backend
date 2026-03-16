@@ -21,10 +21,9 @@ import java.util.regex.Pattern;
 public class PasswordServiceImpl implements PasswordService {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordServiceImpl.class);
-    private static final int MIN_PASSWORD_LENGTH = 10;
+    private static final int MIN_PASSWORD_LENGTH = 8;
     private static final int MAX_PASSWORD_LENGTH = 128;
-    private static final Pattern UPPERCASE = Pattern.compile("[A-Z]");
-    private static final Pattern LOWERCASE = Pattern.compile("[a-z]");
+    private static final Pattern LETTER = Pattern.compile("[A-Za-z]");
     private static final Pattern DIGIT = Pattern.compile("\\d");
     private static final Pattern SPECIAL = Pattern.compile("[^A-Za-z0-9]");
     private static final Pattern WHITESPACE = Pattern.compile("\\s");
@@ -64,8 +63,7 @@ public class PasswordServiceImpl implements PasswordService {
     public boolean isStrongPassword(String password) {
         if (password == null || password.length() < MIN_PASSWORD_LENGTH) return false;
         if (WHITESPACE.matcher(password).find()) return false;
-        return UPPERCASE.matcher(password).find() &&
-               LOWERCASE.matcher(password).find() &&
+        return LETTER.matcher(password).find() &&
                DIGIT.matcher(password).find() &&
                SPECIAL.matcher(password).find();
     }
@@ -91,6 +89,11 @@ public class PasswordServiceImpl implements PasswordService {
             throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
         if (WHITESPACE.matcher(rawPassword).find()) {
+            throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
+        }
+        if (!LETTER.matcher(rawPassword).find() ||
+            !DIGIT.matcher(rawPassword).find() ||
+            !SPECIAL.matcher(rawPassword).find()) {
             throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
     }
