@@ -10,5 +10,6 @@ public record OtpVerificationResult(
     String lastName,
     String passwordHash,
     String mobile,
-    String email
+    String email,
+    Long userId
 ) {}

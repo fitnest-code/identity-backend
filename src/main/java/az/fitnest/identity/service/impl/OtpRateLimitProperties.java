@@ -28,6 +28,8 @@ public class OtpRateLimitProperties {
     private int windowMinutes = 10;
     @Min(0)
     private int cooldownSeconds = 60;
+    @Min(1)
+    private int dailyMaxAttempts = 10;
     private boolean failOpen = false;
     @Min(100)
     private long minExpiryMs = 1000;

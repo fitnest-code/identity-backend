@@ -88,6 +88,11 @@ public final class RedisKeyBuilder {
         return buildKey(PREFIX_OTP, VERSION, PREFIX_RL, purposePrefixes.get(purpose), hashEmail(email), "last");
     }
 
+    public String rateLimitDailyAttemptsKey(OtpPurpose purpose, String email) {
+        validateInputs(purpose, email);
+        return buildKey(PREFIX_OTP, VERSION, PREFIX_RL, purposePrefixes.get(purpose), hashEmail(email), "daily");
+    }
+
     public String getSessionKeyPrefix() {
         return buildKey(PREFIX_OTP, VERSION, PREFIX_SESSION, "");
     }

@@ -14,9 +14,6 @@ public class OtpGenerator {
     private final SecureRandom random = new SecureRandom();
 
     public String generateOtp(OtpPurpose purpose) {
-        if (purpose != OtpPurpose.EMAIL_CHANGE) {
-            return "1111";
-        }
         return String.format("%0" + OTP_LENGTH + "d", random.nextInt(MAX));
     }
 }

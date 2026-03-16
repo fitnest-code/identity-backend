@@ -199,6 +199,7 @@ public class OtpServiceImpl implements OtpService {
                 .mobile(mobile)
                 .email(email)
                 .lockedUntil(Instant.now(clock).plusSeconds(sessionLockSeconds))
+                .userId(userId)
                 .build();
 
         String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobile;
@@ -260,6 +261,7 @@ public class OtpServiceImpl implements OtpService {
                 .passwordHash(verifiedSession.userPasswordHash())
                 .mobile(verifiedSession.mobile())
                 .email(verifiedSession.email())
+                .userId(verifiedSession.userId())
                 .build();
     }
 
@@ -283,7 +285,8 @@ public class OtpServiceImpl implements OtpService {
     public OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request) {
         OtpVerificationResult verificationResult = verifyOtp(request.otpSessionId(), request.otpCode());
 
-        String identifier = verificationResult.mobile();
+        String identifier = (verificationResult.purpose() == OtpPurpose.EMAIL_CHANGE)
+                ? verificationResult.email() : verificationResult.mobile();
 
         if (verificationResult.purpose() == OtpPurpose.REGISTRATION) {
             String registrationToken = registrationTokenService.issueForIdentifier(identifier);
@@ -346,45 +349,37 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public OtpSendResponse resendOtp(String sessionId, OtpPurpose purpose) {
-        Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
-        if (sessionOpt.isEmpty()) {
-            throw new OtpVerificationException("error.otp.invalid");
-        }
-        OtpSessionPayload session = sessionOpt.get();
+        OtpSessionPayload session = otpStore.getSessionForVerification(sessionId)
+                .orElseThrow(() -> new OtpVerificationException("error.otp.invalid"));
+
         long ttlSeconds = otpStore.getOtpSessionTtlSeconds(sessionId);
         if (session.locked() || session.verified() || ttlSeconds <= 0) {
             throw new OtpVerificationException("error.otp.invalid");
         }
-        if (purpose == OtpPurpose.EMAIL_CHANGE) {
-            String email = session.email();
-            if (email == null) {
-                throw new IllegalArgumentException("Missing email for resend");
-            }
-            String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
-            String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(), session.userPasswordHash(), session.mobile(), email, null);
-            emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
-            return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
-        } else if (purpose == OtpPurpose.MOBILE_CHANGE) {
-            String mobile = session.mobile();
-            if (mobile == null) {
-                throw new IllegalArgumentException("Missing mobile for resend");
-            }
-            String otp = "1111";
-            String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(), session.userPasswordHash(), mobile, session.email(), null);
-            smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
-            return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
-        } else if (purpose == OtpPurpose.REGISTRATION) {
-            String mobile = session.mobile();
-            if (mobile == null) {
-                throw new IllegalArgumentException("Missing mobile for resend");
-            }
-            String otp = "1111";
-            String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(), session.userPasswordHash(), mobile, session.email(), null);
-            smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
-            return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
-        } else {
-            throw new IllegalArgumentException("Unsupported purpose for resend");
+
+        otpStore.deleteSession(sessionId);
+
+        String email = session.email();
+        String mobile = session.mobile();
+        String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobile;
+
+        if (identifier == null) {
+            throw new IllegalArgumentException("Missing identifier for resend");
         }
+
+        validateRateLimit(purpose, identifier);
+
+        String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
+        String newSessionId = createOtpSession(purpose, otp, session.firstName(), session.lastName(),
+                session.userPasswordHash(), session.mobile(), session.email(), session.userId());
+
+        if (purpose == OtpPurpose.EMAIL_CHANGE) {
+            emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
+        } else {
+            smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
+        }
+
+        return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
     }
 
     @Override
