@@ -138,7 +138,6 @@ public class OtpServiceImpl implements OtpService {
         return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
     }
 
-    // Enforce OTP length to 4 digits in all OTP generation
     private String enforceOtpLength(String otp) {
         if (otp == null || !otp.matches("\\d{4}")) {
             throw new IllegalStateException("OTP must be exactly 4 digits");

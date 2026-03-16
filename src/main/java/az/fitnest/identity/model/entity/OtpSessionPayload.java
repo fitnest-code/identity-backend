@@ -19,5 +19,6 @@ public record OtpSessionPayload(
     String lastName,
     String userPasswordHash,
     String mobile,
-    String email
+    String email,
+    Instant lockedUntil
 ) {}
