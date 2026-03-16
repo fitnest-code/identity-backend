@@ -76,5 +76,5 @@ public interface UserService {
 
     az.fitnest.identity.dto.response.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId);
 
-    az.fitnest.identity.dto.OtpSendResponse sendOtp(az.fitnest.identity.dto.OtpSendRequest request);
+    az.fitnest.identity.dto.response.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request);
 }

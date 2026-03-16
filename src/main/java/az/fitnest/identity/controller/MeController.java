@@ -1,12 +1,15 @@
 package az.fitnest.identity.controller;
 
 import az.fitnest.identity.util.UserContext;
-import az.fitnest.identity.dto.ApiResponse;
-import az.fitnest.identity.dto.SuccessResponse;
+import az.fitnest.identity.dto.response.ApiResponse;
+import az.fitnest.identity.dto.response.SuccessResponse;
+import az.fitnest.identity.dto.response.UserResponse;
+import az.fitnest.identity.dto.response.MinimalIdentityResponse;
+import az.fitnest.identity.dto.request.OtpSendRequest;
+import az.fitnest.identity.dto.request.OtpVerifyRequest;
+import az.fitnest.identity.dto.request.ChangePasswordRequest;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import az.fitnest.identity.dto.UserResponse;
-import az.fitnest.identity.dto.MinimalIdentityResponse;
 import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.service.UserService;
@@ -50,17 +53,17 @@ public class MeController {
 
     @Operation(summary = "E-poçt dəyişmə sorğusu", description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.")
     @PostMapping("/api/v1/me/change-email/request")
-    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> requestEmailChange(
+    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.response.OtpSendResponse>> requestEmailChange(
             @RequestParam String newEmail) {
         Long userId = UserContext.getRequiredUserId();
-        az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.requestEmailChange(userId, newEmail);
+        az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestEmailChange(userId, newEmail);
         return ResponseEntity.ok(ApiResponse.success(otpResponse));
     }
 
     @Operation(summary = "E-poçt dəyişməsini təsdiqləyin", description = "OTP sessiya ID-si və OTP kodu vasitəsilə yeni e-poçt ünvanını təsdiqləyir.")
     @PostMapping("/api/v1/me/change-email/confirm")
     public ResponseEntity<ApiResponse<UserResponse>> confirmEmailChange(
-            @Valid @RequestBody az.fitnest.identity.dto.OtpVerifyRequest request) {
+            @Valid @RequestBody az.fitnest.identity.dto.request.OtpVerifyRequest request) {
         Long userId = UserContext.getRequiredUserId();
         User updated = userService.confirmEmailChange(userId, request.otpSessionId(), request.otpCode());
         return ResponseEntity.ok(ApiResponse.success(userResponseMapper.toResponse(updated)));
@@ -68,17 +71,17 @@ public class MeController {
 
     @Operation(summary = "Mobil nömrə dəyişmə sorğusu", description = "Yeni mobil nömrəyə OTP kodu göndərir. Cavabda otp_session_id qaytarılır.")
     @PostMapping("/api/v1/me/change-mobile/request")
-    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> requestMobileChange(
+    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.response.OtpSendResponse>> requestMobileChange(
             @RequestParam String newMobile) {
         Long userId = UserContext.getRequiredUserId();
-        az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.requestMobileChange(userId, newMobile);
+        az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestMobileChange(userId, newMobile);
         return ResponseEntity.ok(ApiResponse.success(otpResponse));
     }
 
     @Operation(summary = "Mobil nömrə dəyişməsini təsdiqləyin", description = "OTP sessiya ID-si və OTP kodu vasitəsilə yeni mobil nömrəni təsdiqləyir.")
     @PostMapping("/api/v1/me/change-mobile/confirm")
     public ResponseEntity<ApiResponse<UserResponse>> confirmMobileChange(
-            @Valid @RequestBody az.fitnest.identity.dto.OtpVerifyRequest request) {
+            @Valid @RequestBody az.fitnest.identity.dto.request.OtpVerifyRequest request) {
         Long userId = UserContext.getRequiredUserId();
         User updated = userService.confirmMobileChange(userId, request.otpSessionId(), request.otpCode());
         return ResponseEntity.ok(ApiResponse.success(userResponseMapper.toResponse(updated)));
@@ -87,7 +90,7 @@ public class MeController {
     @PostMapping("/api/v1/me/change-password")
     @Operation(summary = "Şifrəni dəyişdirin")
     public ResponseEntity<ApiResponse<SuccessResponse>> changePassword(
-            @Valid @RequestBody az.fitnest.identity.dto.ChangePasswordRequest request,
+            @Valid @RequestBody az.fitnest.identity.dto.request.ChangePasswordRequest request,
             HttpServletRequest servletRequest) {
         Long userId = UserContext.getRequiredUserId();
         userService.changePassword(userId, request.oldPassword(), request.newPassword(), request.confirmNewPassword());
@@ -125,19 +128,19 @@ public class MeController {
 
     @Operation(summary = "E-poçt OTP-ni yenidən göndərin", description = "Cari istifadəçi üçün e-poçt dəyişmə OTP kodunu yenidən göndərir.")
     @PostMapping("/api/v1/me/change-email/resend")
-    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> resendEmailChangeOtp(
+    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.response.OtpSendResponse>> resendEmailChangeOtp(
             @RequestParam String otpSessionId) {
         Long userId = UserContext.getRequiredUserId();
-        az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.resendEmailChangeOtp(userId, otpSessionId);
+        az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.resendEmailChangeOtp(userId, otpSessionId);
         return ResponseEntity.ok(ApiResponse.success(otpResponse));
     }
 
     @Operation(summary = "Mobil OTP-ni yenidən göndərin", description = "Cari istifadəçi üçün mobil dəyişmə OTP kodunu yenidən göndərir.")
     @PostMapping("/api/v1/me/change-mobile/resend")
-    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.OtpSendResponse>> resendMobileChangeOtp(
+    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.response.OtpSendResponse>> resendMobileChangeOtp(
             @RequestParam String otpSessionId) {
         Long userId = UserContext.getRequiredUserId();
-        az.fitnest.identity.dto.OtpSendResponse otpResponse = userService.resendMobileChangeOtp(userId, otpSessionId);
+        az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.resendMobileChangeOtp(userId, otpSessionId);
         return ResponseEntity.ok(ApiResponse.success(otpResponse));
     }
 

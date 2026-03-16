@@ -1,10 +1,10 @@
 package az.fitnest.identity.service;
 
 import az.fitnest.identity.model.enums.OtpPurpose;
-import az.fitnest.identity.dto.OtpSendRequest;
-import az.fitnest.identity.dto.OtpSendResponse;
-import az.fitnest.identity.dto.OtpVerifyRequest;
-import az.fitnest.identity.dto.OtpVerifyResponse;
+import az.fitnest.identity.dto.request.OtpSendRequest;
+import az.fitnest.identity.dto.response.OtpSendResponse;
+import az.fitnest.identity.dto.request.OtpVerifyRequest;
+import az.fitnest.identity.dto.response.OtpVerifyResponse;
 import az.fitnest.identity.model.entity.OtpVerificationResult;
 
 public interface OtpService {

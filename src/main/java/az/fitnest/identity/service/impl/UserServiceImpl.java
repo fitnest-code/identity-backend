@@ -19,6 +19,7 @@ import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.request.OtpSendRequest;
+import az.fitnest.identity.dto.response.OtpSendResponse;
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.service.OtpService;
 import lombok.RequiredArgsConstructor;
@@ -640,12 +641,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public az.fitnest.identity.dto.OtpSendResponse sendOtp(az.fitnest.identity.dto.OtpSendRequest request) {
+    public az.fitnest.identity.dto.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request) {
         if (request.getPurpose() == az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
-            // Mock OTP logic for MOBILE_CHANGE
             String mobile = request.getMobile();
             String otp = "1111";
-            // Create session and response manually
             String sessionId = otpService.createOtpSession(
                 az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE,
                 otp,
@@ -656,8 +655,7 @@ public class UserServiceImpl implements UserService {
                 null,
                 null
             );
-            // Normally would send SMS, but mock only
-            return az.fitnest.identity.dto.OtpSendResponse.builder()
+            return az.fitnest.identity.dto.response.OtpSendResponse.builder()
                 .otpSessionId(sessionId)
                 .expiresInSeconds(300)
                 .resendAvailableInSeconds(60)
