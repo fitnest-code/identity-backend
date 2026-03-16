@@ -643,24 +643,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public az.fitnest.identity.dto.response.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request) {
         if (request.getPurpose() == az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
-            String mobile = request.getMobile();
-            String otp = "1111";
-            String sessionId = otpService.createOtpSession(
-                az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE,
-                otp,
-                null,
-                null,
-                null,
-                mobile,
-                null,
-                null
-            );
-            return az.fitnest.identity.dto.response.OtpSendResponse.builder()
-                .otpSessionId(sessionId)
-                .expiresInSeconds(300)
-                .resendAvailableInSeconds(60)
-                .message("Mock OTP sent to mobile: " + mobile)
-                .build();
+            return otpService.sendOtp(request);
         } else {
             return otpService.sendOtp(request);
         }
