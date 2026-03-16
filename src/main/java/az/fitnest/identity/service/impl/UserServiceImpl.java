@@ -640,15 +640,29 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public az.fitnest.identity.dto.response.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request) {
+    public az.fitnest.identity.dto.OtpSendResponse sendOtp(az.fitnest.identity.dto.OtpSendRequest request) {
         if (request.getPurpose() == az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
+            // Mock OTP logic for MOBILE_CHANGE
             String mobile = request.getMobile();
             String otp = "1111";
-            return otpService.sendOtpByUserId(null, new az.fitnest.identity.dto.request.OtpSendRequest(
+            // Create session and response manually
+            String sessionId = otpService.createOtpSession(
                 az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE,
+                otp,
+                null,
+                null,
+                null,
                 mobile,
+                null,
                 null
-            ));
+            );
+            // Normally would send SMS, but mock only
+            return az.fitnest.identity.dto.OtpSendResponse.builder()
+                .otpSessionId(sessionId)
+                .expiresInSeconds(300)
+                .resendAvailableInSeconds(60)
+                .message("Mock OTP sent to mobile: " + mobile)
+                .build();
         } else {
             return otpService.sendOtp(request);
         }
