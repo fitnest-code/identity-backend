@@ -10,7 +10,8 @@ import az.fitnest.identity.model.entity.OtpVerificationResult;
 public interface OtpService {
     OtpSendResponse sendOtp(OtpSendRequest request);
 
-    OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash, String mobile);
+    OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash,
+            String mobile);
 
     OtpSendResponse sendOtpByUserId(Long userId, OtpSendRequest request);
 
@@ -23,4 +24,6 @@ public interface OtpService {
     OtpVerifyResponse verifyOtpAndIssueToken(OtpVerifyRequest request);
 
     OtpSendResponse resendOtp(String sessionId, OtpPurpose purpose);
+
+    OtpVerificationResult getOtpSession(String sessionId);
 }

@@ -376,7 +376,23 @@ public class OtpServiceImpl implements OtpService {
         }
     }
 
+    @Override
+    public OtpVerificationResult getOtpSession(String sessionId) {
+        OtpSessionPayload session = otpStore.getSessionForVerification(sessionId)
+                .orElseThrow(() -> new OtpVerificationException("error.otp.invalid"));
+
+        return OtpVerificationResult.builder()
+                .purpose(session.purpose())
+                .firstName(session.firstName())
+                .lastName(session.lastName())
+                .passwordHash(session.userPasswordHash())
+                .mobile(session.mobile())
+                .email(session.email())
+                .build();
+    }
+
     private String getMessage(String code, Object... args) {
+
         return messageSource.getMessage(code, args, org.springframework.context.i18n.LocaleContextHolder.getLocale());
     }
 

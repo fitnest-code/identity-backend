@@ -622,8 +622,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public az.fitnest.identity.dto.response.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId) {
         User user = getUserOrThrow(userId);
-        var session = otpService.verifyOtp(otpSessionId, "");
-        if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE || !session.mobile().equals(user.getMobile())) {
+        var session = otpService.getOtpSession(otpSessionId);
+        if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
         return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE);
@@ -633,8 +633,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public az.fitnest.identity.dto.response.OtpSendResponse resendEmailChangeOtp(Long userId, String otpSessionId) {
         User user = getUserOrThrow(userId);
-        var session = otpService.verifyOtp(otpSessionId, "");
-        if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE || !session.email().equalsIgnoreCase(user.getEmail())) {
+        var session = otpService.getOtpSession(otpSessionId);
+        if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE) {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
         return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE);
