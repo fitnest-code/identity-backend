@@ -9,17 +9,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import az.fitnest.identity.repository.UserRepository;
 
 @Component
 public class RateLimitAdminService {
     private final StringRedisTemplate redisTemplate;
     private final RedisKeyBuilder redisKeyBuilder;
     private final PhoneNormalizer phoneNormalizer;
+    private final UserRepository userRepository;
 
-    public RateLimitAdminService(StringRedisTemplate redisTemplate, RedisKeyBuilder redisKeyBuilder, PhoneNormalizer phoneNormalizer) {
+    public RateLimitAdminService(StringRedisTemplate redisTemplate, RedisKeyBuilder redisKeyBuilder, PhoneNormalizer phoneNormalizer, UserRepository userRepository) {
         this.redisTemplate = redisTemplate;
         this.redisKeyBuilder = redisKeyBuilder;
         this.phoneNormalizer = phoneNormalizer;
+        this.userRepository = userRepository;
     }
 
     public void resetRateLimit(OtpPurpose purpose, String phoneNumber) {
@@ -51,6 +54,27 @@ public class RateLimitAdminService {
             return Long.parseLong(value);
         } catch (NumberFormatException e) {
             return 0L;
+        }
+    }
+
+    public void resetAllRateLimitsForUser(Long userId) {
+        // Find user by ID
+        var userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) return;
+        var user = userOpt.get();
+        // Reset for all OTP purposes (registration, login, password reset, etc.)
+        for (OtpPurpose purpose : OtpPurpose.values()) {
+            String identifier = user.getMobile();
+            if (purpose == OtpPurpose.EMAIL_CHANGE && user.getEmail() != null) {
+                identifier = user.getEmail();
+            }
+            if (identifier != null) {
+                RedisKeyBuilder.RedisKeys keys = redisKeyBuilder.rateLimitKeys(purpose, identifier);
+                redisTemplate.delete(List.of(keys.windowKey(), keys.cooldownKey()));
+                // Also clear daily attempts if used
+                String dailyKey = redisKeyBuilder.rateLimitDailyAttemptsKey(purpose, identifier);
+                redisTemplate.delete(dailyKey);
+            }
         }
     }
 

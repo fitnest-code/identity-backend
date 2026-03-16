@@ -2,7 +2,6 @@ package az.fitnest.identity.controller;
 
 import az.fitnest.identity.dto.response.AdminUserResponse;
 import az.fitnest.identity.dto.response.UserProfileDetailsResponse;
-import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.service.impl.RateLimitAdminService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
@@ -73,25 +72,6 @@ public class UserAdminController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Rate limit statusunu əldə edin", description = "İstifadəçinin OTP və digər limitlərinin cari vəziyyətini yoxlayır. ADMIN rolu tələb olunur.")
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/rate-limit")
-    public ResponseEntity<RateLimitAdminService.RateLimitStatus> getRateLimitStatus(
-            @RequestParam OtpPurpose purpose,
-            @RequestParam String phoneNumber) {
-        return ResponseEntity.ok(rateLimitAdminService.getRateLimitStatus(purpose, phoneNumber));
-    }
-
-    @Operation(summary = "Rate limiti sıfırlayın", description = "İstifadəçinin OTP və ya digər limitlərini sıfırlayaraq yenidən cəhd etməsinə imkan yaradır. ADMIN rolu tələb olunur.")
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/rate-limit/reset")
-    public ResponseEntity<Void> resetRateLimit(
-            @RequestParam OtpPurpose purpose,
-            @RequestParam String phoneNumber) {
-        rateLimitAdminService.resetRateLimit(purpose, phoneNumber);
-        return ResponseEntity.ok().build();
-    }
-
     @Operation(summary = "BÜTÜN istifadəçiləri deaktiv edin (Kritik)", description = "Sistemdəki bütün istifadəçi hesablarını deaktiv edir. Bu əməliyyat yalnız SUPER_ADMIN tərəfindən həyata keçirilə bilər.")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/all")
@@ -118,6 +98,14 @@ public class UserAdminController {
             .bmiIndex(grpcResponse.getBmiIndex())
             .build();
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Bütün rate limitləri sıfırla", description = "Verilən userId üçün bütün OTP və əlaqəli rate limitləri sıfırlayır. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/rate-limit/reset")
+    public ResponseEntity<Void> resetAllRateLimitsForUser(@RequestParam Long userId) {
+        rateLimitAdminService.resetAllRateLimitsForUser(userId);
+        return ResponseEntity.ok().build();
     }
 
 }
