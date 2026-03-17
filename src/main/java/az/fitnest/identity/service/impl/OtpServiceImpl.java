@@ -35,6 +35,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import az.fitnest.identity.mapper.OtpSendResponseMapper;
 import az.fitnest.identity.mapper.OtpVerifyResponseMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +57,8 @@ public class OtpServiceImpl implements OtpService {
     private final org.springframework.context.MessageSource messageSource;
     private final OtpSendResponseMapper otpSendResponseMapper;
     private final OtpVerifyResponseMapper otpVerifyResponseMapper;
+
+    private static final Logger log = LoggerFactory.getLogger(OtpServiceImpl.class);
 
     @Value("${otp.ttl-seconds}")
     private int otpTtlSeconds;
@@ -185,7 +189,6 @@ public class OtpServiceImpl implements OtpService {
     private String createOtpSession(OtpPurpose purpose, String otp, String firstName, String lastName, String userPasswordHash, String mobile, String email, Long userId) {
         String otpHash = hashOtp(otp);
         String sessionId = otpSessionIdGenerator.generateSessionId();
-
         OtpSessionPayload payload = OtpSessionPayload.builder()
                 .purpose(purpose)
                 .otpHash(otpHash)
@@ -201,59 +204,60 @@ public class OtpServiceImpl implements OtpService {
                 .lockedUntil(Instant.now(clock).plusSeconds(sessionLockSeconds))
                 .userId(userId)
                 .build();
-
         String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobile;
+        log.info("Creating OTP session: sessionId={}, purpose={}, otp={}, otpHash={}, identifier={}, ttl={}, payload={}", sessionId, purpose, otp, otpHash, identifier, otpTtlSeconds, payload);
         otpStore.saveOtpSessionAtomically(purpose, identifier, sessionId, payload, otpTtlSeconds);
         if (userId != null) {
             otpStore.setActiveSessionPointer(purpose, "user:" + userId, sessionId, otpTtlSeconds);
+            log.info("Set active session pointer for userId={}, sessionId={}, purpose={}, ttl={}", userId, sessionId, purpose, otpTtlSeconds);
         }
-
         return sessionId;
     }
 
     @Override
     public OtpVerificationResult verifyOtp(String sessionId, String otpCode) {
+        log.info("Verifying OTP: sessionId={}, otpCode={}", sessionId, otpCode);
         Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
-
         if (sessionOpt.isEmpty()) {
+            log.warn("Session not found for sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.invalid");
         }
-
         OtpSessionPayload session = sessionOpt.get();
-
+        log.info("Session payload: {}", session);
         if (session.locked()) {
+            log.warn("Session is locked: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.locked");
         }
-
         if (session.verified()) {
+            log.warn("Session is already verified: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.already_verified");
         }
-
         boolean isValid = hashOtp(otpCode).equals(session.otpHash());
-
+        log.info("OTP hash comparison: inputHash={}, storedHash={}, isValid={}", hashOtp(otpCode), session.otpHash(), isValid);
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
-
+        log.info("VerifyOtpResult: found={}, status={}, session={}", result.isFound(), result.getStatus(), result.getSession());
         if (!result.isFound()) {
+            log.warn("Session not found after verifyOtpAndUpdate: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.invalid");
         }
-
         if (result.isLocked()) {
+            log.warn("Session locked after verifyOtpAndUpdate: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.locked");
         }
-
         if (result.isAlreadyVerified()) {
+            log.warn("Session already verified after verifyOtpAndUpdate: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.already_verified");
         }
-
         if (result.isExpired()) {
+            log.warn("Session expired after verifyOtpAndUpdate: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.invalid");
         }
-
         if (!isValid) {
+            log.warn("OTP code is invalid: sessionId={}, otpCode={}", sessionId, otpCode);
             throw new OtpVerificationException("error.otp.invalid");
         }
-
         OtpSessionPayload verifiedSession = result.getSession();
+        log.info("OTP verified successfully: sessionId={}, userId={}, purpose={}", sessionId, verifiedSession.userId(), verifiedSession.purpose());
         return OtpVerificationResult.builder()
                 .purpose(verifiedSession.purpose())
                 .firstName(verifiedSession.firstName())

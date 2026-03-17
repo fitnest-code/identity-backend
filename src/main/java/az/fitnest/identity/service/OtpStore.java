@@ -14,6 +14,8 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -82,6 +84,7 @@ public class OtpStore {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final MessageSource messageSource;
+    private static final Logger log = LoggerFactory.getLogger(OtpStore.class);
 
     public OtpStore(StringRedisTemplate redisTemplate, ObjectMapper objectMapper, RedisKeyBuilder redisKeyBuilder, MessageSource messageSource) {
         this.redisTemplate = redisTemplate;
@@ -97,6 +100,7 @@ public class OtpStore {
     public void saveOtpSession(String sessionId, OtpSessionPayload payload, long ttlSeconds) {
         try {
             String json = objectMapper.writeValueAsString(payload);
+            log.info("Saving OTP session to Redis: sessionId={}, ttl={}, payload={}", sessionId, ttlSeconds, payload);
             redisTemplate.opsForValue().set(
                     redisKeyBuilder.sessionKey(sessionId),
                     json,
@@ -104,6 +108,7 @@ public class OtpStore {
                     TimeUnit.SECONDS
             );
         } catch (JsonProcessingException e) {
+            log.error("Failed to serialize OTP session: sessionId={}, error={}", sessionId, e.getMessage(), e);
             throw new InternalServerException(getMessage("error.otp.serialize_failed"));
         }
     }
@@ -112,14 +117,17 @@ public class OtpStore {
         String json = redisTemplate.opsForValue().get(
                 redisKeyBuilder.sessionKey(sessionId)
         );
-
+        log.info("Retrieving OTP session from Redis: sessionId={}, json={}", sessionId, json);
         if (json == null) {
+            log.warn("OTP session not found in Redis: sessionId={}", sessionId);
             return Optional.empty();
         }
-
         try {
-            return Optional.of(objectMapper.readValue(json, OtpSessionPayload.class));
+            OtpSessionPayload payload = objectMapper.readValue(json, OtpSessionPayload.class);
+            log.info("Parsed OTP session payload: sessionId={}, payload={}", sessionId, payload);
+            return Optional.of(payload);
         } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize OTP session: sessionId={}, error={}", sessionId, e.getMessage(), e);
             return Optional.empty();
         }
     }
@@ -129,25 +137,25 @@ public class OtpStore {
                 redisKeyBuilder.sessionKey(sessionId),
                 TimeUnit.SECONDS
         );
-
+        log.info("OTP session TTL: sessionId={}, ttlSeconds={}", sessionId, sec);
         if (sec < 0) {
             return 0L;
         }
-
         return sec;
     }
 
     public void updateOtpSession(String sessionId, OtpSessionPayload payload) {
         long ttlSeconds = getOtpSessionTtlSeconds(sessionId);
-
+        log.info("Updating OTP session: sessionId={}, ttl={}, payload={}", sessionId, ttlSeconds, payload);
         if (ttlSeconds <= 0) {
+            log.warn("OTP session not found or expired for update: sessionId={}", sessionId);
             throw new BadRequestException(getMessage("error.otp.session_not_found"));
         }
-
         saveOtpSession(sessionId, payload, ttlSeconds);
     }
 
     public void setActiveSessionPointer(OtpPurpose purpose, String email, String sessionId, long ttlSeconds) {
+        log.info("Setting active session pointer: purpose={}, email={}, sessionId={}, ttl={}", purpose, email, sessionId, ttlSeconds);
         redisTemplate.opsForValue().set(
                 redisKeyBuilder.activeSessionKey(purpose, email),
                 sessionId,
@@ -157,18 +165,20 @@ public class OtpStore {
     }
 
     public Optional<String> getActiveSessionPointer(OtpPurpose purpose, String email) {
-        return Optional.ofNullable(
-                redisTemplate.opsForValue().get(
-                        redisKeyBuilder.activeSessionKey(purpose, email)
-                )
+        String pointer = redisTemplate.opsForValue().get(
+                redisKeyBuilder.activeSessionKey(purpose, email)
         );
+        log.info("Retrieving active session pointer: purpose={}, email={}, pointer={}", purpose, email, pointer);
+        return Optional.ofNullable(pointer);
     }
 
     public void deleteActivePointer(OtpPurpose purpose, String email) {
+        log.info("Deleting active session pointer: purpose={}, email={}", purpose, email);
         redisTemplate.delete(redisKeyBuilder.activeSessionKey(purpose, email));
     }
 
     public void deleteSession(String sessionId) {
+        log.info("Deleting OTP session from Redis: sessionId={}", sessionId);
         redisTemplate.delete(redisKeyBuilder.sessionKey(sessionId));
     }
 
@@ -179,18 +189,18 @@ public class OtpStore {
         String sessionKeyPrefix = redisKeyBuilder.getSessionKeyPrefix();
         try {
             String sessionJson = objectMapper.writeValueAsString(payload);
+            log.info("Atomically saving OTP session: purpose={}, email={}, sessionId={}, ttl={}, payload={}", purpose, email, sessionId, ttlSeconds, payload);
             List<String> keys = Arrays.asList(activePointerKey, sessionKey);
             List<String> args = Arrays.asList(sessionKeyPrefix, sessionJson, String.valueOf(ttlSeconds), sessionId);
             try {
                 redisTemplate.execute(SAVE_OTP_SESSION_SCRIPT, keys, args.toArray());
+                log.info("Redis script executed for saving OTP session: sessionId={}", sessionId);
             } catch (Exception e) {
-                org.slf4j.LoggerFactory.getLogger(OtpStore.class)
-                    .error("Redis script error in saveOtpSessionAtomically", e);
+                log.error("Redis script error in saveOtpSessionAtomically: sessionId={}, error={}", sessionId, e.getMessage(), e);
                 throw new InternalServerException(getMessage("error.otp.processing_failed"));
             }
         } catch (JsonProcessingException e) {
-            org.slf4j.LoggerFactory.getLogger(OtpStore.class)
-                .error("Serialization error in saveOtpSessionAtomically", e);
+            log.error("Serialization error in saveOtpSessionAtomically: sessionId={}, error={}", sessionId, e.getMessage(), e);
             throw new InternalServerException(getMessage("error.otp.processing_failed"));
         }
     }
@@ -203,12 +213,13 @@ public class OtpStore {
         String sessionKey = redisKeyBuilder.sessionKey(sessionId);
         List<String> keys = Arrays.asList(sessionKey);
         List<String> args = Arrays.asList(String.valueOf(maxAttempts), isValid ? "1" : "0");
+        log.info("Verifying OTP in Redis: sessionId={}, maxAttempts={}, isValid={}", sessionId, maxAttempts, isValid);
         List<?> result;
         try {
             result = redisTemplate.execute(VERIFY_OTP_SCRIPT, keys, args.toArray());
+            log.info("Redis script executed for OTP verification: sessionId={}, result={}", sessionId, result);
         } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(OtpStore.class)
-                .error("Redis script error in verifyOtpAndUpdate", e);
+            log.error("Redis script error in verifyOtpAndUpdate: sessionId={}, error={}", sessionId, e.getMessage(), e);
             throw new InternalServerException(getMessage("error.otp.processing_failed"));
         }
 
