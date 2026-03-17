@@ -57,6 +57,7 @@ public class OtpServiceImpl implements OtpService {
     private final org.springframework.context.MessageSource messageSource;
     private final OtpSendResponseMapper otpSendResponseMapper;
     private final OtpVerifyResponseMapper otpVerifyResponseMapper;
+    private final PhoneNormalizer phoneNormalizer;
 
     private static final Logger log = LoggerFactory.getLogger(OtpServiceImpl.class);
 
@@ -375,14 +376,22 @@ public class OtpServiceImpl implements OtpService {
 
         String email = session.email();
         String mobile = session.mobile();
-        String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobile;
+        String identifier;
+        if (purpose == OtpPurpose.EMAIL_CHANGE) {
+            identifier = (email != null) ? email.trim().toLowerCase() : null;
+        } else {
+            identifier = (mobile != null) ? phoneNormalizer.normalizeAzerbaijanPhoneNumber(mobile) : null;
+        }
 
-        if (identifier == null) {
+        if (identifier == null || identifier.isEmpty()) {
+            log.warn("[resendOtp] Missing or invalid identifier for rate limit: purpose={}, sessionId={}", purpose, sessionId);
             throw new IllegalArgumentException("Missing identifier for resend");
         }
 
+        log.info("[resendOtp] Checking rate limit: purpose={}, identifier={}, sessionId={}", purpose, identifier, sessionId);
         validateRateLimit(purpose, identifier);
 
+        log.info("[resendOtp] TTL seconds for session {}: {}", sessionId, ttlSeconds);
         if (ttlSeconds <= 0) {
             String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
             String newSessionId = createOtpSession(
@@ -406,6 +415,7 @@ public class OtpServiceImpl implements OtpService {
 
         String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
         String otpHash = hashOtp(otp);
+
         OtpSessionPayload updatedSession = OtpSessionPayload.builder()
                 .purpose(session.purpose())
                 .otpHash(otpHash)
