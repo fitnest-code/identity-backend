@@ -41,7 +41,7 @@ public class RegistrationServiceImpl implements RegistrationService {
             throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
         }
 
-        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, normalizedMobile, null);
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, normalizedMobile, null, null);
 
         return otpService.sendOtp(
                 otpRequest,

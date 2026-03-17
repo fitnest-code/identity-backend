@@ -59,4 +59,12 @@ public class OtpController {
         OtpVerifyResponse response = otpService.verifyOtpAndIssueToken(request);
         return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(response));
     }
+
+    @PostMapping("/registration/register/resend")
+    public ResponseEntity<OtpSendResponse> registerResendOtp(@RequestBody OtpSendRequest request) {
+        // Always set purpose to REGISTRATION for this endpoint
+        request.setPurpose(az.fitnest.identity.model.enums.OtpPurpose.REGISTRATION);
+        OtpSendResponse response = otpService.resendOtp(request.getSessionId(), request.getPurpose());
+        return ResponseEntity.ok(response);
+    }
 }

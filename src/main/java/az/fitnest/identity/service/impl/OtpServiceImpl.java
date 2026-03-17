@@ -90,6 +90,18 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public OtpSendResponse sendOtp(OtpSendRequest request) {
+        // Infer purpose if not provided
+        OtpPurpose purpose = request.getPurpose();
+        if (purpose == null) {
+            if (request.getEmail() != null) {
+                purpose = OtpPurpose.EMAIL_CHANGE;
+            } else if (request.getMobile() != null) {
+                purpose = OtpPurpose.MOBILE_CHANGE;
+            } else {
+                purpose = OtpPurpose.REGISTRATION;
+            }
+            request.setPurpose(purpose);
+        }
         return sendOtp(request, null, null, null, null);
     }
 
@@ -131,7 +143,7 @@ public class OtpServiceImpl implements OtpService {
         invalidateActiveSession(purpose, identifier, userId);
 
         String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
-        String sessionId = createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
+        String sessionId = request.getSessionId() != null ? request.getSessionId() : createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
             emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);

@@ -104,13 +104,6 @@ public class AuthController {
         return ResponseEntity.status(status).body(response);
     }
 
-    @PostMapping("/otp/send")
-    @Operation(summary = "OTP göndərin", description = "OTP göndərmək üçün endpoint. E-poçt və ya mobil nömrə üçün istifadə olunur.")
-    public ResponseEntity<OtpSendResponse> sendOtp(@Valid @RequestBody OtpSendRequest request) {
-        OtpSendResponse response = userService.sendOtp(request);
-        return ResponseEntity.ok(response);
-    }
-
     private String getMessage(String code) {
         return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }

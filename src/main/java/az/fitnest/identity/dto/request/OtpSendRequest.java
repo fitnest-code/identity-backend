@@ -25,6 +25,9 @@ public class OtpSendRequest {
     @Schema(description = "Email address to receive the OTP", example = "user@example.com")
     private String email;
 
+    @Schema(description = "Session ID for the OTP request", example = "abc123sessionid")
+    private String sessionId;
+
     public OtpPurpose getPurpose() {
         return purpose;
     }
@@ -47,5 +50,13 @@ public class OtpSendRequest {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 }

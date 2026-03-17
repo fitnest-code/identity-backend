@@ -161,7 +161,7 @@ public class UserServiceImpl implements UserService {
     public az.fitnest.identity.dto.response.OtpSendResponse requestEmailChange(Long userId, String newEmail) {
         User user = getUserOrThrow(userId);
         boolean canChange = !newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.findFirstByEmail(newEmail.toLowerCase()).isEmpty();
-        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail);
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail, null);
         if (canChange) {
             return otpService.sendOtpByUserId(userId, otpRequest);
         } else {
@@ -190,7 +190,7 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         String normalizedMobile = MobileNumberUtils.normalize(newMobile);
         boolean canChange = !normalizedMobile.equals(user.getMobile()) && userRepository.findFirstByMobile(normalizedMobile).isEmpty();
-        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null);
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null, null);
         if (canChange) {
             return otpService.sendOtpByUserId(userId, otpRequest);
         } else {

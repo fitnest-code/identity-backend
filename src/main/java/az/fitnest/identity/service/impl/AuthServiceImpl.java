@@ -58,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
             az.fitnest.identity.dto.request.OtpSendRequest otpRequest = new az.fitnest.identity.dto.request.OtpSendRequest(
                     az.fitnest.identity.model.enums.OtpPurpose.REACTIVATION,
                     result.user().getMobile(),
+                    null,
                     null
             );
             az.fitnest.identity.dto.response.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
