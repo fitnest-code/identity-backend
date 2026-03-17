@@ -353,7 +353,7 @@ public class OtpServiceImpl implements OtpService {
                 .orElseThrow(() -> new OtpVerificationException("error.otp.invalid"));
 
         long ttlSeconds = otpStore.getOtpSessionTtlSeconds(sessionId);
-        if (session.locked() || session.verified() || ttlSeconds <= 0) {
+        if (session.locked() || session.verified()) {
             throw new OtpVerificationException("error.otp.invalid");
         }
 
@@ -367,9 +367,29 @@ public class OtpServiceImpl implements OtpService {
 
         validateRateLimit(purpose, identifier);
 
+        if (ttlSeconds <= 0) {
+            String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
+            String newSessionId = createOtpSession(
+                purpose,
+                otp,
+                session.firstName(),
+                session.lastName(),
+                session.userPasswordHash(),
+                session.mobile(),
+                session.email(),
+                session.userId()
+            );
+            otpStore.setActiveSessionPointer(purpose, (purpose == OtpPurpose.EMAIL_CHANGE ? email : mobile), newSessionId, otpTtlSeconds);
+            if (purpose == OtpPurpose.EMAIL_CHANGE) {
+                emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
+            } else {
+                smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
+            }
+            return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
+        }
+
         String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
         String otpHash = hashOtp(otp);
-        // Reset attempts, update OTP hash, and update createdAt (or expiry if needed)
         OtpSessionPayload updatedSession = OtpSessionPayload.builder()
                 .purpose(session.purpose())
                 .otpHash(otpHash)

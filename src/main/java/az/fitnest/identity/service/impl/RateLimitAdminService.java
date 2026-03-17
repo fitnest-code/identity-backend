@@ -58,11 +58,9 @@ public class RateLimitAdminService {
     }
 
     public void resetAllRateLimitsForUser(Long userId) {
-        // Find user by ID
         var userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) return;
         var user = userOpt.get();
-        // Reset for all OTP purposes (registration, login, password reset, etc.)
         for (OtpPurpose purpose : OtpPurpose.values()) {
             String identifier = user.getMobile();
             if (purpose == OtpPurpose.EMAIL_CHANGE && user.getEmail() != null) {
@@ -71,7 +69,6 @@ public class RateLimitAdminService {
             if (identifier != null) {
                 RedisKeyBuilder.RedisKeys keys = redisKeyBuilder.rateLimitKeys(purpose, identifier);
                 redisTemplate.delete(List.of(keys.windowKey(), keys.cooldownKey()));
-                // Also clear daily attempts if used
                 String dailyKey = redisKeyBuilder.rateLimitDailyAttemptsKey(purpose, identifier);
                 redisTemplate.delete(dailyKey);
             }
