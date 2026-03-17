@@ -33,6 +33,10 @@ public class OtpRateLimitProperties {
     private boolean failOpen = false;
     @Min(100)
     private long minExpiryMs = 1000;
+    @Min(0)
+    private int minCooldownSeconds = 60;
+    @Min(0)
+    private int errorMessageThresholdSeconds = 30;
 
     public long getWindowMillis() {
         return windowMinutes * 60L * 1000L;

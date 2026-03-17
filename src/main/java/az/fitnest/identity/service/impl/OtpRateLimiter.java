@@ -84,8 +84,11 @@ public class OtpRateLimiter {
     }
 
     public RateLimitResult checkRateLimit(OtpPurpose purpose, String phoneNumber, String clientIp) {
+        org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(OtpRateLimiter.class);
+        log.info("[OtpRateLimiter] Rate limit check: purpose={}, phoneNumber={}, clientIp={}", purpose, phoneNumber, clientIp);
         if (purpose == null || phoneNumber == null || phoneNumber.isEmpty()) {
             meterRegistry.counter("otp.ratelimit.invalid.input").increment();
+            log.warn("[OtpRateLimiter] Invalid input for rate limit: purpose={}, phoneNumber={}, clientIp={}", purpose, phoneNumber, clientIp);
             return new RateLimitResult(false, properties.getWindowSeconds());
         }
 
@@ -94,6 +97,7 @@ public class OtpRateLimiter {
             Long count = localBurstShield.getIfPresent(shieldKey);
             if (count != null && count > 5) {
                 meterRegistry.counter("otp.ratelimit.local.shield.denied").increment();
+                log.warn("[OtpRateLimiter] Local burst shield activated, too many requests from clientIp: {}", clientIp);
                 return new RateLimitResult(false, 30);
             }
             localBurstShield.put(shieldKey, count == null ? 1L : count + 1);
@@ -106,18 +110,18 @@ public class OtpRateLimiter {
             finalIdentifier = phoneNormalizer.normalizeAzerbaijanPhoneNumber(phoneNumber);
             if (finalIdentifier == null) {
                 meterRegistry.counter("otp.ratelimit.invalid.identifier").increment();
+                log.warn("[OtpRateLimiter] Invalid identifier for rate limit: purpose={}, phoneNumber={}", purpose, phoneNumber);
                 return denyDefault();
             }
         }
-
         RateLimitResult identifierResult = checkRedisRateLimit("identifier", purpose, finalIdentifier);
+        log.info("[OtpRateLimiter] Redis rate limit result for identifier: allowed={}, waitTimeSeconds={}", identifierResult.allowed(), identifierResult.waitTimeSeconds());
         if (!identifierResult.allowed()) return identifierResult;
-
         if (clientIp != null) {
             RateLimitResult ipResult = checkRedisRateLimit("ip", purpose, clientIp);
+            log.info("[OtpRateLimiter] Redis rate limit result for clientIp: allowed={}, waitTimeSeconds={}", ipResult.allowed(), ipResult.waitTimeSeconds());
             if (!ipResult.allowed()) return ipResult;
         }
-
         return new RateLimitResult(true, 0);
     }
 
@@ -126,6 +130,7 @@ public class OtpRateLimiter {
     }
 
     private RateLimitResult checkRedisRateLimit(String dimension, OtpPurpose purpose, String identifier) {
+        org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(OtpRateLimiter.class);
         RedisKeyBuilder.RedisKeys keys = redisKeyBuilder.rateLimitKeys(purpose, identifier);
         long start = System.nanoTime();
         try {
@@ -137,30 +142,32 @@ public class OtpRateLimiter {
                     String.valueOf(properties.getCooldownMillis()),
                     String.valueOf(properties.getMaxAttempts())
             );
-
             meterRegistry.timer("otp.ratelimit.redis.latency", "dimension", dimension)
                     .record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
-
+            log.info("[OtpRateLimiter] Redis script result: {}", res);
             if (res == null || res.size() < 2) {
                 meterRegistry.counter("otp.ratelimit.redis.bad_response").increment();
+                log.warn("[OtpRateLimiter] Bad Redis response for rate limit: dimension={}, keys={}", dimension, keys);
                 return denyDefault();
             }
-
             boolean allowed = res.get(0) == 1L;
             long waitSec = res.get(1);
             meterRegistry.counter("otp.ratelimit.result", "allowed", Boolean.toString(allowed), "dimension", dimension).increment();
+            log.info("[OtpRateLimiter] Rate limit check result: allowed={}, waitSec={}, dimension={}, keys={}", allowed, waitSec, dimension, keys);
             return new RateLimitResult(allowed, waitSec);
-
         } catch (Exception e) {
             meterRegistry.counter("otp.ratelimit.error", "dimension", dimension).increment();
-            org.slf4j.LoggerFactory.getLogger(OtpRateLimiter.class)
-                    .error("Redis error during OTP {} rate limit check: {}", dimension, keys, e);
+            log.error("[OtpRateLimiter] Redis error during OTP {} rate limit check: {}", dimension, keys, e);
             return properties.isFailOpen() ? new RateLimitResult(true, 0) : denyDefault();
         }
     }
 
     private RateLimitResult denyDefault() {
         return new RateLimitResult(false, properties.getWindowSeconds());
+    }
+
+    public OtpRateLimitProperties getProperties() {
+        return properties;
     }
 
     public record RateLimitResult(boolean allowed, long waitTimeSeconds) {

@@ -89,6 +89,17 @@ public class OtpServiceImpl implements OtpService {
         }
     }
 
+    @PostConstruct
+    private void logRateLimitConfig() {
+        log.info("OTP Rate Limit Config: maxAttempts={}, windowMinutes={}, cooldownSeconds={}, dailyMaxAttempts={}, minCooldownSeconds={}, errorMessageThresholdSeconds={}",
+                otpRateLimiter.getProperties().getMaxAttempts(),
+                otpRateLimiter.getProperties().getWindowMinutes(),
+                otpRateLimiter.getProperties().getCooldownSeconds(),
+                otpRateLimiter.getProperties().getDailyMaxAttempts(),
+                otpRateLimiter.getProperties().getMinCooldownSeconds(),
+                otpRateLimiter.getProperties().getErrorMessageThresholdSeconds());
+    }
+
     @Override
     public OtpSendResponse sendOtp(OtpSendRequest request) {
         // Infer purpose if not provided
@@ -185,11 +196,13 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private void validateRateLimit(OtpPurpose purpose, String identifier) {
+        log.info("[validateRateLimit] Checking rate limit for purpose={}, identifier={}", purpose, identifier);
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
+        log.info("[validateRateLimit] Rate limit result: allowed={}, waitTimeSeconds={}", rateLimitResult.allowed(), rateLimitResult.waitTimeSeconds());
         if (!rateLimitResult.allowed()) {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
             String message = getMessage("error.otp.rate_limit_generic");
-
+            log.warn("[validateRateLimit] Rate limit exceeded for purpose={}, identifier={}, waitTimeSeconds={}", purpose, identifier, waitTimeSeconds);
             throw new OtpRateLimitedException(message, waitTimeSeconds);
         }
     }
