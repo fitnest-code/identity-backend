@@ -102,7 +102,6 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public OtpSendResponse sendOtp(OtpSendRequest request) {
-        // Infer purpose if not provided
         OtpPurpose purpose = request.getPurpose();
         if (purpose == null) {
             if (request.getEmail() != null) {

@@ -193,7 +193,7 @@ jwt:
 # OTP Configuration (simplified - remove duplicates)
 otp:
   ttl-seconds: 180 # 3 minutes
-  max-verify-attempts: 3
+  max-verify-attempts: 5
   resend-cooldown-seconds: 60 # 60 seconds
   session-lock-seconds: 600 # 10 minutes
   rate-limit:
