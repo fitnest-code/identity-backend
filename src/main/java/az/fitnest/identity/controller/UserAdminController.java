@@ -1,6 +1,7 @@
 package az.fitnest.identity.controller;
 
 import az.fitnest.identity.dto.response.AdminUserResponse;
+import az.fitnest.identity.dto.PaginatedResponse;
 import az.fitnest.identity.dto.response.UserProfileDetailsResponse;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.service.impl.RateLimitAdminService;
@@ -52,14 +53,15 @@ public class UserAdminController {
     })
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<Page<az.fitnest.identity.dto.response.AdminUserResponse>> getAllUsers(
+    public ResponseEntity<PaginatedResponse<AdminUserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String query,
             @RequestParam(required = false) Long packageID,
             @RequestParam(required = false) Integer durationMonths,
             @RequestParam(required = false) String type) {
-        return ResponseEntity.ok(userService.getAdminUsers(page, size, query, packageID, durationMonths, type));
+        Page<AdminUserResponse> userPage = userService.getAdminUsers(page, size, query, packageID, durationMonths, type);
+        return ResponseEntity.ok(PaginatedResponse.of(userPage));
     }
 
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")
