@@ -185,7 +185,7 @@ springdoc:
 jwt:
   secret: ${JWT_SECRET:your-jwt-secret-change-in-production}
   issuer: ${JWT_ISSUER:fitnest}
-  access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:3600}
+  access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:60}
   refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:604800}
   # Remove expiration if not used
   # expiration: ${JWT_EXPIRATION:86400000}
