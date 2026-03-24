@@ -404,26 +404,8 @@ public class OtpServiceImpl implements OtpService {
         validateRateLimit(purpose, identifier);
 
         log.info("[resendOtp] TTL seconds for session {}: {}", sessionId, ttlSeconds);
-        if (ttlSeconds <= 0) {
-            String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
-            String newSessionId = createOtpSession(
-                purpose,
-                otp,
-                session.firstName(),
-                session.lastName(),
-                session.userPasswordHash(),
-                session.mobile(),
-                session.email(),
-                session.userId()
-            );
-            otpStore.setActiveSessionPointer(purpose, (purpose == OtpPurpose.EMAIL_CHANGE ? email : mobile), newSessionId, otpTtlSeconds);
-            if (purpose == OtpPurpose.EMAIL_CHANGE) {
-                emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
-            } else {
-                smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
-            }
-            return otpSendResponseMapper.toResponse(newSessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
-        }
+        int resendCount = (session.resendCount() != null) ? session.resendCount() + 1 : 1;
+        int incrementalCooldown = 60 * resendCount;
 
         String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
         String otpHash = hashOtp(otp);
@@ -442,6 +424,7 @@ public class OtpServiceImpl implements OtpService {
                 .email(session.email())
                 .lockedUntil(session.lockedUntil())
                 .userId(session.userId())
+                .resendCount(resendCount)
                 .build();
         otpStore.updateOtpSession(sessionId, updatedSession);
 
@@ -451,7 +434,7 @@ public class OtpServiceImpl implements OtpService {
             smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
         }
 
-        return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
+        return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, incrementalCooldown, getMessage("success.otp.sent"));
     }
 
     @Override

@@ -21,5 +21,6 @@ public record OtpSessionPayload(
     String mobile,
     String email,
     Instant lockedUntil,
-    Long userId
+    Long userId,
+    Integer resendCount
 ) {}

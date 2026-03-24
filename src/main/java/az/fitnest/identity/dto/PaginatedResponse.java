@@ -35,4 +35,3 @@ public record PaginatedResponse<T>(
                 .build();
     }
 }
-
