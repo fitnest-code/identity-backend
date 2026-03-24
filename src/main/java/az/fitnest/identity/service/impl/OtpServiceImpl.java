@@ -187,8 +187,10 @@ public class OtpServiceImpl implements OtpService {
         } else {
             smsService.sendSms(mobileNumber, "Your Fitnest verification code: " + otp);
         }
-
-        return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, resendCooldownSeconds, getMessage("success.otp.sent"));
+        // For initial send, the next resend will be the first, so cooldown should be 60s (or 60 * resendCount if logic changes)
+        int resendCount = 1;
+        int cooldown = 60 * resendCount;
+        return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, cooldown, getMessage("success.otp.sent"));
     }
 
     private String enforceOtpLength(String otp) {
