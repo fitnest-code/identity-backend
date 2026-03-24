@@ -15,6 +15,7 @@ import az.fitnest.identity.exception.OtpVerificationException;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.SmsService;
 import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.identity.repository.OtpStateRepository;
 
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
@@ -23,6 +24,7 @@ import az.fitnest.identity.service.EmailService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +39,10 @@ import az.fitnest.identity.mapper.OtpSendResponseMapper;
 import az.fitnest.identity.mapper.OtpVerifyResponseMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import az.fitnest.identity.model.otp.OtpUserState;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +64,9 @@ public class OtpServiceImpl implements OtpService {
     private final OtpSendResponseMapper otpSendResponseMapper;
     private final OtpVerifyResponseMapper otpVerifyResponseMapper;
     private final PhoneNormalizer phoneNormalizer;
+
+    @Autowired
+    private OtpStateRepository otpStateRepository;
 
     private static final Logger log = LoggerFactory.getLogger(OtpServiceImpl.class);
 
@@ -113,6 +122,23 @@ public class OtpServiceImpl implements OtpService {
             }
             request.setPurpose(purpose);
         }
+        String globalKey = getOtpGlobalKey(az.fitnest.identity.util.UserContext.getCurrentUserId());
+        OtpUserState state = getOrInitOtpUserState(globalKey);
+        Instant now = Instant.now(clock);
+        if (state.getLastSentAt() != null && state.getResendCount() != null && state.getResendCount() > 0) {
+            long cooldown = 60L * state.getResendCount();
+            if (now.isBefore(state.getLastSentAt().plusSeconds(cooldown))) {
+                long wait = state.getLastSentAt().plusSeconds(cooldown).getEpochSecond() - now.getEpochSecond();
+                throw new OtpRateLimitedException(getMessage("error.otp.resend_cooldown"), wait);
+            }
+        }
+        if (state.getDailySendCount() != null && state.getDailySendCount() >= 10) {
+            throw new OtpRateLimitedException(getMessage("error.otp.daily_limit"), 24 * 3600);
+        }
+        state.setResendCount(state.getResendCount() == null ? 1 : state.getResendCount() + 1);
+        state.setLastSentAt(now);
+        state.setDailySendCount(state.getDailySendCount() == null ? 1 : state.getDailySendCount() + 1);
+        otpStateRepository.save(state);
         return sendOtp(request, null, null, null, null);
     }
 
@@ -465,5 +491,27 @@ public class OtpServiceImpl implements OtpService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 not available", e);
         }
+    }
+
+    private String getOtpGlobalKey(Long userId) {
+        if (userId != null) {
+            return "user:" + userId;
+        }
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            HttpServletRequest req = attrs.getRequest();
+            String ip = req.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isBlank()) {
+                ip = req.getRemoteAddr();
+            } else {
+                ip = ip.split(",")[0].trim();
+            }
+            return "ip:" + ip;
+        }
+        return "ip:unknown";
+    }
+
+    private OtpUserState getOrInitOtpUserState(String key) {
+        return otpStateRepository.get(key).orElseGet(() -> new OtpUserState(key));
     }
 }
