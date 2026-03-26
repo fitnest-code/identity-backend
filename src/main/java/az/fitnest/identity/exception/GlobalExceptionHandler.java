@@ -143,9 +143,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OtpRateLimitedException.class)
     public ResponseEntity<ApiResponse<Void>> handleOtpRateLimitedException(OtpRateLimitedException exception, WebRequest request) {
         logger.error("OTP rate limit error: {}", exception.getMessage(), exception);
+        // Format the message with the actual seconds value
+        String formattedMessage = messageSource.getMessage(
+                "error.otp.resend_cooldown",
+                new Object[]{exception.getWaitTimeSeconds()},
+                LocaleContextHolder.getLocale()
+        );
         ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code("error.otp.rate_limit_generic")
-                .message(getMessage("error.otp.resend_cooldown"))
+                .message(formattedMessage)
                 .status(HttpStatus.TOO_MANY_REQUESTS.value())
                 .path(request.getDescription(false).replace("uri=", ""))
                 .timestamp(OffsetDateTime.now())
