@@ -33,15 +33,7 @@ public class RegistrationController {
     @PostMapping("/register/complete")
     @Operation(summary = "Qeydiyyatı tamamlayın", description = "OTP və istifadəçi məlumatları ilə qeydiyyatı tamamlayır.")
     public ResponseEntity<?> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
-        LoginResponse loginResponse = registrationService.completeRegistration(request);
-        ApiSuccessResponse success = ApiSuccessResponse.builder()
-                .code("success.registration.completed")
-                .message("Registration completed successfully.")
-                .status(200)
-                .path("/api/v1/auth/registration/register/complete")
-                .timestamp(java.time.OffsetDateTime.now())
-                .details(loginResponse)
-                .build();
+        ApiSuccessResponse success = registrationService.completeRegistration(request);
         return ResponseEntity.ok(Map.of("success", success));
     }
 }
