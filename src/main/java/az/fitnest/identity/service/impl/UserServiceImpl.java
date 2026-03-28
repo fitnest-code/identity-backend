@@ -48,7 +48,7 @@ import java.util.Map;
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
-    private static final java.util.regex.Pattern NAME_PART_PATTERN = java.util.regex.Pattern.compile("\\S+");
+    private static final java.util.regex.Pattern NAME_PART_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}]+$");
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -403,7 +403,11 @@ public class UserServiceImpl implements UserService {
         String v = value.trim();
         if (v.isEmpty()) return null;
         java.util.regex.Matcher matcher = NAME_PART_PATTERN.matcher(v);
-        return matcher.find() ? matcher.group() : null;
+        if (matcher.matches()) {
+            return v;
+        } else {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_NAME_CHARACTERS");
+        }
     }
 
     private void publishUserEvent(String eventType, Long userId) {
