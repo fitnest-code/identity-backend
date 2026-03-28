@@ -71,7 +71,7 @@ public class RegistrationServiceImpl implements RegistrationService {
                 mobile
         );
 
-        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
+        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType(), false);
     }
 
 }

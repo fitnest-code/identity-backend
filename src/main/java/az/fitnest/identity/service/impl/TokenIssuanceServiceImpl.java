@@ -60,6 +60,30 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         return loginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
     }
 
+    @Override
+    public LoginResponse issueTokens(User user, String deviceType, boolean consentRequired) {
+        String roleName = (user.getRole() != null) ? user.getRole().getName() : "ROLE_USER";
+        List<String> roles = List.of(roleName);
+
+        String accessToken = jwtService.generateAccessToken(user.getId(), roles);
+        String refreshToken = jwtService.generateRefreshToken(user.getId());
+
+        Instant accessExpiresAt = jwtService.parseExpiration(accessToken);
+        Instant refreshExpiresAt = jwtService.parseExpiration(refreshToken);
+
+        Duration accessTtl = Duration.between(Instant.now(), accessExpiresAt);
+        String jti = jwtService.parseJti(accessToken);
+        redisTokenService.activateAccessToken(jti, accessTtl);
+
+        redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
+
+        saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
+
+        UserResponse userResponse = userResponseMapper.toResponse(user, consentRequired);
+
+        return loginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
+    }
+
     private void saveAuthToken(Long userId, String accessToken, String refreshToken, String jti, String deviceType,
                                Instant accessExpiresAt, Instant refreshExpiresAt) {
         AuthToken authToken = AuthToken.builder()

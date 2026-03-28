@@ -21,4 +21,5 @@ import org.springframework.stereotype.Service;
 
 public interface TokenIssuanceService {
     LoginResponse issueTokens(User user, String deviceType);
+    LoginResponse issueTokens(User user, String deviceType, boolean consentRequired);
 }
