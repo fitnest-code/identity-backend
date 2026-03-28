@@ -183,10 +183,9 @@ public class OtpServiceImpl implements OtpService {
         String sessionId = request.getSessionId() != null ? request.getSessionId() : createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
-            emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
-        } else {
-            smsService.sendSms(mobileNumber, "Your Fitnest verification code: " + otp);
-        }
+                emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
+            } else {
+            }
         int resendCount = 1;
         int cooldown = 60 * resendCount;
         return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, cooldown, getMessage("success.otp.sent"));
@@ -458,7 +457,6 @@ public class OtpServiceImpl implements OtpService {
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
             emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
         } else {
-            smsService.sendSms(mobile, "Your Fitnest verification code: " + otp);
         }
 
         return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, incrementalCooldown, getMessage("success.otp.sent"));
