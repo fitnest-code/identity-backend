@@ -14,6 +14,8 @@ public class OtpGenerator {
     private final SecureRandom random = new SecureRandom();
 
     public String generateOtp(OtpPurpose purpose) {
-        return "1111";
+
+        int otp = random.nextInt(MAX - (MAX / 10)) + (MAX / 10);
+        return String.valueOf(otp);
     }
 }
