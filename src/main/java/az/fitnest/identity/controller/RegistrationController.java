@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @Tag(name = "Qeydiyyat", description = "İstifadəçi qeydiyyatı və qeydiyyatın tamamlanması üçün endpointlər.")
 @RestController
 @RequestMapping("/api/v1/auth/registration")
@@ -30,7 +32,16 @@ public class RegistrationController {
 
     @PostMapping("/register/complete")
     @Operation(summary = "Qeydiyyatı tamamlayın", description = "OTP və istifadəçi məlumatları ilə qeydiyyatı tamamlayır.")
-    public ResponseEntity<ApiResponse<LoginResponse>> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(registrationService.completeRegistration(request)));
+    public ResponseEntity<?> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
+        LoginResponse loginResponse = registrationService.completeRegistration(request);
+        ApiSuccessResponse success = ApiSuccessResponse.builder()
+                .code("success.registration.completed")
+                .message("Registration completed successfully.")
+                .status(200)
+                .path("/api/v1/auth/registration/register/complete")
+                .timestamp(java.time.OffsetDateTime.now())
+                .details(loginResponse)
+                .build();
+        return ResponseEntity.ok(Map.of("success", success));
     }
 }
