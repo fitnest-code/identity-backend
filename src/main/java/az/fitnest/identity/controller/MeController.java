@@ -51,12 +51,52 @@ public class MeController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "E-poçt dəyişmə sorğusu", description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.")
+    @Operation(
+        summary = "E-poçt dəyişmə sorğusu",
+        description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            description = "Yeni e-poçt ünvanı üçün sorğu",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.request.ChangeEmailRequest.class)
+            )
+        ),
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "OTP uğurla göndərildi",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.OtpSendResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "Yanlış və ya natamam sorğu",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "409",
+                description = "E-poçt artıq istifadə olunur və ya dəyişdirilə bilməz",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
+                )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "500",
+                description = "Daxili server xətası",
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
+                )
+            )
+        }
+    )
     @PostMapping("/api/v1/me/change-email/request")
     public ResponseEntity<ApiResponse<az.fitnest.identity.dto.response.OtpSendResponse>> requestEmailChange(
-            @RequestParam String newEmail) {
+            @Valid @RequestBody az.fitnest.identity.dto.request.ChangeEmailRequest request) {
         Long userId = UserContext.getRequiredUserId();
-        az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestEmailChange(userId, newEmail);
+        az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestEmailChange(userId, request.newEmail());
         return ResponseEntity.ok(ApiResponse.success(otpResponse));
     }
 
