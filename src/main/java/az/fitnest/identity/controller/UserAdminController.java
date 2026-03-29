@@ -6,6 +6,9 @@ import az.fitnest.identity.dto.response.UserProfileDetailsResponse;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.service.impl.RateLimitAdminService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
+import az.fitnest.identity.model.enums.OtpPurpose;
+import az.fitnest.identity.dto.request.OtpRateLimitResetRequest;
+import az.fitnest.identity.dto.request.OtpRateLimitUserResetRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -105,9 +108,35 @@ public class UserAdminController {
     @Operation(summary = "Bütün rate limitləri sıfırla", description = "Verilən userId üçün bütün OTP və əlaqəli rate limitləri sıfırlayır. ADMIN rolu tələb olunur.")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/rate-limit/reset")
-    public ResponseEntity<Void> resetAllRateLimitsForUser(@RequestParam Long userId) {
+    public ResponseEntity<Void> resetAllRateLimitsForUser(@RequestBody OtpRateLimitUserResetRequest request) {
+        rateLimitAdminService.resetAllRateLimitsForUser(request.getUserId());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Reset OTP rate limits for a user", description = "Resets all OTP rate limits for the given user ID (all purposes). Admin only.")
+    @ApiResponse(responseCode = "200", description = "OTP rate limits reset for user.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{userId}/otp-rate-limit/reset")
+    public ResponseEntity<Void> resetOtpRateLimitForUser(@PathVariable Long userId) {
         rateLimitAdminService.resetAllRateLimitsForUser(userId);
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Reset OTP rate limit for identifier and purpose", description = "Resets OTP rate limit for a specific identifier (mobile/email) and purpose. Admin only.")
+    @ApiResponse(responseCode = "200", description = "OTP rate limit reset for identifier and purpose.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/otp-rate-limit/reset")
+    public ResponseEntity<Void> resetOtpRateLimitForIdentifier(@RequestBody OtpRateLimitResetRequest request) {
+        rateLimitAdminService.resetRateLimit(request.getPurpose(), request.getIdentifier());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Reset all OTP rate limits for all users", description = "Resets all OTP rate limits for all users and all purposes. Admin only.")
+    @ApiResponse(responseCode = "200", description = "All OTP rate limits reset.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/otp-rate-limit/reset-all")
+    public ResponseEntity<Void> resetAllOtpRateLimits() {
+        rateLimitAdminService.resetAllRateLimitsForAllUsers();
+        return ResponseEntity.ok().build();
+    }
 }

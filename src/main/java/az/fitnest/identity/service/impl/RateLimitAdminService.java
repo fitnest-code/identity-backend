@@ -75,6 +75,24 @@ public class RateLimitAdminService {
         }
     }
 
+    public void resetAllRateLimitsForAllUsers() {
+        var users = userRepository.findAll();
+        for (var user : users) {
+            for (OtpPurpose purpose : OtpPurpose.values()) {
+                String identifier = user.getMobile();
+                if (purpose == OtpPurpose.EMAIL_CHANGE && user.getEmail() != null) {
+                    identifier = user.getEmail();
+                }
+                if (identifier != null) {
+                    RedisKeyBuilder.RedisKeys keys = redisKeyBuilder.rateLimitKeys(purpose, identifier);
+                    redisTemplate.delete(List.of(keys.windowKey(), keys.cooldownKey()));
+                    String dailyKey = redisKeyBuilder.rateLimitDailyAttemptsKey(purpose, identifier);
+                    redisTemplate.delete(dailyKey);
+                }
+            }
+        }
+    }
+
     public record RateLimitStatus(long attempts, long cooldownTtlSec, long windowTtlSec) {
     }
 }
