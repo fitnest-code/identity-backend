@@ -93,22 +93,11 @@ public class MeController {
         }
     )
     @PostMapping("/api/v1/me/change-email/request")
-    public ResponseEntity<Object> requestEmailChange(
-            @Valid @RequestBody az.fitnest.identity.dto.request.ChangeEmailRequest request,
-            HttpServletRequest servletRequest) {
+    public ResponseEntity<az.fitnest.identity.dto.response.OtpSendResponse> requestEmailChange(
+            @Valid @RequestBody az.fitnest.identity.dto.request.ChangeEmailRequest request) {
         Long userId = UserContext.getRequiredUserId();
         az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestEmailChange(userId, request.newEmail());
-        // Build a success response in the same structure as error
-        var now = java.time.OffsetDateTime.now();
-        var success = az.fitnest.identity.dto.response.ApiSuccessResponse.builder()
-                .code("success.email.change_requested")
-                .message("Change email request sent successfully")
-                .status(200)
-                .path(servletRequest.getRequestURI())
-                .timestamp(now)
-                .details(otpResponse)
-                .build();
-        return ResponseEntity.ok(Map.of("success", success));
+        return ResponseEntity.ok(otpResponse);
     }
 
     @Operation(summary = "E-poçt dəyişməsini təsdiqləyin", description = "OTP sessiya ID-si və OTP kodu vasitəsilə yeni e-poçt ünvanını təsdiqləyir.")
