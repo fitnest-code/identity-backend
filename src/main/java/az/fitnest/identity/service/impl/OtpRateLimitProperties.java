@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.Min;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 @Validated
 @Getter
