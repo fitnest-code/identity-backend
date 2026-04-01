@@ -38,6 +38,7 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
                 GsonFactory.getDefaultInstance()
         )
                 .setAudience(Collections.singletonList(googleClientId))
+                .setAcceptableTimeSkewSeconds(300L) // Allow 5 minutes skew
                 .build();
     }
 
