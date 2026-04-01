@@ -140,6 +140,14 @@ spring:
             read-timeout: ${FEIGN_READ_TIMEOUT:2000}
             logger-level: BASIC
 
+# Auth Configuration for Token Verifiers
+auth:
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+  apple:
+    client-id: ${APPLE_CLIENT_ID:}
+    team-id: ${APPLE_TEAM_ID:}
+
 # SpringDoc OpenAPI (Swagger) - Optimized for fast loading
 springdoc:
   api-docs:
