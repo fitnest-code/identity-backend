@@ -33,6 +33,7 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
     @PostConstruct
     private void initVerifier() {
+        log.info("Initializing Google ID Token Verifier with Client ID: {}", googleClientId);
         verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 GsonFactory.getDefaultInstance()
@@ -49,6 +50,14 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
         try {
             GoogleIdToken token = verifier.verify(idToken);
             if (token == null) {
+                try {
+                    GoogleIdToken unverifiedToken = GoogleIdToken.parse(GsonFactory.getDefaultInstance(), idToken);
+                    GoogleIdToken.Payload payload = unverifiedToken.getPayload();
+                    log.error("Google token verification failed. Token payload: aud={}, azp={}, iss={}, exp={}",
+                        payload.getAudience(), payload.get("azp"), payload.getIssuer(), payload.getExpirationTimeSeconds());
+                } catch (Exception parseEx) {
+                    log.error("Google token verification failed and could not parse token: {}", parseEx.getMessage());
+                }
                 throw new UnauthorizedException("error.service.external_auth_error");
             }
 
