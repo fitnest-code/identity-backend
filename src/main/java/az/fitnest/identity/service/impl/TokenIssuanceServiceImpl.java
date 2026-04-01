@@ -91,7 +91,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
                 .accessTokenHash(tokenHasher.hash(accessToken))
                 .refreshTokenHash(tokenHasher.hash(refreshToken))
                 .jti(jti)
-                .deviceType(deviceType)
+                .deviceType(deviceType != null ? deviceType : "UNKNOWN")
                 .accessExpiresAt(accessExpiresAt)
                 .refreshExpiresAt(refreshExpiresAt)
                 .revoked(false)

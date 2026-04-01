@@ -2,6 +2,7 @@ package az.fitnest.identity.service.impl;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
+import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.service.GoogleTokenVerifier;
 import az.fitnest.identity.service.GoogleTokenVerifier.GoogleTokenClaims;
@@ -13,7 +14,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.Collections;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -24,16 +29,16 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
     private GoogleIdTokenVerifier verifier;
 
-    private GoogleIdTokenVerifier getVerifier() {
-        if (verifier == null) {
-            verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(),
-                    GsonFactory.getDefaultInstance()
-            )
-                    .setAudience(Collections.singletonList(googleClientId))
-                    .build();
-        }
-        return verifier;
+    private static final Logger log = LoggerFactory.getLogger(GoogleTokenVerifierImpl.class);
+
+    @PostConstruct
+    private void initVerifier() {
+        verifier = new GoogleIdTokenVerifier.Builder(
+                new NetHttpTransport(),
+                GsonFactory.getDefaultInstance()
+        )
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
     }
 
     @Override
@@ -41,9 +46,8 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
         if (googleClientId == null || googleClientId.isEmpty()) {
             throw new IllegalStateException("Google client ID not configured");
         }
-
         try {
-            GoogleIdToken token = getVerifier().verify(idToken);
+            GoogleIdToken token = verifier.verify(idToken);
             if (token == null) {
                 throw new UnauthorizedException("error.service.external_auth_error");
             }
@@ -52,9 +56,38 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
             String userId = payload.getSubject();
             String email = (String) payload.get("email");
-            String emailVerified = String.valueOf(payload.get("email_verified"));
+            if (email == null || email.isEmpty()) {
+                throw new UnauthorizedException("Google account does not provide an email address");
+            }
+
+            Object emailVerifiedObj = payload.get("email_verified");
+            boolean emailVerified = false;
+            if (emailVerifiedObj instanceof Boolean b) {
+                emailVerified = b;
+            } else if (emailVerifiedObj instanceof String s) {
+                emailVerified = Boolean.parseBoolean(s);
+            }
+
+            if (!emailVerified) {
+                throw new InvalidCredentialsException("Google account email is not verified");
+            }
+
+            String givenName = (String) payload.get("given_name");
+            String familyName = (String) payload.get("family_name");
+            String name = (String) payload.get("name");
             String issuer = payload.getIssuer();
-            Long expirationTimeSeconds = payload.getExpirationTimeSeconds();
+
+            Object audience = payload.getAudience();
+            boolean audMatch = false;
+            if (audience instanceof String s) {
+                audMatch = googleClientId.equals(s);
+            } else if (audience instanceof java.util.List<?> list) {
+                audMatch = list.contains(googleClientId);
+            }
+
+            if (!audMatch) {
+                throw new UnauthorizedException("Google ID token audience does not match configured client ID");
+            }
 
             if (userId == null || userId.isEmpty()) {
                 throw new UnauthorizedException("error.service.external_auth_error");
@@ -64,14 +97,18 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
                 throw new UnauthorizedException("error.service.external_auth_error");
             }
 
-            if (expirationTimeSeconds != null && expirationTimeSeconds * 1000L < System.currentTimeMillis()) {
-                throw new UnauthorizedException("error.service.external_auth_error");
-            }
-
-            return new GoogleTokenClaims(userId, email, "true".equalsIgnoreCase(emailVerified));
+            return new GoogleTokenClaims(
+                userId,
+                email,
+                true,
+                givenName,
+                familyName,
+                name
+            );
         } catch (UnauthorizedException e) {
             throw e;
         } catch (Exception e) {
+            log.error("Google token verification failed", e);
             throw new UnauthorizedException("error.service.external_auth_error");
         }
     }

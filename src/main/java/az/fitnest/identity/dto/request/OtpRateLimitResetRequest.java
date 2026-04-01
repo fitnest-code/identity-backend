@@ -6,6 +6,5 @@ import lombok.Data;
 @Data
 public class OtpRateLimitResetRequest {
     private OtpPurpose purpose;
-    private String identifier; // mobile or email
+    private String identifier;
 }
-

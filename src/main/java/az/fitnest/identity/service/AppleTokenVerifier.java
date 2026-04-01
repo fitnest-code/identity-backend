@@ -2,6 +2,7 @@ package az.fitnest.identity.service;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
+import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,18 +59,29 @@ public class AppleTokenVerifier {
             String subject = claims.getSubject();
             String email = claims.getStringClaim("email");
             Boolean emailVerified = claims.getBooleanClaim("email_verified");
+
             if (!APPLE_ISSUER.equals(issuer) || !appleClientId.equals(audience) || subject == null || subject.isEmpty()) {
                 throw new UnauthorizedException(getMessage("error.auth.external_token_invalid"));
             }
+
+            if (emailVerified != null && !emailVerified) {
+                throw new InvalidCredentialsException(getMessage("error.auth.external_email_not_verified"));
+            }
+
             if (expirationTime != null && expirationTime.before(new Date())) {
                 throw new UnauthorizedException(getMessage("error.auth.external_token_expired"));
             }
+
             String keyId = header.getKeyID();
             RSAPublicKey publicKey = getApplePublicKey(keyId);
             if (publicKey == null || !signedJWT.verify(new RSASSAVerifier(publicKey))) {
                 throw new UnauthorizedException(getMessage("error.auth.external_token_invalid"));
             }
-            return new AppleTokenClaims(subject, email, emailVerified != null && emailVerified);
+
+            String firstName = claims.getStringClaim("given_name");
+            String lastName = claims.getStringClaim("family_name");
+
+            return new AppleTokenClaims(subject, email, true, firstName, lastName);
         } catch (ParseException | JOSEException e) {
             throw new UnauthorizedException(getMessage("error.auth.external_auth_failed"));
         } catch (UnauthorizedException e) {
@@ -103,6 +115,6 @@ public class AppleTokenVerifier {
         }
     }
 
-    public record AppleTokenClaims(String userId, String email, boolean emailVerified) {
+    public record AppleTokenClaims(String userId, String email, boolean emailVerified, String firstName, String lastName) {
     }
 }

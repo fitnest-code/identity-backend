@@ -14,6 +14,7 @@ import java.time.Instant;
         name = "users",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_users_mobile", columnNames = "mobile"),
+                @UniqueConstraint(name = "uk_users_email", columnNames = "email")
         }
 )
 @AttributeOverride(name = "id", column = @Column(name = "user_id"))
@@ -30,7 +31,7 @@ public class User extends BaseAuditableEntity {
     @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "mobile", nullable = false, length = 20)
+    @Column(name = "mobile", length = 20)
     private String mobile;
 
     @Column(name = "email")

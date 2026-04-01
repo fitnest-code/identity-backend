@@ -11,12 +11,12 @@ public class DeviceDetector {
     public static String detectDeviceType() {
         HttpServletRequest request = getCurrentRequest();
         if (request == null) {
-            return null;
+            return "UNKNOWN";
         }
 
         String userAgent = request.getHeader("User-Agent");
         if (userAgent == null) {
-            return null;
+            return "UNKNOWN";
         }
 
         String ua = userAgent.toLowerCase();
@@ -26,7 +26,7 @@ public class DeviceDetector {
             return "iOS";
         }
 
-        return null;
+        return "UNKNOWN";
     }
 
     private static HttpServletRequest getCurrentRequest() {
