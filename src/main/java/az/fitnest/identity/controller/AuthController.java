@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +39,7 @@ import az.fitnest.identity.dto.request.AppleSocialRequest;
 import az.fitnest.identity.dto.request.GoogleSocialRequest;
 
 @Tag(name = "Autentifikasiya", description = "İstifadəçi autentifikasiyası, giriş, çıxış, token yeniləmə və şifrə idarəetməsi üçün endpointlər.")
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -99,8 +101,10 @@ public class AuthController {
     @PostMapping("/social/google")
     @Operation(summary = "Google ilə sosial giriş")
     public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
+        log.info("Received Google social login request");
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
         HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
+        log.info("Google social login successful for user: {}", response.user().userId());
         return ResponseEntity.status(status).body(response);
     }
 

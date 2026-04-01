@@ -33,7 +33,6 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
     @PostConstruct
     private void initVerifier() {
-        log.info("Initializing Google ID Token Verifier with Client ID: {}", googleClientId);
         verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 GsonFactory.getDefaultInstance()
@@ -44,19 +43,22 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
     @Override
     public GoogleTokenClaims verify(String idToken) {
+        log.info("Verifying Google ID token with configured Client ID: {}", googleClientId);
         if (googleClientId == null || googleClientId.isEmpty()) {
+            log.error("Google client ID is not configured (null or empty)");
             throw new IllegalStateException("Google client ID not configured");
         }
         try {
             GoogleIdToken token = verifier.verify(idToken);
             if (token == null) {
+                // Peek at the token content to see why it failed
                 try {
                     GoogleIdToken unverifiedToken = GoogleIdToken.parse(GsonFactory.getDefaultInstance(), idToken);
                     GoogleIdToken.Payload payload = unverifiedToken.getPayload();
-                    log.error("Google token verification failed. Token payload: aud={}, azp={}, iss={}, exp={}",
+                    log.error("Google verification failed. Payload details: aud={}, azp={}, iss={}, exp={}",
                         payload.getAudience(), payload.get("azp"), payload.getIssuer(), payload.getExpirationTimeSeconds());
-                } catch (Exception parseEx) {
-                    log.error("Google token verification failed and could not parse token: {}", parseEx.getMessage());
+                } catch (Exception e) {
+                    log.error("Google verification failed and token could not be parsed: {}", e.getMessage());
                 }
                 throw new UnauthorizedException("error.service.external_auth_error");
             }

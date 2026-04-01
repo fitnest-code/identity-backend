@@ -39,7 +39,9 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     @Transactional
     @Override
     public LoginResponse socialLoginGoogle(GoogleSocialRequest request) {
+        log.info("Starting Google social login process");
         GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.idToken());
+        log.info("Google token verified successfully for email: {}", claims.email());
 
         return processSocialLogin(
                 SocialProvider.GOOGLE,
@@ -72,30 +74,40 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
     private LoginResponse processSocialLogin(SocialProvider provider, String providerId, String email,
                                             String firstName, String lastName, String fullName) {
+        log.info("Processing social login for provider: {}, providerId: {}, email: {}", provider, providerId, email);
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(provider, providerId);
 
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
+            log.info("Found existing social auth record for user ID: {}", socialAuth.getUserId());
             User user = userRepository.findById(socialAuth.getUserId())
-                    .orElseThrow(() -> new InvalidCredentialsException("error.auth.invalid_credentials"));
+                    .orElseThrow(() -> {
+                        log.error("User ID {} from social auth record not found in users table", socialAuth.getUserId());
+                        return new InvalidCredentialsException("error.auth.invalid_credentials");
+                    });
 
             handleUserStatus(user);
+            log.info("Issuing tokens for existing user: {}", user.getId());
             return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
 
         if (email != null && !email.isEmpty()) {
+            log.info("No social auth record found, checking if user exists by email: {}", email);
             Optional<User> userByEmail = userRepository.findFirstByEmail(email);
             if (userByEmail.isPresent()) {
                 User user = userByEmail.get();
+                log.info("Found existing user by email: {}. Linking {} account.", email, provider);
                 handleUserStatus(user);
                 linkSocialAccount(user.getId(), provider, providerId);
                 return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
             }
         }
 
+        log.info("No existing user found. Creating new user for social login.");
         User newUser = createUserForSocialLogin(firstName, lastName, fullName, email, null);
         linkSocialAccount(newUser.getId(), provider, providerId);
 
+        log.info("Issuing tokens for new user: {}", newUser.getId());
         return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
     }
 
