@@ -383,6 +383,9 @@ grpc:
     order-service:
       address: 'static://${ORDER_SERVICE_GRPC_HOST:localhost}:${ORDER_SERVICE_GRPC_PORT:9090}'
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
+    user-service:
+      address: ${USER_SERVICE_GRPC_ADDRESS:static://user-service:9090}
+      negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
   notifications:
     deadline-ms: 10000
     keep-alive-time: 30s

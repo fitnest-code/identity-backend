@@ -1,48 +1,31 @@
 package az.fitnest.identity.service;
 
 import az.fitnest.user.grpc.*;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserProfileGrpcClient {
+
+    @GrpcClient("user-service")
+    private UserProfileServiceGrpc.UserProfileServiceBlockingStub stub;
+
     public UserProfileDetailsResponse getUserProfileDetails(Long userId) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("user-service", 9090)
-                .usePlaintext()
+        UserProfileDetailsRequest request = UserProfileDetailsRequest.newBuilder()
+                .setUserId(userId)
                 .build();
-        UserProfileServiceGrpc.UserProfileServiceBlockingStub stub = UserProfileServiceGrpc.newBlockingStub(channel);
-        try {
-            UserProfileDetailsRequest request = UserProfileDetailsRequest.newBuilder()
-                    .setUserId(userId)
-                    .build();
-            return stub.getUserProfileDetails(request);
-        } finally {
-            channel.shutdown();
-        }
+        return stub.getUserProfileDetails(request);
     }
 
     public void updateProfileImage(Long userId, String imageUrl) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("user-service", 9090)
-                .usePlaintext()
+        UpdateProfileImageDetailsRequest request = UpdateProfileImageDetailsRequest.newBuilder()
+                .setUserId(userId)
+                .setImageUrl(imageUrl != null ? imageUrl : "")
                 .build();
-        UserProfileServiceGrpc.UserProfileServiceBlockingStub stub = UserProfileServiceGrpc.newBlockingStub(channel);
-        try {
-            UpdateProfileImageDetailsRequest request = UpdateProfileImageDetailsRequest.newBuilder()
-                    .setUserId(userId)
-                    .setImageUrl(imageUrl != null ? imageUrl : "")
-                    .build();
-            stub.updateProfileImage(request);
-        } finally {
-            channel.shutdown();
-        }
+        stub.updateProfileImage(request);
     }
 
     public UserByEmailResponse getUserByEmail(String email) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("user-service", 9090)
-                .usePlaintext()
-                .build();
-        UserProfileServiceGrpc.UserProfileServiceBlockingStub stub = UserProfileServiceGrpc.newBlockingStub(channel);
         try {
             UserByEmailRequest request = UserByEmailRequest.newBuilder()
                     .setEmail(email)
@@ -51,27 +34,17 @@ public class UserProfileGrpcClient {
             return new UserByEmailResponse(response.getUserId(), response.getFirstName(), response.getLastName(), response.getEmail());
         } catch (Exception e) {
             return null;
-        } finally {
-            channel.shutdown();
         }
     }
 
     public void createUserProfile(Long userId, String firstName, String lastName, String email) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("user-service", 9090)
-                .usePlaintext()
+        CreateProfileRequest request = CreateProfileRequest.newBuilder()
+                .setUserId(userId)
+                .setFirstName(firstName != null ? firstName : "")
+                .setLastName(lastName != null ? lastName : "")
+                .setEmail(email != null ? email : "")
                 .build();
-        UserProfileServiceGrpc.UserProfileServiceBlockingStub stub = UserProfileServiceGrpc.newBlockingStub(channel);
-        try {
-            CreateProfileRequest request = CreateProfileRequest.newBuilder()
-                    .setUserId(userId)
-                    .setFirstName(firstName != null ? firstName : "")
-                    .setLastName(lastName != null ? lastName : "")
-                    .setEmail(email != null ? email : "")
-                    .build();
-            stub.createUserProfile(request);
-        } finally {
-            channel.shutdown();
-        }
+        stub.createUserProfile(request);
     }
 
     public record UserByEmailResponse(Long userId, String firstName, String lastName, String email) {}
