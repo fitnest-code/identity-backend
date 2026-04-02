@@ -7,14 +7,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 @Tag(name = "Qeydiyyat", description = "İstifadəçi qeydiyyatı və qeydiyyatın tamamlanması üçün endpointlər.")
 @RestController
@@ -32,8 +30,7 @@ public class RegistrationController {
 
     @PostMapping("/register/complete")
     @Operation(summary = "Qeydiyyatı tamamlayın", description = "OTP və istifadəçi məlumatları ilə qeydiyyatı tamamlayır.")
-    public ResponseEntity<?> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
-        ApiSuccessResponse success = registrationService.completeRegistration(request);
-        return ResponseEntity.ok(Map.of("success", success));
+    public ResponseEntity<LoginResponse> registerComplete(@Valid @RequestBody RegisterCompleteRequest request) {
+        return ResponseEntity.ok(registrationService.completeRegistration(request));
     }
 }

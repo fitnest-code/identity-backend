@@ -1,7 +1,5 @@
 package az.fitnest.identity.service.impl;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.dto.response.LoginResponse;
 import az.fitnest.identity.dto.request.OtpSendRequest;
@@ -21,7 +19,6 @@ import az.fitnest.identity.util.DeviceDetector;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import az.fitnest.identity.dto.response.ApiSuccessResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -55,25 +52,20 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Transactional
     @Override
-    public ApiSuccessResponse completeRegistration(RegisterCompleteRequest request) {
+    public LoginResponse completeRegistration(RegisterCompleteRequest request) {
         String registrationToken = request.registrationToken();
         String identifier = registrationTokenService.requireIdentifier(registrationToken);
         String mobile = identifier;
         registrationTokenService.consume(registrationToken);
         String passwordHash = passwordService.hashPassword(request.password());
-        userService.createNewUser(
+        User user = userService.createNewUser(
                 request.firstName(),
                 request.lastName(),
                 passwordHash,
                 mobile
         );
-        return ApiSuccessResponse.builder()
-                .code("success.registration.completed")
-                .message("Registration completed successfully.")
-                .status(200)
-                .path("/api/v1/auth/registration/register/complete")
-                .timestamp(java.time.OffsetDateTime.now())
-                .build();
+
+        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
     }
 
 }

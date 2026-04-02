@@ -35,8 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +60,6 @@ public class UserServiceImpl implements UserService {
     private final UserSubscriptionGrpcClient userSubscriptionGrpcClient;
     private final UserResponseMapper userResponseMapper;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
-
-
 
     @Transactional
     @Override
