@@ -36,7 +36,7 @@ public class AdminDataInitializer implements CommandLineRunner {
         if (userRepository.findFirstByMobile(adminMobile).isEmpty()) {
             User admin = User.builder()
                     .mobile(adminMobile)
-                    .passwordHash(passwordService.hashPassword("admin123"))
+                    .passwordHash(passwordService.hashPassword("Admin@1234!"))
                     .status(UserStatus.ACTIVE)
                     .role(adminRole)
                     .setupRequired(false)
@@ -51,7 +51,7 @@ public class AdminDataInitializer implements CommandLineRunner {
             } catch (Exception e) {
                 log.error("Failed to create admin profile via gRPC", e);
             }
-            log.info("Admin data initialized successfully with mobile: {} and password: admin123", adminMobile);
+            log.info("Admin data initialized successfully with mobile: {} and password: Admin@1234!", adminMobile);
         }
     }
 }
