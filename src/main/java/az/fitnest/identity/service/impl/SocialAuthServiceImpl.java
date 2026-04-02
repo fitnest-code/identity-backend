@@ -16,6 +16,7 @@ import az.fitnest.identity.service.AppleTokenVerifier;
 import az.fitnest.identity.service.GoogleTokenVerifier;
 import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.TokenIssuanceService;
+import az.fitnest.identity.service.UserProfileGrpcClient;
 import az.fitnest.identity.util.DeviceDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final AppleTokenVerifier appleTokenVerifier;
     private final TokenIssuanceService tokenIssuanceService;
     private final RoleRepository roleRepository;
+    private final UserProfileGrpcClient userProfileGrpcClient;
 
     @Transactional
     @Override
@@ -49,7 +51,8 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 claims.email(),
                 claims.givenName(),
                 claims.familyName(),
-                claims.name()
+                claims.name(),
+                claims.picture()
         );
     }
 
@@ -68,12 +71,13 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 claims.email(),
                 firstName,
                 lastName,
-                fullName
+                fullName,
+                null
         );
     }
 
     private LoginResponse processSocialLogin(SocialProvider provider, String providerId, String email,
-                                            String firstName, String lastName, String fullName) {
+                                            String firstName, String lastName, String fullName, String pictureUrl) {
         log.info("Processing social login for provider: {}, providerId: {}, email: {}", provider, providerId, email);
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(provider, providerId);
 
@@ -87,17 +91,33 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                     });
 
             handleUserStatus(user);
+            var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
+            if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
+                log.info("Updating profile image for existing user: {}", user.getId());
+                userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
+            }
             log.info("Issuing tokens for existing user: {}", user.getId());
             return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
         }
 
         if (email != null && !email.isEmpty()) {
-            log.info("No social auth record found, checking if user exists by email: {}", email);
-            Optional<User> userByEmail = userRepository.findFirstByEmail(email);
-            if (userByEmail.isPresent()) {
-                User user = userByEmail.get();
-                log.info("Found existing user by email: {}. Linking {} account.", email, provider);
+            log.info("No social auth record found, checking if user exists by email in user-service: {}", email);
+            var userByEmail = userProfileGrpcClient.getUserByEmail(email);
+            if (userByEmail != null) {
+                Long userId = userByEmail.userId();
+                log.info("Found existing user by email in user-service: {}. UserId: {}. Linking {} account.", email, userId, provider);
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> {
+                            log.error("User ID {} found in user-service but not in identity-service", userId);
+                            return new InvalidCredentialsException("error.auth.user_sync_error");
+                        });
                 handleUserStatus(user);
+
+                var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
+                if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
+                    log.info("Updating profile image for existing user (by email): {}", user.getId());
+                    userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
+                }
                 linkSocialAccount(user.getId(), provider, providerId);
                 return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
             }
@@ -105,6 +125,9 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
         log.info("No existing user found. Creating new user for social login.");
         User newUser = createUserForSocialLogin(firstName, lastName, fullName, email, null);
+        if (pictureUrl != null && !pictureUrl.isBlank()) {
+            userProfileGrpcClient.updateProfileImage(newUser.getId(), pictureUrl);
+        }
         linkSocialAccount(newUser.getId(), provider, providerId);
 
         log.info("Issuing tokens for new user: {}", newUser.getId());
@@ -148,9 +171,6 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
 
         User user = User.builder()
-                .firstName(nameParts.firstName())
-                .lastName(nameParts.lastName())
-                .email(email)
                 .mobile(mobile)
                 .passwordHash(null)
                 .hasAccount(true)
@@ -161,7 +181,12 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                         .orElseThrow(() -> new IllegalStateException("System error: Default role ROLE_USER not found")))
                 .build();
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        log.info("Creating user profile in user-service for user ID: {}", savedUser.getId());
+        userProfileGrpcClient.createUserProfile(savedUser.getId(), nameParts.firstName(), nameParts.lastName(), email);
+
+        return savedUser;
     }
 
     private NameParts resolveNameParts(String firstName, String lastName, String fullName) {

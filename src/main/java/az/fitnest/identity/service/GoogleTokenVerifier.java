@@ -12,6 +12,7 @@ public interface GoogleTokenVerifier {
         boolean emailVerified,
         String givenName,
         String familyName,
-        String name
+        String name,
+        String picture
     ) {}
 }

@@ -73,22 +73,6 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void updateProfileImage(UpdateProfileImageRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
-        try {
-            User user = userService.updateProfileImageUrl(request.getUserId(), request.getImageUrl());
-            az.fitnest.user.grpc.UserResponse response = buildUserResponse(user);
-
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            responseObserver.onError(Status.INTERNAL
-                    .withDescription("Failed to update profile image: " + e.getMessage())
-                    .withCause(e)
-                    .asException());
-        }
-    }
-
-    @Override
     public void updateSetupRequired(UpdateSetupRequiredRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
             User user = userService.updateSetupRequired(request.getUserId(), request.getSetupRequired());
@@ -225,11 +209,11 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         String createdDate = user.getCreatedDate() != null ? user.getCreatedDate().toString() : "";
         return az.fitnest.user.grpc.UserResponse.newBuilder()
                 .setUserId(user.getId())
-                .setFirstName(user.getFirstName() != null ? user.getFirstName() : "")
-                .setLastName(user.getLastName() != null ? user.getLastName() : "")
-                .setEmail(user.getEmail() != null ? user.getEmail() : "")
+                .setFirstName("")
+                .setLastName("")
+                .setEmail("")
                 .setMobile(user.getMobile() != null ? user.getMobile() : "")
-                .setProfileImageUrl(user.getProfileImageUrl() != null ? user.getProfileImageUrl() : "")
+                .setProfileImageUrl("")
                 .setSetupRequired(user.isSetupRequired())
                 .setLanguage(user.getLanguage() != null ? user.getLanguage() : "")
                 .setStatus(user.getStatus() != null ? user.getStatus().name() : "")

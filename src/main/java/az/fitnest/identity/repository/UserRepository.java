@@ -29,10 +29,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByMobile(String mobile);
 
-    Optional<User> findFirstByEmail(String email);
-
-    boolean existsByEmail(String email);
-
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.failedLoginAttempts = u.failedLoginAttempts + 1 WHERE u.id = :userId")
@@ -100,12 +96,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = """
         SELECT * FROM users u1_0
         WHERE (:id IS NULL OR u1_0.user_id = :id)
-          AND (
-            (:name IS NULL OR lower(CAST(u1_0.first_name AS text)) LIKE lower('%' || :name || '%'))
-            OR (:surname IS NULL OR lower(CAST(u1_0.last_name AS text)) LIKE lower('%' || :surname || '%'))
-            OR (:email IS NULL OR lower(CAST(u1_0.email AS text)) LIKE lower('%' || :email || '%'))
-            OR (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
-          )
+          AND (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
     """, nativeQuery = true)
     Page<User> searchUsersAdvanced(@Param("id") Long id,
                               @Param("name") String name,
@@ -117,12 +108,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = """
         SELECT * FROM users u1_0
         WHERE (:id IS NULL OR u1_0.user_id = :id)
-          AND (
-            (:name IS NULL OR lower(CAST(u1_0.first_name AS text)) LIKE lower('%' || :name || '%'))
-            OR (:surname IS NULL OR lower(CAST(u1_0.last_name AS text)) LIKE lower('%' || :surname || '%'))
-            OR (:email IS NULL OR lower(CAST(u1_0.email AS text)) LIKE lower('%' || :email || '%'))
-            OR (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
-          )
+          AND (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
     """, nativeQuery = true)
     Page<User> searchUsers(@Param("id") Long id,
                       @Param("name") String name,

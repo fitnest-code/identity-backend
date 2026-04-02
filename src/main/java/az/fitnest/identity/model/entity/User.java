@@ -13,8 +13,7 @@ import java.time.Instant;
 @Table(
         name = "users",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_users_mobile", columnNames = "mobile"),
-                @UniqueConstraint(name = "uk_users_email", columnNames = "email")
+                @UniqueConstraint(name = "uk_users_mobile", columnNames = "mobile")
         }
 )
 @AttributeOverride(name = "id", column = @Column(name = "user_id"))
@@ -25,17 +24,8 @@ import java.time.Instant;
 @Builder
 public class User extends BaseAuditableEntity {
 
-    @Column(name = "first_name")
-    private String firstName;
-
-    @Column(name = "last_name")
-    private String lastName;
-
     @Column(name = "mobile", length = 20)
     private String mobile;
-
-    @Column(name = "email")
-    private String email;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
@@ -64,9 +54,6 @@ public class User extends BaseAuditableEntity {
     @Column(name = "locked_until")
     private Instant lockedUntil;
 
-    @Column(name = "profile_image_url")
-    private String profileImageUrl;
-
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
@@ -83,11 +70,7 @@ public class User extends BaseAuditableEntity {
     @Column(name = "inactive_at")
     private Instant inactiveAt;
 
-    public String getFirstName() { return firstName; }
-    public String getLastName() { return lastName; }
     public String getMobile() { return mobile; }
-    public String getEmail() { return email; }
-    public String getProfileImageUrl() { return profileImageUrl; }
     public UserStatus getStatus() { return status; }
     public SessionStatus getSessionStatus() { return sessionStatus; }
     public Role getRole() { return role; }

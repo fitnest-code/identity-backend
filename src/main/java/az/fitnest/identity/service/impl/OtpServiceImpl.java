@@ -49,6 +49,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class OtpServiceImpl implements OtpService {
 
     private final UserRepository userRepository;
+    private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
     private final OtpStore otpStore;
     private final OtpRateLimiter otpRateLimiter;
     private final OtpGenerator otpGenerator;
@@ -168,7 +169,7 @@ public class OtpServiceImpl implements OtpService {
         validateRateLimit(purpose, identifier);
 
         boolean exists = (purpose == OtpPurpose.EMAIL_CHANGE)
-                ? userRepository.findFirstByEmail(email).isPresent()
+                ? userProfileGrpcClient.getUserByEmail(email) != null
                 : userRepository.findFirstByMobile(mobileNumber).isPresent();
 
         boolean shouldSendOtp = doesPurposeMatchExistence(purpose, exists);

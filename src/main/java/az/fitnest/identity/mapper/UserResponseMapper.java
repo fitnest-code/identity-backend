@@ -14,20 +14,17 @@ public class UserResponseMapper {
     }
 
     public UserResponse toResponse(User user, boolean consentRequired) {
-        String profileImageUrl = user.getProfileImageUrl();
-        if (profileImageUrl != null && !profileImageUrl.isBlank() && !profileImageUrl.startsWith("http")) {
-            profileImageUrl = "/api/v1/me/profile/images/" + profileImageUrl;
-        }
+        String profileImageUrl = null;
 
         boolean accountLocked = user.getStatus() == UserStatus.LOCKED &&
             user.getLockedUntil() != null && user.getLockedUntil().isAfter(java.time.Instant.now());
 
         return new UserResponse(
                 user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
+                null,
+                null,
                 user.getMobile(),
-                user.getEmail(),
+                null,
                 user.hasAccount(),
                 user.isSetupRequired(),
                 profileImageUrl,

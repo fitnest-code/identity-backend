@@ -1,5 +1,7 @@
 package az.fitnest.identity.controller;
 
+import lombok.extern.slf4j.Slf4j;
+
 import az.fitnest.identity.util.UserContext;
 import az.fitnest.identity.dto.response.ApiResponse;
 import az.fitnest.identity.dto.response.SuccessResponse;
@@ -28,6 +30,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import az.fitnest.identity.dto.response.ApiErrorResponse;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Mən", description = "Cari autentifikasiya olunmuş istifadəçi üçün hesab və profil idarəetməsi endpointləri.")
@@ -37,16 +40,28 @@ public class MeController {
     private final UserService userService;
     private final MessageSource messageSource;
     private final UserResponseMapper userResponseMapper;
+    private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
 
     @Operation(summary = "Cari istifadəçini əldə edin", description = "Autentifikasiya olunmuş istifadəçinin hesab təfərrüatlarını qaytarır.")
     @GetMapping("/api/v1/identity/me")
     public ResponseEntity<ApiResponse<MinimalIdentityResponse>> getMe() {
         Long userId = UserContext.getRequiredUserId();
         User user = userService.getUserById(userId);
+
+        String email = "";
+        try {
+            var profile = userProfileGrpcClient.getUserProfileDetails(userId);
+            if (profile != null) {
+                email = profile.getEmail();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch profile for user {} from user-service", userId);
+        }
+
         MinimalIdentityResponse response = new MinimalIdentityResponse(
             user.getId(),
             user.getMobile(),
-            user.getEmail()
+            email
         );
         return ResponseEntity.ok(ApiResponse.success(response));
     }

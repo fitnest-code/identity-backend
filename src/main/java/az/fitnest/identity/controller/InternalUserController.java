@@ -5,7 +5,6 @@ import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.dto.request.UpdateSessionStatusRequest;
 import az.fitnest.identity.service.UserService;
 import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
-import az.fitnest.identity.dto.request.UpdateProfileImageRequest;
 import az.fitnest.identity.dto.request.UpdateSetupRequiredRequest;
 import az.fitnest.identity.dto.request.UpdateUserProfileRequest;
 import az.fitnest.identity.mapper.UserResponseMapper;
@@ -47,15 +46,6 @@ public class InternalUserController {
                 request.email(),
                 null
         ));
-        return ResponseEntity.ok(toUserResponse(user));
-    }
-
-    @PutMapping("/{userId}/profile-image")
-    @Operation(summary = "Profil şəklini yeniləyin", description = "İstifadəçinin profil şəklini yeniləyir.")
-    public ResponseEntity<UserResponse> updateProfileImage(
-            @PathVariable Long userId,
-            @RequestBody UpdateProfileImageRequest request) {
-        User user = userService.updateProfileImageUrl(userId, request.imageUrl());
         return ResponseEntity.ok(toUserResponse(user));
     }
 

@@ -21,8 +21,9 @@ public class DataInitializer {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordService passwordService;
-    private final LegalDocumentRepository legalDocumentRepository;
     private final UserConsentRepository userConsentRepository;
+    private final LegalDocumentRepository legalDocumentRepository;
+    private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
 
     @Bean
     public CommandLineRunner initData() {
@@ -67,16 +68,14 @@ public class DataInitializer {
                     });
 
             User admin = new User();
-            admin.setFirstName("Admin");
-            admin.setLastName("User");
             admin.setMobile(adminMobile);
             admin.setPasswordHash(passwordService.hashPassword("Admin123!"));
             admin.setHasAccount(true);
             admin.setSetupRequired(false);
             admin.setRole(adminRole);
-            admin.setProfileImageUrl("https://i.pravatar.cc/150?u=admin");
 
-            userRepository.save(admin);
+            User saved = userRepository.save(admin);
+            userProfileGrpcClient.createUserProfile(saved.getId(), "Admin", "User", "admin@fitnest.az");
         }
     }
 
@@ -93,16 +92,14 @@ public class DataInitializer {
                     });
 
             User superAdmin = new User();
-            superAdmin.setFirstName("Super");
-            superAdmin.setLastName("Admin");
             superAdmin.setMobile(superAdminMobile);
             superAdmin.setPasswordHash(passwordService.hashPassword("SuperAdmin123!"));
             superAdmin.setHasAccount(true);
             superAdmin.setSetupRequired(false);
             superAdmin.setRole(superAdminRole);
-            superAdmin.setProfileImageUrl("https://i.pravatar.cc/150?u=superadmin");
 
-            userRepository.save(superAdmin);
+            User saved = userRepository.save(superAdmin);
+            userProfileGrpcClient.createUserProfile(saved.getId(), "Super", "Admin", "superadmin@fitnest.az");
         }
     }
 
@@ -111,15 +108,13 @@ public class DataInitializer {
         if (userRepository.findFirstByMobile(userMobile).isEmpty()) {
             Role userRole = roleRepository.findByName("ROLE_USER").orElse(null);
             User user = new User();
-            user.setFirstName("Regular");
-            user.setLastName("User");
             user.setMobile(userMobile);
             user.setPasswordHash(passwordService.hashPassword("User123!"));
             user.setHasAccount(true);
             user.setSetupRequired(false);
             user.setRole(userRole);
-            user.setProfileImageUrl("https://i.pravatar.cc/150?u=regular");
-            userRepository.save(user);
+            User saved = userRepository.save(user);
+            userProfileGrpcClient.createUserProfile(saved.getId(), "Regular", "User", null);
         }
     }
 
@@ -128,15 +123,13 @@ public class DataInitializer {
         if (userRepository.findFirstByMobile(partnerMobile).isEmpty()) {
             Role partnerRole = roleRepository.findByName("ROLE_PARTNER").orElse(null);
             User user = new User();
-            user.setFirstName("Partner");
-            user.setLastName("User");
             user.setMobile(partnerMobile);
             user.setPasswordHash(passwordService.hashPassword("Partner123!"));
             user.setHasAccount(true);
             user.setSetupRequired(false);
             user.setRole(partnerRole);
-            user.setProfileImageUrl("https://i.pravatar.cc/150?u=partner");
-            userRepository.save(user);
+            User saved = userRepository.save(user);
+            userProfileGrpcClient.createUserProfile(saved.getId(), "Partner", "User", null);
         }
     }
 
@@ -145,15 +138,13 @@ public class DataInitializer {
         if (userRepository.findFirstByMobile(userMobile).isEmpty()) {
             Role userRole = roleRepository.findByName("ROLE_USER").orElse(null);
             User user = new User();
-            user.setFirstName("Alice");
-            user.setLastName("Smith");
             user.setMobile(userMobile);
             user.setPasswordHash(passwordService.hashPassword("User123!"));
             user.setHasAccount(true);
             user.setSetupRequired(false);
             user.setRole(userRole);
-            user.setProfileImageUrl("https://i.pravatar.cc/150?u=alice");
-            userRepository.save(user);
+            User saved = userRepository.save(user);
+            userProfileGrpcClient.createUserProfile(saved.getId(), "Alice", "Smith", null);
         }
     }
 
@@ -162,15 +153,13 @@ public class DataInitializer {
         if (userRepository.findFirstByMobile(partnerMobile).isEmpty()) {
             Role partnerRole = roleRepository.findByName("ROLE_PARTNER").orElse(null);
             User user = new User();
-            user.setFirstName("Bob");
-            user.setLastName("Partner");
             user.setMobile(partnerMobile);
             user.setPasswordHash(passwordService.hashPassword("Partner123!"));
             user.setHasAccount(true);
             user.setSetupRequired(false);
             user.setRole(partnerRole);
-            user.setProfileImageUrl("https://i.pravatar.cc/150?u=bob");
-            userRepository.save(user);
+            User saved = userRepository.save(user);
+            userProfileGrpcClient.createUserProfile(saved.getId(), "Bob", "Partner", null);
         }
     }
 

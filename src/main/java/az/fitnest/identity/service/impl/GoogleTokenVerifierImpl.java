@@ -38,7 +38,7 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
                 GsonFactory.getDefaultInstance()
         )
                 .setAudience(Collections.singletonList(googleClientId))
-                .setAcceptableTimeSkewSeconds(300L) // Allow 5 minutes skew
+                .setAcceptableTimeSkewSeconds(300L)
                 .build();
     }
 
@@ -52,7 +52,6 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
         try {
             GoogleIdToken token = verifier.verify(idToken);
             if (token == null) {
-                // Peek at the token content to see why it failed
                 try {
                     GoogleIdToken unverifiedToken = GoogleIdToken.parse(GsonFactory.getDefaultInstance(), idToken);
                     GoogleIdToken.Payload payload = unverifiedToken.getPayload();
@@ -87,6 +86,7 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
             String givenName = (String) payload.get("given_name");
             String familyName = (String) payload.get("family_name");
             String name = (String) payload.get("name");
+            String picture = (String) payload.get("picture");
             String issuer = payload.getIssuer();
 
             Object audience = payload.getAudience();
@@ -115,7 +115,8 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
                 true,
                 givenName,
                 familyName,
-                name
+                name,
+                picture
             );
         } catch (UnauthorizedException e) {
             throw e;

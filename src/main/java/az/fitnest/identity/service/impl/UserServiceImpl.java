@@ -61,6 +61,7 @@ public class UserServiceImpl implements UserService {
     private final OtpService otpService;
     private final UserSubscriptionGrpcClient userSubscriptionGrpcClient;
     private final UserResponseMapper userResponseMapper;
+    private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
 
     private Role defaultUserRole;
 
@@ -116,8 +117,6 @@ public class UserServiceImpl implements UserService {
 
     private User createNewUserInternal(String firstName, String lastName, String passwordHash, String mobile) {
         User user = User.builder()
-                .firstName(firstName)
-                .lastName(lastName)
                 .passwordHash(passwordHash)
                 .mobile(mobile)
                 .hasAccount(true)
@@ -127,7 +126,10 @@ public class UserServiceImpl implements UserService {
                 .role(defaultUserRole)
                 .build();
         try {
-            return userRepository.save(user);
+            User saved = userRepository.save(user);
+            log.info("Creating user profile in user-service for user ID: {}", saved.getId());
+            userProfileGrpcClient.createUserProfile(saved.getId(), firstName, lastName, null);
+            return saved;
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
         }
@@ -143,8 +145,8 @@ public class UserServiceImpl implements UserService {
         boolean namePartsProvided = firstName != null || lastName != null;
         if (namePartsProvided) {
             NameParts parts = resolveNameParts(firstName, lastName, null);
-            user.setFirstName(parts.firstName());
-            user.setLastName(parts.lastName());
+            log.info("Updating user profile in user-service for user ID: {}", userId);
+            userProfileGrpcClient.createUserProfile(userId, parts.firstName(), parts.lastName(), null);
         }
         User saved = userRepository.save(user);
         localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
@@ -160,9 +162,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public az.fitnest.identity.dto.response.OtpSendResponse requestEmailChange(Long userId, String newEmail) {
         User user = getUserOrThrow(userId);
-        boolean canChange = !newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.findFirstByEmail(newEmail.toLowerCase()).isEmpty();
+        boolean alreadyExists = userProfileGrpcClient.getUserByEmail(newEmail) != null;
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail, null);
-        if (canChange) {
+        if (!alreadyExists) {
             return otpService.sendOtpByUserId(userId, otpRequest);
         } else {
             return new az.fitnest.identity.dto.response.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
@@ -178,7 +180,8 @@ public class UserServiceImpl implements UserService {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
         String newEmail = verificationResult.email();
-        user.setEmail(newEmail.trim().toLowerCase());
+        log.info("Confirming email change to {} in user-service for user ID: {}", newEmail, userId);
+        userProfileGrpcClient.createUserProfile(userId, null, null, newEmail.trim().toLowerCase());
         User saved = userRepository.save(user);
         localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
         return saved;
@@ -211,18 +214,6 @@ public class UserServiceImpl implements UserService {
         String normalizedMobile = verificationResult.mobile();
 
         user.setMobile(normalizedMobile);
-        User saved = userRepository.save(user);
-        publishUserEvent("USER_UPDATED", userId);
-        return saved;
-    }
-
-    @CacheEvict(value = "users", key = "#userId")
-    @Transactional
-    @Override
-    public User updateProfileImageUrl(Long userId, String profileImageUrl) {
-        User user = getUserOrThrow(userId);
-
-        user.setProfileImageUrl(profileImageUrl);
         User saved = userRepository.save(user);
         publishUserEvent("USER_UPDATED", userId);
         return saved;
@@ -610,10 +601,10 @@ public class UserServiceImpl implements UserService {
                 String subscriptionStatus = (sub != null && sub.getSubscriptionStatus() != null && !sub.getSubscriptionStatus().isEmpty()) ? sub.getSubscriptionStatus() : null;
                 return new az.fitnest.identity.dto.response.AdminUserResponse(
                     user.getId(),
-                    user.getFirstName(),
-                    user.getLastName(),
+                    null,
+                    null,
                     user.getMobile(),
-                    user.getEmail(),
+                    null,
                     user.getStatus() != null ? user.getStatus().name() : null,
                     subscriptionStatus
                 );

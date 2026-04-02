@@ -17,12 +17,14 @@ public class RateLimitAdminService {
     private final RedisKeyBuilder redisKeyBuilder;
     private final PhoneNormalizer phoneNormalizer;
     private final UserRepository userRepository;
+    private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
 
-    public RateLimitAdminService(StringRedisTemplate redisTemplate, RedisKeyBuilder redisKeyBuilder, PhoneNormalizer phoneNormalizer, UserRepository userRepository) {
+    public RateLimitAdminService(StringRedisTemplate redisTemplate, RedisKeyBuilder redisKeyBuilder, PhoneNormalizer phoneNormalizer, UserRepository userRepository, az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient) {
         this.redisTemplate = redisTemplate;
         this.redisKeyBuilder = redisKeyBuilder;
         this.phoneNormalizer = phoneNormalizer;
         this.userRepository = userRepository;
+        this.userProfileGrpcClient = userProfileGrpcClient;
     }
 
     public void resetRateLimit(OtpPurpose purpose, String phoneNumber) {
@@ -62,10 +64,19 @@ public class RateLimitAdminService {
         if (userOpt.isEmpty()) return;
         var user = userOpt.get();
         for (OtpPurpose purpose : OtpPurpose.values()) {
-            String identifier = user.getMobile();
-            if (purpose == OtpPurpose.EMAIL_CHANGE && user.getEmail() != null) {
-                identifier = user.getEmail();
+            String identifier = null;
+            if (purpose == OtpPurpose.EMAIL_CHANGE) {
+                try {
+                    var profile = userProfileGrpcClient.getUserProfileDetails(userId);
+                    if (profile != null && !profile.getEmail().isEmpty()) {
+                        identifier = profile.getEmail();
+                    }
+                } catch (Exception e) {
+                }
+            } else {
+                identifier = user.getMobile();
             }
+
             if (identifier != null) {
                 RedisKeyBuilder.RedisKeys keys = redisKeyBuilder.rateLimitKeys(purpose, identifier);
                 redisTemplate.delete(List.of(keys.windowKey(), keys.cooldownKey()));
@@ -79,10 +90,19 @@ public class RateLimitAdminService {
         var users = userRepository.findAll();
         for (var user : users) {
             for (OtpPurpose purpose : OtpPurpose.values()) {
-                String identifier = user.getMobile();
-                if (purpose == OtpPurpose.EMAIL_CHANGE && user.getEmail() != null) {
-                    identifier = user.getEmail();
+                String identifier = null;
+                if (purpose == OtpPurpose.EMAIL_CHANGE) {
+                    try {
+                        var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
+                        if (profile != null && !profile.getEmail().isEmpty()) {
+                            identifier = profile.getEmail();
+                        }
+                    } catch (Exception e) {
+                    }
+                } else {
+                    identifier = user.getMobile();
                 }
+
                 if (identifier != null) {
                     RedisKeyBuilder.RedisKeys keys = redisKeyBuilder.rateLimitKeys(purpose, identifier);
                     redisTemplate.delete(List.of(keys.windowKey(), keys.cooldownKey()));

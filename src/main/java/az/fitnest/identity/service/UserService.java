@@ -36,8 +36,6 @@ public interface UserService {
 
     User updateUserProfile(Long userId, UpdateUserProfileCommandRequest command);
 
-    User updateProfileImageUrl(Long userId, String profileImageUrl);
-
     User updateSetupRequired(Long userId, boolean setupRequired);
 
     User updateLanguage(Long userId, String language);
