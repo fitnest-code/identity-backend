@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import jakarta.annotation.PostConstruct;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,13 +63,7 @@ public class UserServiceImpl implements UserService {
     private final UserResponseMapper userResponseMapper;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
 
-    private Role defaultUserRole;
 
-    @PostConstruct
-    public void initDefaultRole() {
-        this.defaultUserRole = roleRepository.findByName("ROLE_USER")
-            .orElseThrow(() -> new IllegalStateException("ROLE_USER missing"));
-    }
 
     @Transactional
     @Override
@@ -123,7 +117,7 @@ public class UserServiceImpl implements UserService {
                 .setupRequired(true)
                 .failedLoginAttempts(0)
                 .status(UserStatus.ACTIVE)
-                .role(defaultUserRole)
+                .role(getDefaultUserRole())
                 .build();
         try {
             User saved = userRepository.save(user);
@@ -133,6 +127,15 @@ public class UserServiceImpl implements UserService {
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
         }
+    }
+
+    private Role getDefaultUserRole() {
+        return roleRepository.findByName("ROLE_USER")
+            .orElseGet(() -> {
+                Role role = new Role();
+                role.setName("ROLE_USER");
+                return roleRepository.save(role);
+            });
     }
 
     @CacheEvict(value = "users", key = "#userId")
