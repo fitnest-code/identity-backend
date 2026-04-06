@@ -85,6 +85,8 @@ spring:
           min-idle: 2
           max-wait: 2000ms
         shutdown-timeout: 100ms
+      repositories:
+        enabled: false
 
   # Kafka
   kafka:

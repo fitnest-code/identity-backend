@@ -1,9 +1,6 @@
 package az.fitnest.identity.configuration;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import org.springdoc.core.properties.SpringDocConfigProperties;
-import org.springdoc.webmvc.api.OpenApiWebMvcResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -13,23 +10,18 @@ import org.springframework.scheduling.annotation.Async;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Locale;
 
 @Configuration
 public class OpenApiWarmupConfig {
 
     private final SpringDocConfigProperties springDocConfigProperties;
-    private final OpenApiWebMvcResource openApiResource;
 
     @Value("${server.port:8080}")
     private int serverPort;
 
     @Autowired
-    public OpenApiWarmupConfig(
-            SpringDocConfigProperties springDocConfigProperties,
-            @Autowired(required = false) OpenApiWebMvcResource openApiResource) {
+    public OpenApiWarmupConfig(SpringDocConfigProperties springDocConfigProperties) {
         this.springDocConfigProperties = springDocConfigProperties;
-        this.openApiResource = openApiResource;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -40,16 +32,10 @@ public class OpenApiWarmupConfig {
         }
 
         try {
-            if (openApiResource != null) {
-                try {
-                    openApiResource.openapiJson(null, "", Locale.getDefault());
-                    return;
-                } catch (Exception e) {
-                }
-            }
-
+            // Avoid calling openApiResource.openapiJson(null, ...) directly as it can cause NPE in SB4
             warmupViaHttp();
         } catch (Exception e) {
+            // Ignore warmup failures
         }
     }
 
