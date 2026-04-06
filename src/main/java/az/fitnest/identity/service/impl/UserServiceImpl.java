@@ -161,13 +161,24 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public az.fitnest.identity.dto.response.OtpSendResponse requestEmailChange(Long userId, String newEmail) {
         User user = getUserOrThrow(userId);
-        boolean alreadyExists = userProfileGrpcClient.getUserByEmail(newEmail) != null;
-        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail, null);
-        if (!alreadyExists) {
-            return otpService.sendOtpByUserId(userId, otpRequest);
-        } else {
-            return new az.fitnest.identity.dto.response.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
+        String trimmedEmail = (newEmail != null) ? newEmail.trim().toLowerCase() : null;
+
+        try {
+            var currentProfile = userProfileGrpcClient.getUserProfileDetails(userId);
+            if (currentProfile != null && trimmedEmail != null && trimmedEmail.equals(currentProfile.getEmail())) {
+                throw new az.fitnest.identity.exception.ValidationException("error.service.same_email", "SAME_EMAIL");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch profile during email change request for user {}. Proceeding without same-email check.", userId);
         }
+
+        boolean alreadyExists = trimmedEmail != null && userProfileGrpcClient.getUserByEmail(trimmedEmail) != null;
+        if (alreadyExists) {
+            throw new ConflictException("error.service.email_already_in_use", "DUPLICATE_EMAIL");
+        }
+
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.EMAIL_CHANGE, null, newEmail, null);
+        return otpService.sendOtpByUserId(userId, otpRequest);
     }
 
     @Override
@@ -191,13 +202,17 @@ public class UserServiceImpl implements UserService {
     public az.fitnest.identity.dto.response.OtpSendResponse requestMobileChange(Long userId, String newMobile) {
         User user = getUserOrThrow(userId);
         String normalizedMobile = MobileNumberUtils.normalize(newMobile);
-        boolean canChange = !normalizedMobile.equals(user.getMobile()) && userRepository.findFirstByMobile(normalizedMobile).isEmpty();
-        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null, null);
-        if (canChange) {
-            return otpService.sendOtpByUserId(userId, otpRequest);
-        } else {
-            return new az.fitnest.identity.dto.response.OtpSendResponse(null, null, null, "success.otp.sent_if_exists");
+
+        if (normalizedMobile.equals(user.getMobile())) {
+            throw new az.fitnest.identity.exception.ValidationException("error.service.same_mobile", "SAME_MOBILE");
         }
+
+        if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
+            throw new ConflictException("error.service.mobile_already_in_use", "DUPLICATE_MOBILE");
+        }
+
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.MOBILE_CHANGE, normalizedMobile, null, null);
+        return otpService.sendOtpByUserId(userId, otpRequest);
     }
 
     @Override
