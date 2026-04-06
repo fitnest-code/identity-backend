@@ -19,6 +19,8 @@ public interface LegalService {
 
     void acceptConsent(Long userId, ConsentAcceptRequest request, String ipAddress, String userAgent);
 
+    void acceptLatestConsents(Long userId, String platform, String ipAddress, String userAgent);
+
     void autoAcceptLatestConsents(Long userId);
 
     UserConsentStatusResponse getUserConsentStatus(Long userId);

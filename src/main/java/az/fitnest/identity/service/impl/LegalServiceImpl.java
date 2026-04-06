@@ -117,12 +117,12 @@ public class LegalServiceImpl implements LegalService {
 
     @Transactional
     @Override
-    public void autoAcceptLatestConsents(Long userId) {
+    public void acceptLatestConsents(Long userId, String platform, String ipAddress, String userAgent) {
         String latestPrivacyVersion = getLatestVersion(LegalDocumentType.PRIVACY_POLICY);
         String latestTermsVersion = getLatestVersion(LegalDocumentType.TERMS_OF_USE);
 
         if (latestPrivacyVersion == null || latestTermsVersion == null) {
-            return;
+            throw new ValidationException("Heç bir aktiv hüquqi sənəd tapılmadı", "MISSING_LEGAL_DOCUMENTS");
         }
 
         UserConsent consent = UserConsent.builder()
@@ -130,12 +130,18 @@ public class LegalServiceImpl implements LegalService {
                 .privacyPolicyVersion(latestPrivacyVersion)
                 .termsOfUseVersion(latestTermsVersion)
                 .acceptedAt(LocalDateTime.now())
-                .platform("SYSTEM")
-                .ipAddress("0.0.0.0")
-                .userAgent("SYSTEM-AUTO-ACCEPT")
+                .platform(platform != null ? platform : "UNKNOWN")
+                .ipAddress(ipAddress != null ? ipAddress : "0.0.0.0")
+                .userAgent(userAgent != null ? userAgent : "UNKNOWN")
                 .build();
 
         userConsentRepository.save(consent);
+    }
+
+    @Transactional
+    @Override
+    public void autoAcceptLatestConsents(Long userId) {
+        acceptLatestConsents(userId, "SYSTEM", "0.0.0.0", "SYSTEM-AUTO-ACCEPT");
     }
 
     @Override

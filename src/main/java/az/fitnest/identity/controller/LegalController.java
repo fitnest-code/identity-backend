@@ -76,4 +76,23 @@ public class LegalController {
         return ResponseEntity.ok(legalService.getUserConsentStatus(userId));
     }
 
+    @PostMapping("/consents/me/accept")
+    @Operation(summary = "Son razılıqları qəbul edin", description = "Məxfilik Siyasəti və İstifadə Şərtlərinin ən son aktiv versiyalarını qəbul edir.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Razılıqlar uğurla qəbul edildi", content = @Content(schema = @Schema(implementation = UserConsentStatusResponse.class))),
+            @ApiResponse(responseCode = "401", description = "İstifadəçi autentifikasiya olunmayıb")
+    })
+    public ResponseEntity<UserConsentStatusResponse> acceptLatestConsents(
+            @RequestParam(required = false) String platform,
+            HttpServletRequest request) {
+        Long userId = UserContext.getRequiredUserId();
+        String ipAddress = request.getRemoteAddr();
+        String userAgent = request.getHeader("User-Agent");
+
+        legalService.acceptLatestConsents(userId, platform, ipAddress, userAgent);
+
+        return ResponseEntity.ok(legalService.getUserConsentStatus(userId));
+    }
+
 }

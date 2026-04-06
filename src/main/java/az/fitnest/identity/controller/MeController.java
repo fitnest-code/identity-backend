@@ -127,9 +127,9 @@ public class MeController {
     @Operation(summary = "Mobil nömrə dəyişmə sorğusu", description = "Yeni mobil nömrəyə OTP kodu göndərir. Cavabda otp_session_id qaytarılır.")
     @PostMapping("/api/v1/me/change-mobile/request")
     public ResponseEntity<ApiResponse<az.fitnest.identity.dto.response.OtpSendResponse>> requestMobileChange(
-            @RequestParam String newMobile) {
+            @Valid @RequestBody az.fitnest.identity.dto.request.ChangeMobileRequest request) {
         Long userId = UserContext.getRequiredUserId();
-        az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestMobileChange(userId, newMobile);
+        az.fitnest.identity.dto.response.OtpSendResponse otpResponse = userService.requestMobileChange(userId, request.newMobile());
         return ResponseEntity.ok(ApiResponse.success(otpResponse));
     }
 

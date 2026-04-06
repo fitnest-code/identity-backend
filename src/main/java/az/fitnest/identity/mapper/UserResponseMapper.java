@@ -5,6 +5,7 @@ import az.fitnest.identity.dto.request.*;
 import az.fitnest.identity.dto.response.*;
 import az.fitnest.identity.dto.response.UserResponse;
 import az.fitnest.identity.model.entity.User;
+import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
 import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +15,10 @@ import lombok.RequiredArgsConstructor;
 public class UserResponseMapper {
 
     private final UserProfileGrpcClient userProfileGrpcClient;
+    private final LegalService legalService;
 
     public UserResponse toResponse(User user) {
-        return toResponse(user, false);
+        return toResponse(user, legalService.isConsentRequired(user.getId()));
     }
 
     public UserResponse toResponse(User user, boolean consentRequired) {
