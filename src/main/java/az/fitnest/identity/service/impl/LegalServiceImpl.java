@@ -1,7 +1,5 @@
 package az.fitnest.identity.service.impl;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import az.fitnest.identity.repository.UserConsentRepository;
 import az.fitnest.identity.repository.LegalDocumentRepository;
 import az.fitnest.identity.dto.request.*;
@@ -117,6 +115,29 @@ public class LegalServiceImpl implements LegalService {
         userConsentRepository.save(consent);
     }
 
+    @Transactional
+    @Override
+    public void autoAcceptLatestConsents(Long userId) {
+        String latestPrivacyVersion = getLatestVersion(LegalDocumentType.PRIVACY_POLICY);
+        String latestTermsVersion = getLatestVersion(LegalDocumentType.TERMS_OF_USE);
+
+        if (latestPrivacyVersion == null || latestTermsVersion == null) {
+            return;
+        }
+
+        UserConsent consent = UserConsent.builder()
+                .userId(userId)
+                .privacyPolicyVersion(latestPrivacyVersion)
+                .termsOfUseVersion(latestTermsVersion)
+                .acceptedAt(LocalDateTime.now())
+                .platform("SYSTEM")
+                .ipAddress("0.0.0.0")
+                .userAgent("SYSTEM-AUTO-ACCEPT")
+                .build();
+
+        userConsentRepository.save(consent);
+    }
+
     @Override
     public UserConsentStatusResponse getUserConsentStatus(Long userId) {
         Optional<UserConsent> latestConsent = userConsentRepository.findTopByUserIdOrderByAcceptedAtDesc(userId);
@@ -126,20 +147,13 @@ public class LegalServiceImpl implements LegalService {
 
         if (latestConsent.isPresent()) {
             UserConsent consent = latestConsent.get();
-
-            boolean isPrivacyUpToDate = latestPrivacyVersion != null && latestPrivacyVersion.equals(consent.getPrivacyPolicyVersion());
-            boolean isTermsUpToDate = latestTermsVersion != null && latestTermsVersion.equals(consent.getTermsOfUseVersion());
-
-            return userConsentStatusResponseMapper.toResponse(consent, isPrivacyUpToDate, isTermsUpToDate);
+            return userConsentStatusResponseMapper.toResponse(consent, latestPrivacyVersion, latestTermsVersion);
         }
 
         return new UserConsentStatusResponse(
-                new UserConsentStatusResponse.ConsentStatus(false, false),
-                new UserConsentStatusResponse.ConsentStatus(false, false),
-                false,
-                false,
-                null,
-                null
+                new UserConsentStatusResponse.ConsentDetail(false, false, null, latestPrivacyVersion, null),
+                new UserConsentStatusResponse.ConsentDetail(false, false, null, latestTermsVersion, null),
+                false
         );
     }
 

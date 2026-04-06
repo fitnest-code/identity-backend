@@ -4,21 +4,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 public record UserConsentStatusResponse(
-    ConsentStatus privacy,
-    ConsentStatus terms,
-    boolean accepted,
-
-    @JsonProperty("up_to_date")
-    boolean upToDate,
-
-    String version,
-
-    @JsonProperty("accepted_at")
-    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy")
-    LocalDateTime acceptedAt
+    ConsentDetail privacy,
+    ConsentDetail terms,
+    @JsonProperty("is_all_accepted")
+    boolean isAllAccepted
 ) {
-    public record ConsentStatus(
+    public record ConsentDetail(
         boolean accepted,
-        boolean upToDate
+
+        @JsonProperty("up_to_date")
+        boolean upToDate,
+
+        @JsonProperty("accepted_version")
+        String acceptedVersion,
+
+        @JsonProperty("latest_version")
+        String latestVersion,
+
+        @JsonProperty("accepted_at")
+        @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy HH:mm:ss")
+        LocalDateTime acceptedAt
     ) {}
 }

@@ -7,6 +7,7 @@ import az.fitnest.identity.dto.request.RegisterRequest;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
@@ -43,6 +44,8 @@ public class RegistrationServiceTest {
     private OtpService otpService;
     @Mock
     private RegistrationTokenService registrationTokenService;
+    @Mock
+    private LegalService legalService;
 
     private RegistrationServiceImpl registrationService;
 
@@ -54,7 +57,8 @@ public class RegistrationServiceTest {
             userRepository,
             tokenIssuanceService,
             otpService,
-            registrationTokenService
+            registrationTokenService,
+            legalService
         );
     }
 

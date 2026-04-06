@@ -9,6 +9,7 @@ import az.fitnest.identity.dto.request.RegisterRequest;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationService;
@@ -30,6 +31,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final TokenIssuanceService tokenIssuanceService;
     private final OtpService otpService;
     private final RegistrationTokenService registrationTokenService;
+    private final LegalService legalService;
 
     @Override
     public OtpSendResponse startRegistration(RegisterRequest request) {
@@ -64,6 +66,8 @@ public class RegistrationServiceImpl implements RegistrationService {
                 passwordHash,
                 mobile
         );
+
+        legalService.autoAcceptLatestConsents(user.getId());
 
         return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType(), false);
     }

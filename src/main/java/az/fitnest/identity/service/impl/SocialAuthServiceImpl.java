@@ -14,6 +14,7 @@ import az.fitnest.identity.repository.SocialAuthRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.service.AppleTokenVerifier;
 import az.fitnest.identity.service.GoogleTokenVerifier;
+import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
@@ -37,6 +38,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final TokenIssuanceService tokenIssuanceService;
     private final RoleRepository roleRepository;
     private final UserProfileGrpcClient userProfileGrpcClient;
+    private final LegalService legalService;
 
     @Transactional
     @Override
@@ -131,6 +133,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         linkSocialAccount(newUser.getId(), provider, providerId);
 
         log.info("Issuing tokens for new user: {}", newUser.getId());
+        legalService.autoAcceptLatestConsents(newUser.getId());
         return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
     }
 
