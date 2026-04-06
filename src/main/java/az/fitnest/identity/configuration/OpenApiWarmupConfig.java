@@ -32,10 +32,8 @@ public class OpenApiWarmupConfig {
         }
 
         try {
-            // Avoid calling openApiResource.openapiJson(null, ...) directly as it can cause NPE in SB4
             warmupViaHttp();
         } catch (Exception e) {
-            // Ignore warmup failures
         }
     }
 
