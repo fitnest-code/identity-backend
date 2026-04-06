@@ -30,7 +30,7 @@ public class UserResponseMapper {
         try {
             var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
             if (profile != null) {
-                profileImageUrl = profile.getProfileImageUrl();
+                profileImageUrl = formatProfileImageUrl(profile.getProfileImageUrl());
                 firstName = profile.getFirstName();
                 lastName = profile.getLastName();
                 email = profile.getEmail();
@@ -56,5 +56,15 @@ public class UserResponseMapper {
                 consentRequired,
                 user.getRole() != null ? user.getRole().getName() : null
         );
+    }
+
+    private String formatProfileImageUrl(String profileImageUrl) {
+        if (profileImageUrl == null || profileImageUrl.isBlank()) {
+            return null;
+        }
+        if (profileImageUrl.startsWith("http")) {
+            return profileImageUrl;
+        }
+        return "/api/v1/me/profile/images/" + profileImageUrl;
     }
 }
