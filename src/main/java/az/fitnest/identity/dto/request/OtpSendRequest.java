@@ -18,7 +18,7 @@ public class OtpSendRequest {
     private OtpPurpose purpose;
 
     @Schema(description = "Mobile number to receive the OTP", example = "0501234567")
-    @jakarta.validation.constraints.Pattern(regexp = "^(0|\\+994)(50|51|10|55|99|70|77|60)\\d{7}$", message = "Invalid mobile number format. Must be in Azerbaijan format (e.g., 0501234567 or +994501234567).")
+    @jakarta.validation.constraints.Pattern(regexp = "^(0|\\+994|994)?(10|50|51|55|60|70|77|99)\\d{7}$", message = "Invalid mobile number format. Must be in Azerbaijan format (e.g., 0501234567 or +994501234567).")
     private String mobile;
 
     @Email

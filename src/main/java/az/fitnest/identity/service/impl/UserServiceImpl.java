@@ -203,6 +203,10 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         String normalizedMobile = MobileNumberUtils.normalize(newMobile);
 
+        if (normalizedMobile == null) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_MOBILE");
+        }
+
         if (normalizedMobile.equals(user.getMobile())) {
             throw new az.fitnest.identity.exception.ValidationException("error.service.same_mobile", "SAME_MOBILE");
         }

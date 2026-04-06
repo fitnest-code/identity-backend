@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Pattern;
 @Schema(description = "Request body for changing mobile number")
 public record ChangeMobileRequest(
     @NotBlank
-    @Pattern(regexp = "^(050|051|055|070|077|099|010|060)\\d{7}$", message = "Phone must be in format 0501234567")
+    @Pattern(regexp = "^(0|\\+994|994)?(10|50|51|55|60|70|77|99)\\d{7}$", message = "Phone must be in format 0501234567 or +994501234567")
     @Schema(description = "New mobile number", example = "0501234567", requiredMode = Schema.RequiredMode.REQUIRED)
     String newMobile
 ) {}
