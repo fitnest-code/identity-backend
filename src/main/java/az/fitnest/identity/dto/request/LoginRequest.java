@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 @Schema(description = "User login credentials")
 public record LoginRequest(
     @NotBlank(message = "Mobil nömrə tələb olunur")
-    @Pattern(regexp = "^(0|\\+994|994)?(10|50|51|55|60|70|77|99)\\d{7}$", message = "Yanlış mobil nömrə formatı. Azərbaycan formatında olmalıdır (məsələn, 0501234567 və ya +994501234567).")
+    @Pattern(regexp = "^(\\+994|0)(10|50|51|55|60|70|77|99)\\d{7}$", message = "Yanlış mobil nömrə formatı. Azərbaycan formatında olmalıdır (məsələn, 0501234567 və ya +994501234567).")
     @Schema(description = "User's mobile number in Azerbaijan format", example = "0501234567", requiredMode = Schema.RequiredMode.REQUIRED)
     String mobile,
 

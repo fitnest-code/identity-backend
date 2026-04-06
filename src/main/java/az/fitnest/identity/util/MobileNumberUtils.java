@@ -17,12 +17,10 @@ public class MobileNumberUtils {
         String digits = mobile.replaceAll("\\D", "");
 
         String normalizedDigits;
-        if (digits.startsWith("994") && digits.length() == 12) {
+        if (mobile.startsWith("+994") && digits.length() == 12) {
             normalizedDigits = digits;
-        } else if (digits.startsWith("0") && digits.length() == 10) {
+        } else if (mobile.startsWith("0") && digits.length() == 10) {
             normalizedDigits = "994" + digits.substring(1);
-        } else if (digits.length() == 9) {
-            normalizedDigits = "994" + digits;
         } else {
             return null;
         }
