@@ -47,9 +47,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ApiResponse<Void>> handleBaseException(BaseException exception, WebRequest request) {
         logger.error("Base exception: {}", exception.getMessage(), exception);
+        
+        String messageKey = exception.getMessage();
         String errorCode = exception.getErrorCode();
-        String safeCode = errorCode.startsWith("error.") ? errorCode : "error.server.internal";
+        
+        // Determine the actual error code to return and use for translation
+        // Prefer message key if it starts with "error." (common pattern in service impl)
+        // Otherwise use errorCode if it starts with "error.", fallback to original errorCode
+        String finalErrorCode = (messageKey != null && messageKey.startsWith("error.")) ? messageKey :
+                              (errorCode != null && errorCode.startsWith("error.")) ? errorCode : errorCode;
+        
+        // Final safety check: if we still don't have an "error." prefix, 
+        // we use getMessage(finalErrorCode) which will fallback to error.server.internal if not found.
+        String safeCode = finalErrorCode != null && finalErrorCode.startsWith("error.") ? finalErrorCode : "error.server.internal";
         String message = getMessage(safeCode);
+        
         ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code(safeCode)
                 .message(message)
