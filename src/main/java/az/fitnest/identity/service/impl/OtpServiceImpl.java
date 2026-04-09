@@ -500,12 +500,22 @@ public class OtpServiceImpl implements OtpService {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs != null) {
             HttpServletRequest req = attrs.getRequest();
-            String ip = req.getHeader("X-Forwarded-For");
+            
+            String ip = req.getHeader("X-Client-IP");
             if (ip == null || ip.isBlank()) {
-                ip = req.getRemoteAddr();
-            } else {
-                ip = ip.split(",")[0].trim();
+                ip = req.getHeader("X-Forwarded-For");
+                if (ip != null && !ip.isBlank()) {
+                    ip = ip.split(",")[0].trim();
+                } else {
+                    ip = req.getRemoteAddr();
+                }
             }
+            
+            String userAgent = req.getHeader("User-Agent");
+            if (userAgent != null && !userAgent.isBlank()) {
+                ip = ip + ":" + Math.abs(userAgent.hashCode());
+            }
+
             return "ip:" + ip;
         }
         return "ip:unknown";
