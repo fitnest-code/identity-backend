@@ -134,7 +134,12 @@ public class OtpServiceImpl implements OtpService {
             }
         }
         if (state.getDailySendCount() != null && state.getDailySendCount() >= 10) {
-            throw new OtpRateLimitedException(getMessage("error.otp.daily_limit"), 24 * 3600);
+            long wait = 24 * 3600;
+            if (state.getLastSentAt() != null) {
+                wait = state.getLastSentAt().plusSeconds(24 * 3600).getEpochSecond() - now.getEpochSecond();
+                if (wait < 0) wait = 0;
+            }
+            throw new OtpRateLimitedException(getMessage("error.otp.daily_limit"), wait);
         }
         state.setResendCount(state.getResendCount() == null ? 1 : state.getResendCount() + 1);
         state.setLastSentAt(now);
