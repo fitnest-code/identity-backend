@@ -44,7 +44,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Transactional
     public OtpSendResponse forgotPassword(ForgotPasswordRequest request) {
         if (request == null || !StringUtils.hasText(request.mobile())) {
-            return otpSendResponseMapper.toResponse(null, null, null, getMessage("success.otp.sent_if_exists"));
+            return otpSendResponseMapper.toResponse(null, null, null, getMessage("success.otp.sent"));
         }
         String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
@@ -82,7 +82,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         userRepository.save(user);
         resetPasswordTokenService.consume(request.resetToken());
         revokeAllUserTokens(user.getId());
-        return resetPasswordResponseMapper.toResponse(getMessage("info.service.request_processed"));
+        return resetPasswordResponseMapper.toResponse(getMessage("success.password.changed"));
     }
 
     private String getMessage(String code, Object... args) {

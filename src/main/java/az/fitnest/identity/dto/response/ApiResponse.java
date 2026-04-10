@@ -23,6 +23,9 @@ public record ApiResponse<T>(
         if (error != null) {
             return Map.of("error", error);
         }
+        if (data instanceof ApiSuccessResponse success) {
+            return Map.of("success", success);
+        }
         return data != null ? data : Map.of();
     }
 }
