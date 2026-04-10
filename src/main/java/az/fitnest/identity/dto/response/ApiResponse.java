@@ -2,6 +2,7 @@ package az.fitnest.identity.dto.response;
 
 import az.fitnest.identity.dto.response.ApiErrorResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 
