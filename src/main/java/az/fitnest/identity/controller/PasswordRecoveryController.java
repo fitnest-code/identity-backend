@@ -35,8 +35,20 @@ public class PasswordRecoveryController {
     @PostMapping("/forgot-password")
     @Operation(summary = "Şifrəni unutmuşam", description = "Şifrəni bərpa etmək üçün OTP göndərir.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP uğurla göndərildi", content = @Content(schema = @Schema(implementation = ApiSuccessResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Yanlış sorğu və ya doğrulama uğursuz oldu")
+            @ApiResponse(responseCode = "200", description = "OTP uğurla göndərildi",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiSuccessResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    name = "SuccessResponse",
+                                    value = "{\"success\": {\"code\": \"success.otp.sent\", \"message\": \"Təsdiq kodu göndərildi\", \"status\": 200, \"path\": \"/api/v1/auth/password-recovery/forgot-password\", \"timestamp\": \"2026-04-10T11:39:29.183Z\", \"details\": {\"otp_session_id\": \"550e8400-e29b-41d4-a716-446655440000\", \"expires_in_seconds\": 180, \"resend_available_in_seconds\": 60, \"message\": \"Təsdiq kodu göndərildi\"}}}"
+                            ))),
+            @ApiResponse(responseCode = "400", description = "Yanlış sorğu və ya doğrulama uğursuz oldu",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    name = "ErrorResponse",
+                                    value = "{\"error\": {\"code\": \"error.validation\", \"message\": \"Verilən məlumatlar etibarsızdır\", \"status\": 400, \"path\": \"/api/v1/auth/password-recovery/forgot-password\", \"timestamp\": \"2026-04-10T11:39:29.183Z\"}}"
+                            )))
     })
     public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<ApiSuccessResponse>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request,
@@ -65,8 +77,20 @@ public class PasswordRecoveryController {
     @PostMapping("/reset-password")
     @Operation(summary = "Şifrəni sıfırlayın", description = "OTP və yeni şifrə ilə şifrəni sıfırlayır.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Şifrə uğurla sıfırlandı", content = @Content(schema = @Schema(implementation = ApiSuccessResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Yanlış sorğu və ya doğrulama uğursuz oldu")
+            @ApiResponse(responseCode = "200", description = "Şifrə uğurla sıfırlandı",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiSuccessResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    name = "SuccessResponse",
+                                    value = "{\"success\": {\"code\": \"success.password.changed\", \"message\": \"Şifrə uğurla dəyişdirildi\", \"status\": 200, \"path\": \"/api/v1/auth/password-recovery/reset-password\", \"timestamp\": \"2026-04-10T11:39:29.183Z\"}}"
+                            ))),
+            @ApiResponse(responseCode = "400", description = "Yanlış sorğu və ya doğrulama uğursuz oldu",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    name = "ErrorResponse",
+                                    value = "{\"error\": {\"code\": \"error.validation\", \"message\": \"Verilən məlumatlar etibarsızdır\", \"status\": 400, \"path\": \"/api/v1/auth/password-recovery/reset-password\", \"timestamp\": \"2026-04-10T11:39:29.183Z\"}}"
+                            )))
     })
     public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<ApiSuccessResponse>> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request,
