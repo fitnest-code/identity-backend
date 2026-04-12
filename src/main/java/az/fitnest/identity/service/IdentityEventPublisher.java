@@ -16,7 +16,7 @@ public class IdentityEventPublisher {
                 .eventId(UUID.randomUUID().toString())
                 .userId(userId)
                 .timestamp(System.currentTimeMillis())
-                .source("identity-service")
+                .source("identity-backend")
                 .build();
         kafkaTemplate.send("user-setup-completed", String.valueOf(userId), event);
     }
