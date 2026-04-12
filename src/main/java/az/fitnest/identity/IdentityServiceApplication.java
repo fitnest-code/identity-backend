@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@EnableMethodSecurity
 @EnableCaching
 @EnableJpaAuditing
 @EnableAsync

@@ -32,6 +32,8 @@ public class OpenApiWarmupConfig {
         }
 
         try {
+            // Give Tomcat a moment to fully initialize its connectors
+            Thread.sleep(2000);
             warmupViaHttp();
         } catch (Exception e) {
         }
