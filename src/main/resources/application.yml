@@ -140,6 +140,7 @@ auth:
     team-id: ${APPLE_TEAM_ID:}
 
 springdoc:
+  server-url: ${SPRINGDOC_SERVER_URL:}
   api-docs:
     path: /v3/api-docs
     enabled: true
@@ -238,11 +239,9 @@ management:
         enabled: true
     metrics:
       enabled: true
-    prometheus:
-      enabled: true
-  metrics:
-    export:
-      prometheus:
+  prometheus:
+    metrics:
+      export:
         enabled: true
     distribution:
       percentiles-histogram:
