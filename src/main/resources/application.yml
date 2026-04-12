@@ -86,7 +86,7 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service.fitnest-dev.svc.cluster.local:9092}
     consumer:
-      group-id: identity-group
+      group-id: identity-backend
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -190,8 +190,8 @@ otp:
 
 # ✅ Updated to user-backend
 user:
-  service:
-    url: ${USER_SERVICE_URL:http://user-backend:8080}
+  backend:
+    url: ${USER_BACKEND_URL:http://user-backend:8080}
 
 app:
   security:
@@ -343,13 +343,13 @@ grpc:
         trust-cert-collection: ${GRPC_TRUST_CERT:}
         client-cert-chain: ${GRPC_CLIENT_CERT:}
         client-private-key: ${GRPC_CLIENT_KEY:}
-    # ✅ Updated to order-backend
+  # ✅ Updated to order-backend
     order-backend:
-      address: 'static://${ORDER_SERVICE_GRPC_HOST:order-backend}:${ORDER_SERVICE_GRPC_PORT:9090}'
+      address: 'static://${ORDER_BACKEND_GRPC_HOST:order-backend}:${ORDER_BACKEND_GRPC_PORT:9090}'
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
     # ✅ Updated to user-backend
     user-backend:
-      address: ${USER_SERVICE_GRPC_ADDRESS:static://user-backend:9090}
+      address: ${USER_BACKEND_GRPC_ADDRESS:static://user-backend:9090}
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
   notifications:
     deadline-ms: 10000
