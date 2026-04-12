@@ -27,7 +27,7 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         OpenAPI openAPI = new OpenAPI()
                 .info(new Info()
-                        .title("Identity Service API")
+                        .title("Identity Backend API")
                         .version("1.0.0")
                         .description("Identity and Access Management Service - Handles authentication, registration, OTP verification, and user management")
                         .contact(new Contact()

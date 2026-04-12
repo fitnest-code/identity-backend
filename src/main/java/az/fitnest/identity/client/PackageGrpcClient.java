@@ -10,7 +10,7 @@ import java.util.List;
 
 @Service
 public class PackageGrpcClient {
-    @GrpcClient("order-service")
+    @GrpcClient("order-backend")
     private UserSubscriptionServiceGrpc.UserSubscriptionServiceBlockingStub blockingStub;
 
     public List<Long> getUserIdsByPackageId(Long packageId) {

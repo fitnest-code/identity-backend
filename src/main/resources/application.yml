@@ -266,7 +266,7 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
-    name: logs/identity-service.log   # You may optionally rename this file to identity-backend.log
+    name: logs/identity-backend.log   # You may optionally rename this file to identity-backend.log
     max-size: 10MB
     max-history: 30
 
@@ -326,7 +326,7 @@ grpc:
       private-key: ${GRPC_SERVER_KEY:}
       trust-cert-collection: ${GRPC_TRUST_CERT:}
   client:
-    identity-service:   # This is self-reference, unchanged
+    identity-backend:   # This is self-reference, unchanged
       address: 'static://localhost:9090'
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
       security:
@@ -335,7 +335,7 @@ grpc:
         client-cert-chain: ${GRPC_CLIENT_CERT:}
         client-private-key: ${GRPC_CLIENT_KEY:}
     # ✅ Updated to notifications-backend
-    notifications-service:
+    notifications-backend:
       address: 'static://notifications-backend:9090'
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
       security:
@@ -344,11 +344,11 @@ grpc:
         client-cert-chain: ${GRPC_CLIENT_CERT:}
         client-private-key: ${GRPC_CLIENT_KEY:}
     # ✅ Updated to order-backend
-    order-service:
+    order-backend:
       address: 'static://${ORDER_SERVICE_GRPC_HOST:order-backend}:${ORDER_SERVICE_GRPC_PORT:9090}'
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
     # ✅ Updated to user-backend
-    user-service:
+    user-backend:
       address: ${USER_SERVICE_GRPC_ADDRESS:static://user-backend:9090}
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
   notifications:

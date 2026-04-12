@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserProfileGrpcClient {
 
-    @GrpcClient("user-service")
+    @GrpcClient("user-backend")
     private UserProfileServiceGrpc.UserProfileServiceBlockingStub stub;
 
     public UserProfileDetailsResponse getUserProfileDetails(Long userId) {

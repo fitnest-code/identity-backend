@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 @Component
 public class UserSubscriptionGrpcClient {
 
-    @GrpcClient("order-service")
+    @GrpcClient("order-backend")
     private UserSubscriptionServiceGrpc.UserSubscriptionServiceBlockingStub stub;
 
     public List<Long> getUserIdsByPackageId(long packageId) {
