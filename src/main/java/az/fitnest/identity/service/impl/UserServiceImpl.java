@@ -117,7 +117,7 @@ public class UserServiceImpl implements UserService {
                 .build();
         try {
             User saved = userRepository.save(user);
-            log.info("Creating user profile in user-service for user ID: {}", saved.getId());
+            log.info("Creating user profile in user-backend for user ID: {}", saved.getId());
             userProfileGrpcClient.createUserProfile(saved.getId(), firstName, lastName, null);
             return saved;
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
@@ -144,7 +144,7 @@ public class UserServiceImpl implements UserService {
         boolean namePartsProvided = firstName != null || lastName != null;
         if (namePartsProvided) {
             NameParts parts = resolveNameParts(firstName, lastName, null);
-            log.info("Updating user profile in user-service for user ID: {}", userId);
+            log.info("Updating user profile in user-backend for user ID: {}", userId);
             userProfileGrpcClient.createUserProfile(userId, parts.firstName(), parts.lastName(), null);
         }
         User saved = userRepository.save(user);
@@ -190,7 +190,7 @@ public class UserServiceImpl implements UserService {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
         String newEmail = verificationResult.email();
-        log.info("Confirming email change to {} in user-service for user ID: {}", newEmail, userId);
+        log.info("Confirming email change to {} in user-backend for user ID: {}", newEmail, userId);
         userProfileGrpcClient.createUserProfile(userId, null, null, newEmail.trim().toLowerCase());
         User saved = userRepository.save(user);
         localEventPublisher.publishEvent(new UserUpdatedEvent(userId));

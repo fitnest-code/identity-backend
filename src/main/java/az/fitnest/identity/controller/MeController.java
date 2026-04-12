@@ -55,7 +55,7 @@ public class MeController {
                 email = profile.getEmail();
             }
         } catch (Exception e) {
-            log.warn("Failed to fetch profile for user {} from user-service", userId);
+            log.warn("Failed to fetch profile for user {} from user-backend", userId);
         }
 
         MinimalIdentityResponse response = new MinimalIdentityResponse(

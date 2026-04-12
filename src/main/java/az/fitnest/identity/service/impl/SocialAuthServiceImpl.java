@@ -103,14 +103,14 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         }
 
         if (email != null && !email.isEmpty()) {
-            log.info("No social auth record found, checking if user exists by email in user-service: {}", email);
+            log.info("No social auth record found, checking if user exists by email in user-backend: {}", email);
             var userByEmail = userProfileGrpcClient.getUserByEmail(email);
             if (userByEmail != null) {
                 Long userId = userByEmail.userId();
-                log.info("Found existing user by email in user-service: {}. UserId: {}. Linking {} account.", email, userId, provider);
+                log.info("Found existing user by email in user-backend: {}. UserId: {}. Linking {} account.", email, userId, provider);
                 User user = userRepository.findById(userId)
                         .orElseThrow(() -> {
-                            log.error("User ID {} found in user-service but not in identity-service", userId);
+                            log.error("User ID {} found in user-backend but not in identity-backend", userId);
                             return new InvalidCredentialsException("error.auth.user_sync_error");
                         });
                 handleUserStatus(user);
@@ -186,7 +186,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
         User savedUser = userRepository.save(user);
 
-        log.info("Creating user profile in user-service for user ID: {}", savedUser.getId());
+        log.info("Creating user profile in user-backend for user ID: {}", savedUser.getId());
         userProfileGrpcClient.createUserProfile(savedUser.getId(), nameParts.firstName(), nameParts.lastName(), email);
 
         return savedUser;
