@@ -14,6 +14,7 @@ public record LoginRequest(
 
     @NotBlank(message = "Şifrə tələb olunur")
     @Size(min = 8, max = 64, message = "Şifrə 8-64 simvol aralığında olmalıdır")
+    @Pattern(regexp = "^\\S+$", message = "Şifrədə boşluq simvolu ola bilməz")
     @Schema(description = "User's password (8-64 characters)", example = "SecurePass123!", requiredMode = Schema.RequiredMode.REQUIRED, minLength = 8, maxLength = 64)
     String password
 ) {

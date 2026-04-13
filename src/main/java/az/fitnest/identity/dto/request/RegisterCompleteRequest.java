@@ -3,6 +3,7 @@ package az.fitnest.identity.dto.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Schema(description = "Request to complete registration after OTP verification")
@@ -26,6 +27,7 @@ public record RegisterCompleteRequest(
 
     @NotBlank(message = "Şifrə tələb olunur")
     @Size(min = 8, max = 100, message = "Şifrə 8-100 simvol aralığında olmalıdır")
+    @Pattern(regexp = "^\\S+$", message = "Şifrədə boşluq simvolu ola bilməz")
     @Schema(description = "User's password (min 8 characters)", example = "SecurePass123!", requiredMode = Schema.RequiredMode.REQUIRED)
     String password
 ) {}
