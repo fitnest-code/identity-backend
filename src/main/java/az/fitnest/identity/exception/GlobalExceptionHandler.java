@@ -47,29 +47,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ApiResponse<Void>> handleBaseException(BaseException exception, WebRequest request) {
         logger.error("Base exception: {}", exception.getMessage(), exception);
-        
-        String messageKey = exception.getMessage();
-        String errorCode = exception.getErrorCode();
-        
-        // Determine the actual error code to return and use for translation
-        // Prefer message key if it starts with "error." (common pattern in service impl)
-        // Otherwise use errorCode if it starts with "error.", fallback to original errorCode
-        String finalErrorCode = (messageKey != null && messageKey.startsWith("error.")) ? messageKey :
-                              (errorCode != null && errorCode.startsWith("error.")) ? errorCode : errorCode;
-        
-        // Final safety check: if we still don't have an "error." prefix, 
-        // we use getMessage(finalErrorCode) which will fallback to error.server.internal if not found.
-        String safeCode = finalErrorCode != null && finalErrorCode.startsWith("error.") ? finalErrorCode : "error.server.internal";
-        String message = getMessage(safeCode);
-        
+        HttpStatus status = exception.getHttpStatus();
         ApiErrorResponse apiError = ApiErrorResponse.builder()
-                .code(safeCode)
-                .message(message)
-                .status(exception.getHttpStatus().value())
+                .code(exception.getErrorCode())
+                .message(getLocalizedMessage(exception.getErrorCode(), exception.getMessage()))
+                .status(status.value())
                 .path(request.getDescription(false).replace("uri=", ""))
                 .timestamp(OffsetDateTime.now())
                 .build();
-        return ResponseEntity.status(exception.getHttpStatus()).body(ApiResponse.error(apiError));
+        return ResponseEntity.status(status).body(ApiResponse.error(apiError));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -78,7 +64,7 @@ public class GlobalExceptionHandler {
         BindingResult result = exception.getBindingResult();
         Map<String, String> validationErrors = new HashMap<>();
         for (FieldError error : result.getFieldErrors()) {
-            validationErrors.put(error.getField(), getMessage("error.validation.invalid_field"));
+            validationErrors.put(error.getField(), safeMessage(error.getDefaultMessage()));
         }
         ApiErrorResponse apiError = ApiErrorResponse.builder()
                 .code("error.validation")
@@ -171,11 +157,37 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ApiResponse.error(apiError));
     }
 
+    private String getLocalizedMessage(String errorCode, String defaultMessage) {
+        String key = "error." + errorCode.toLowerCase();
+        try {
+            return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
+        } catch (org.springframework.context.NoSuchMessageException e1) {
+            try {
+                return messageSource.getMessage(errorCode, null, LocaleContextHolder.getLocale());
+            } catch (org.springframework.context.NoSuchMessageException e2) {
+                return safeMessage(defaultMessage);
+            }
+        }
+    }
+
+    private String safeMessage(String msg) {
+        if (msg == null || msg.isBlank()) {
+            return getMessage("error.server.internal");
+        }
+        if (msg.startsWith("error.")) {
+            String resolved = getMessage(msg);
+            if (!resolved.equals(msg)) {
+                return resolved;
+            }
+        }
+        return msg;
+    }
+
     private String getMessage(String code) {
         try {
             return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
         } catch (org.springframework.context.NoSuchMessageException e) {
-            return getMessage("error.server.internal");
+            return code;
         }
     }
 }
