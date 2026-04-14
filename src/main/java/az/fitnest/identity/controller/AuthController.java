@@ -31,6 +31,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -60,7 +62,10 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Yanlış sorğu formatı", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Doğrulama uğursuz oldu\",\n    \"status\": 400,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}"))),
             @ApiResponse(responseCode = "429", description = "Çox sayda giriş cəhdi (limit keçilib)", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"LOGIN_RATE_LIMIT\",\n    \"message\": \"Çox sayda giriş cəhdi. Zəhmət olmasa bir az sonra yenidən cəhd edin.\",\n    \"status\": 429,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}")))
     })
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(
+            @Valid @RequestBody LoginRequest request,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
         Object response = authService.login(request);
         if (response instanceof az.fitnest.identity.dto.response.OtpSendResponse) {
             return ResponseEntity.ok(response);
@@ -92,7 +97,10 @@ public class AuthController {
 
     @PostMapping("/social/apple")
     @Operation(summary = "Apple ilə sosial giriş")
-    public ResponseEntity<LoginResponse> socialLoginApple(@Valid @RequestBody AppleSocialRequest request) {
+    public ResponseEntity<LoginResponse> socialLoginApple(
+            @Valid @RequestBody AppleSocialRequest request,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
         LoginResponse response = socialAuthService.socialLoginApple(request);
         HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(status).body(response);
@@ -100,7 +108,10 @@ public class AuthController {
 
     @PostMapping("/social/google")
     @Operation(summary = "Google ilə sosial giriş")
-    public ResponseEntity<LoginResponse> socialLoginGoogle(@Valid @RequestBody GoogleSocialRequest request) {
+    public ResponseEntity<LoginResponse> socialLoginGoogle(
+            @Valid @RequestBody GoogleSocialRequest request,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
         log.info("Received Google social login request");
         LoginResponse response = socialAuthService.socialLoginGoogle(request);
         HttpStatus status = response.user().setupRequired() ? HttpStatus.CREATED : HttpStatus.OK;

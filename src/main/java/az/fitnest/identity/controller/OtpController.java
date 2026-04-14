@@ -17,6 +17,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 
 @RestController
 @RequestMapping("/api/v1/auth/otp")
@@ -54,14 +56,19 @@ public class OtpController {
     })
     @PostMapping("/verify")
     public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<OtpVerifyResponse>> verifyOtp(
-            @Valid @RequestBody OtpVerifyRequest request
+            @Valid @RequestBody OtpVerifyRequest request,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang
     ) {
         OtpVerifyResponse response = otpService.verifyOtpAndIssueToken(request);
         return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(response));
     }
 
     @PostMapping("/registration/register/resend")
-    public ResponseEntity<OtpSendResponse> registerResendOtp(@RequestParam String sessionId) {
+    public ResponseEntity<OtpSendResponse> registerResendOtp(
+            @RequestParam String sessionId,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
         OtpSendResponse response = otpService.resendOtp(sessionId, az.fitnest.identity.model.enums.OtpPurpose.REGISTRATION);
         return ResponseEntity.ok(response);
     }

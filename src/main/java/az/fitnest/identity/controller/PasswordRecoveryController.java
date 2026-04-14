@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +55,9 @@ public class PasswordRecoveryController {
     })
     public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<ApiSuccessResponse>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
         logger.info("Received forgotPassword request: {}", request);
         try {
             OtpSendResponse response = passwordResetService.forgotPassword(request);
@@ -94,7 +99,9 @@ public class PasswordRecoveryController {
     })
     public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<ApiSuccessResponse>> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
         ResetPasswordResponse response = passwordResetService.resetPassword(request);
         
         ApiSuccessResponse apiSuccess = ApiSuccessResponse.builder()
