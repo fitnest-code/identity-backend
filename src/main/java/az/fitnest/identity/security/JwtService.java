@@ -40,8 +40,12 @@ public class JwtService {
         this.refreshTtlSeconds = refreshTtlSeconds;
     }
 
-    public String generateAccessToken(Long userId, java.util.Collection<String> roles) {
-        return buildToken(userId, accessTtlSeconds, Map.of("typ", "access", "roles", roles));
+    public String generateAccessToken(Long userId, java.util.Collection<String> roles, String language) {
+        return buildToken(userId, accessTtlSeconds, Map.of(
+                "typ", "access",
+                "roles", roles,
+                "lang", language != null ? language : "AZ"
+        ));
     }
 
     public String generateRefreshToken(Long userId) {
