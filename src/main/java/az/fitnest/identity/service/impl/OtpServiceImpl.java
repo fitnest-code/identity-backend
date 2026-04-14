@@ -130,7 +130,7 @@ public class OtpServiceImpl implements OtpService {
             long cooldown = 60L * state.getResendCount();
             if (now.isBefore(state.getLastSentAt().plusSeconds(cooldown))) {
                 long wait = state.getLastSentAt().plusSeconds(cooldown).getEpochSecond() - now.getEpochSecond();
-                throw new OtpRateLimitedException(getMessage("error.otp.resend_cooldown"), wait);
+                throw new OtpRateLimitedException(getMessage("error.otp.resend_cooldown", wait), "error.otp.resend_cooldown", wait);
             }
         }
         if (state.getDailySendCount() != null && state.getDailySendCount() >= 10) {
@@ -139,7 +139,7 @@ public class OtpServiceImpl implements OtpService {
                 wait = state.getLastSentAt().plusSeconds(24 * 3600).getEpochSecond() - now.getEpochSecond();
                 if (wait < 0) wait = 0;
             }
-            throw new OtpRateLimitedException(getMessage("error.otp.daily_limit"), wait);
+            throw new OtpRateLimitedException(getMessage("error.otp.daily_limit"), "error.otp.daily_limit", wait);
         }
         state.setResendCount(state.getResendCount() == null ? 1 : state.getResendCount() + 1);
         state.setLastSentAt(now);
@@ -234,7 +234,7 @@ public class OtpServiceImpl implements OtpService {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
             String message = getMessage("error.otp.rate_limit_generic");
             log.warn("[validateRateLimit] Rate limit exceeded for purpose={}, identifier={}, waitTimeSeconds={}", purpose, identifier, waitTimeSeconds);
-            throw new OtpRateLimitedException(message, waitTimeSeconds);
+            throw new OtpRateLimitedException(message, "error.otp.rate_limit_generic", waitTimeSeconds);
         }
     }
 
