@@ -33,11 +33,22 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
     @PostConstruct
     private void initVerifier() {
+        java.util.List<String> audiences;
+        if (googleClientId != null && !googleClientId.isEmpty()) {
+            audiences = java.util.Arrays.stream(googleClientId.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            log.info("Google Token Verifier initialized with audiences: {}", audiences);
+        } else {
+            audiences = Collections.emptyList();
+            log.warn("Google Client ID is not configured. Google Sign-In verification will likely fail.");
+        }
+
         verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
-                GsonFactory.getDefaultInstance()
-        )
-                .setAudience(Collections.singletonList(googleClientId))
+                GsonFactory.getDefaultInstance())
+                .setAudience(audiences)
                 .setAcceptableTimeSkewSeconds(300L)
                 .build();
     }
@@ -56,7 +67,8 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
                     GoogleIdToken unverifiedToken = GoogleIdToken.parse(GsonFactory.getDefaultInstance(), idToken);
                     GoogleIdToken.Payload payload = unverifiedToken.getPayload();
                     log.error("Google verification failed. Payload details: aud={}, azp={}, iss={}, exp={}",
-                        payload.getAudience(), payload.get("azp"), payload.getIssuer(), payload.getExpirationTimeSeconds());
+                            payload.getAudience(), payload.get("azp"), payload.getIssuer(),
+                            payload.getExpirationTimeSeconds());
                 } catch (Exception e) {
                     log.error("Google verification failed and token could not be parsed: {}", e.getMessage());
                 }
@@ -91,14 +103,22 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
             Object audience = payload.getAudience();
             boolean audMatch = false;
+
+            // Extract the list of configured audiences for manual check
+            java.util.List<String> allowedAudiences = java.util.Arrays.stream(googleClientId.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+
             if (audience instanceof String s) {
-                audMatch = googleClientId.equals(s);
+                audMatch = allowedAudiences.contains(s);
             } else if (audience instanceof java.util.List<?> list) {
-                audMatch = list.contains(googleClientId);
+                audMatch = list.stream().anyMatch(a -> allowedAudiences.contains(a.toString()));
             }
 
             if (!audMatch) {
-                throw new UnauthorizedException("Google ID token audience does not match configured client ID");
+                log.error("Google ID token audience mismatch. Token audience: {}. Allowed audiences: {}", audience, allowedAudiences);
+                throw new UnauthorizedException("Google ID token audience does not match configured client IDs");
             }
 
             if (userId == null || userId.isEmpty()) {
@@ -110,14 +130,13 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
             }
 
             return new GoogleTokenClaims(
-                userId,
-                email,
-                true,
-                givenName,
-                familyName,
-                name,
-                picture
-            );
+                    userId,
+                    email,
+                    true,
+                    givenName,
+                    familyName,
+                    name,
+                    picture);
         } catch (UnauthorizedException e) {
             throw e;
         } catch (Exception e) {

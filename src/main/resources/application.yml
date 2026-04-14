@@ -135,7 +135,7 @@ spring:
 
 auth:
   google:
-    client-id: ${GOOGLE_CLIENT_ID:}
+    client-id: ${GOOGLE_CLIENT_ID:} # Can be a comma-separated list of IDs (e.g. for Debug, Release)
   apple:
     client-id: ${APPLE_CLIENT_ID:}
     team-id: ${APPLE_TEAM_ID:}
