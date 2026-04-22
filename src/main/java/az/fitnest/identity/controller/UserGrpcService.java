@@ -220,6 +220,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                 .setAccountLocked(user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(java.time.Instant.now()))
                 .setSessionStatus(user.getSessionStatus() != null ? user.getSessionStatus().name() : "")
                 .setCreatedAt(createdDate)
+                .setHasLocalPassword(user.isHasLocalPassword())
                 .build();
     }
 }

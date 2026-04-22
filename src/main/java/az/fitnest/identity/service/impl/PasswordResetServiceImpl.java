@@ -74,6 +74,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
         User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials"));
+        
+        if (!user.isHasLocalPassword()) {
+            throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
+        }
+
         if (passwordService.verifyPassword(newPassword, user.getPasswordHash()).matches()) {
             throw new az.fitnest.identity.exception.ValidationException("error.service.password_not_allowed", "VALIDATION_ERROR");
         }

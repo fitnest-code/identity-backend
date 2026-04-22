@@ -39,6 +39,7 @@ message UserResponse {
   string status = 10;
   bool account_locked = 11;
   string session_status = 12;
+  bool has_local_password = 13;
 }
 
 message UpdateUserProfileRequest {

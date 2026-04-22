@@ -61,7 +61,8 @@ public class MeController {
         MinimalIdentityResponse response = new MinimalIdentityResponse(
             user.getId(),
             user.getMobile(),
-            email
+            email,
+            user.isHasLocalPassword()
         );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
