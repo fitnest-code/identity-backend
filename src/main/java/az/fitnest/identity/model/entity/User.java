@@ -65,7 +65,7 @@ public class User extends BaseAuditableEntity {
     private SessionStatus sessionStatus = SessionStatus.NO_SESSIONS;
     
     @Builder.Default
-    @Column(name = "has_local_password", nullable = false)
+    @Column(name = "has_local_password", nullable = false, columnDefinition = "boolean default false")
     private boolean hasLocalPassword = false;
 
     @Column(name = "deleted_at")
