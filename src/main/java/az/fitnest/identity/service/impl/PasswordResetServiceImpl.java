@@ -48,6 +48,13 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
         String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
+        
+        userRepository.findFirstByMobile(mobile).ifPresent(user -> {
+            if (!user.isHasLocalPassword()) {
+                throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
+            }
+        });
+
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.PASSWORD_RESET, mobile, null, null);
         return otpService.sendOtp(otpRequest);
     }
@@ -72,6 +79,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
         String passwordHash = passwordService.hashPassword(newPassword);
         user.setPasswordHash(passwordHash);
+        user.setHasLocalPassword(true);
 
         if (user.getStatus() == UserStatus.INACTIVE) {
             user.setStatus(UserStatus.ACTIVE);

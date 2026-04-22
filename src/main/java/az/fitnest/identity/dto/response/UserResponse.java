@@ -61,5 +61,9 @@ public record UserResponse(
 
     @JsonProperty("role")
     @Schema(description = "User's role", example = "ROLE_USER")
-    String role
+    String role,
+
+    @JsonProperty("has_local_password")
+    @Schema(description = "Indicates if the user has a local password set", example = "true")
+    boolean hasLocalPassword
 ) {}

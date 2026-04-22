@@ -180,6 +180,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .setupRequired(true)
                 .failedLoginAttempts(0)
                 .status(UserStatus.ACTIVE)
+                .hasLocalPassword(false)
                 .role(roleRepository.findByName("ROLE_USER")
                         .orElseThrow(() -> new IllegalStateException("System error: Default role ROLE_USER not found")))
                 .build();

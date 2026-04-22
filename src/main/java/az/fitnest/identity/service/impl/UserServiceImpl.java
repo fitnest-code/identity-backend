@@ -113,6 +113,7 @@ public class UserServiceImpl implements UserService {
                 .setupRequired(true)
                 .failedLoginAttempts(0)
                 .status(UserStatus.ACTIVE)
+                .hasLocalPassword(true)
                 .role(getDefaultUserRole())
                 .build();
         try {
@@ -311,6 +312,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword) {
         User user = getUserById(userId);
+        if (!user.isHasLocalPassword()) {
+            throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
+        }
         if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash()).matches()) {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials");
         }

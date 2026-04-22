@@ -54,7 +54,8 @@ public class UserResponseMapper {
                 accountLocked,
                 user.getCreatedDate(),
                 consentRequired,
-                user.getRole() != null ? user.getRole().getName() : null
+                user.getRole() != null ? user.getRole().getName() : null,
+                user.isHasLocalPassword()
         );
     }
 

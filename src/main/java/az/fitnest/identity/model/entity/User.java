@@ -63,6 +63,10 @@ public class User extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "session_status")
     private SessionStatus sessionStatus = SessionStatus.NO_SESSIONS;
+    
+    @Builder.Default
+    @Column(name = "has_local_password", nullable = false)
+    private boolean hasLocalPassword = false;
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
