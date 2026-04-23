@@ -20,6 +20,7 @@ import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.util.DeviceDetector;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -31,6 +32,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -141,16 +143,20 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public RefreshResponse refresh(String refreshToken) {
+        log.info("[refresh] Received refresh token request. RefreshToken: {}", refreshToken);
         Long userId;
         Instant expiration;
         try {
             userId = jwtService.parseUserId(refreshToken, "refresh");
             expiration = jwtService.parseExpiration(refreshToken);
+            log.info("[refresh] Parsed refresh token. userId: {}, expiration: {}", userId, expiration);
         } catch (JwtException | IllegalArgumentException e) {
+            log.error("[refresh] Failed to parse refresh token: {}", e.getMessage());
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
         if (expiration.isBefore(Instant.now())) {
+            log.warn("[refresh] Refresh token expired for userId: {}. Expiration: {}", userId, expiration);
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
@@ -163,15 +169,23 @@ public class AuthServiceImpl implements AuthService {
             userRepository.save(user);
         }
 
-        return new RefreshResponse(tokens.accessToken(), tokens.refreshToken());
+        RefreshResponse response = new RefreshResponse(tokens.accessToken(), tokens.refreshToken());
+        log.info("[refresh] Token refresh successful for userId: {}. New AccessToken: {}, New RefreshToken: {}", 
+                userId, response.accessToken(), response.refreshToken());
+        return response;
     }
 
     private User internalRefresh(Long userId, String refreshToken) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UnauthorizedException("error.auth.invalid_credentials"));
+                .orElseThrow(() -> {
+                    log.warn("[refresh] User not found for userId: {}", userId);
+                    return new UnauthorizedException("error.auth.invalid_credentials");
+                });
 
         Instant now = Instant.now();
         if (user.getStatus() == UserStatus.INACTIVE || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))) {
+            log.warn("[refresh] User status prevents refresh. userId: {}, status: {}, lockedUntil: {}", 
+                    userId, user.getStatus(), user.getLockedUntil());
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
@@ -179,9 +193,12 @@ public class AuthServiceImpl implements AuthService {
         int consumed = authTokenRepository.consumeRefreshToken(userId, refreshTokenHash, now);
 
         if (consumed == 0) {
+            log.warn("[refresh] Refresh token not found, already consumed, or expired in DB. userId: {}, tokenHash: {}", 
+                    userId, refreshTokenHash);
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
+        log.info("[refresh] Refresh token consumed successfully in DB for userId: {}", userId);
         return user;
     }
 
