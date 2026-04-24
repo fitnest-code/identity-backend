@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.scheduling.annotation.EnableAsync;
 
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 
 @SpringBootApplication
 @EnableCaching
@@ -18,6 +19,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EnableAsync
 @EnableKafka
 @EnableJpaRepositories(basePackages = "az.fitnest.identity.repository")
+@EnableRedisRepositories(basePackages = {})
 public class IdentityServiceApplication {
 
     public static void main(String[] args) {
