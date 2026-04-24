@@ -70,7 +70,7 @@ spring:
 
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:redis.fitnest-development.svc.cluster.local}
+      host: ${SPRING_DATA_REDIS_HOST:redis.fitnest-production.svc.cluster.local}
       port: ${SPRING_DATA_REDIS_PORT:6379}
       password: ${SPRING_DATA_REDIS_PASSWORD:}
       timeout: 2000ms
@@ -85,7 +85,7 @@ spring:
         enabled: false
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service.fitnest-development.svc.cluster.local:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service.fitnest-production.svc.cluster.local:9092}
     consumer:
       group-id: identity-backend
       auto-offset-reset: earliest
