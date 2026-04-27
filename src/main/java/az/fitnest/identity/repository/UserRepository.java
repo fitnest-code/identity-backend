@@ -97,12 +97,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
         SELECT * FROM users u1_0
         WHERE (:id IS NULL OR u1_0.user_id = :id)
           AND (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
+          AND (:userIds IS NULL OR u1_0.user_id IN :userIds)
     """, nativeQuery = true)
     Page<User> searchUsersAdvanced(@Param("id") Long id,
                               @Param("name") String name,
                               @Param("surname") String surname,
                               @Param("email") String email,
                               @Param("mobile") String mobile,
+                              @Param("userIds") List<Long> userIds,
                               Pageable pageable);
 
     @Query(value = """

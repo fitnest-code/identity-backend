@@ -454,186 +454,106 @@ public class UserServiceImpl implements UserService {
     @Override
     public Page<UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths) {
         size = Math.min(size, 100);
-        Long id = null;
-        String name = null;
-        String surname = null;
-        String email = null;
-        String mobile = null;
-        String genericSearch = null;
-        if (query != null && !query.isBlank()) {
-            if (!query.contains("=")) {
-                genericSearch = query.trim();
-            } else {
-                String[] parts = query.split(";");
-                for (String part : parts) {
-                    String[] kv = part.split("=", 2);
-                    if (kv.length == 2) {
-                        String key = kv[0].trim().toLowerCase();
-                        String value = kv[1].trim();
-                        switch (key) {
-                            case "id":
-                                try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                                break;
-                            case "name":
-                                name = value;
-                                break;
-                            case "surname":
-                                surname = value;
-                                break;
-                            case "email":
-                                email = value;
-                                break;
-                            case "mobile":
-                                mobile = value;
-                                break;
-                        }
-                    }
-                }
-            }
-        }
-        if (genericSearch != null) {
-            name = genericSearch;
-            surname = genericSearch;
-            email = genericSearch;
-            mobile = genericSearch;
-        }
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        Page<User> userPage = userRepository.searchUsersAdvanced(id, name, surname, email, mobile, pageable);
-        List<User> filteredUsers = userPage.getContent();
-        if (packageID != null) {
-            try {
-                List<Long> packageUserIds = userSubscriptionGrpcClient.getUserIdsByPackageId(packageID);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> packageUserIds.contains(user.getId()))
-                    .toList();
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by package ID {} via gRPC. Skipping package filter.", packageID, e);
-            }
+
+        QueryParams params = parseQuery(query);
+        List<Long> subscriptionUserIds = resolveSubscriptionFilteredIds(packageID, durationMonths, null);
+
+        if (subscriptionUserIds != null && subscriptionUserIds.isEmpty()) {
+            return Page.empty(pageable);
         }
-        if (durationMonths != null) {
-            try {
-                List<Long> durationUserIds = userSubscriptionGrpcClient.getUserIdsByDurationMonths(durationMonths);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> durationUserIds.contains(user.getId()))
-                    .toList();
-            } catch (UnsupportedOperationException e) {
-                log.warn("Duration months filtering not implemented in gRPC client.");
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by duration months {} via gRPC. Skipping duration filter.", durationMonths, e);
-            }
-        }
-        int start = Math.min(page * size, filteredUsers.size());
-        int end = Math.min(start + size, filteredUsers.size());
-        List<UserResponse> pagedResponses = filteredUsers.subList(start, end).stream()
-            .map(userResponseMapper::toResponse)
-            .toList();
-        return new org.springframework.data.domain.PageImpl<>(pagedResponses, pageable, filteredUsers.size());
+
+        Page<User> userPage = userRepository.searchUsersAdvanced(
+            params.id(), params.name(), params.surname(), params.email(), params.mobile(),
+            subscriptionUserIds, pageable
+        );
+
+        return userPage.map(userResponseMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
     @Override
     public Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type) {
         size = Math.min(size, 100);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
+
+        QueryParams params = parseQuery(query);
+        List<Long> subscriptionUserIds = resolveSubscriptionFilteredIds(packageID, durationMonths, type);
+
+        if (subscriptionUserIds != null && subscriptionUserIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        Page<User> userPage = userRepository.searchUsersAdvanced(
+            params.id(), params.name(), params.surname(), params.email(), params.mobile(),
+            subscriptionUserIds, pageable
+        );
+
+        return userPage.map(user -> {
+            String subscriptionStatus = null;
+            try {
+                var sub = userSubscriptionGrpcClient.getActiveSubscription(user.getId());
+                subscriptionStatus = (sub != null && !sub.getSubscriptionStatus().isEmpty()) ? sub.getSubscriptionStatus() : null;
+            } catch (Exception e) {
+                log.warn("Failed to fetch subscription for user {}: {}", user.getId(), e.getMessage());
+            }
+            return new az.fitnest.identity.dto.response.AdminUserResponse(
+                user.getId(), null, null, user.getMobile(), null,
+                user.getStatus() != null ? user.getStatus().name() : null,
+                subscriptionStatus
+            );
+        });
+    }
+
+    private List<Long> resolveSubscriptionFilteredIds(Long packageID, Integer durationMonths, String type) {
+        List<Long> ids = null;
+        if (packageID != null) {
+            ids = intersect(ids, userSubscriptionGrpcClient.getUserIdsByPackageId(packageID));
+        }
+        if (durationMonths != null) {
+            ids = intersect(ids, userSubscriptionGrpcClient.getUserIdsByDurationMonths(durationMonths));
+        }
+        if (type != null && !type.isBlank()) {
+            ids = intersect(ids, userSubscriptionGrpcClient.getUserIdsByType(type));
+        }
+        return ids;
+    }
+
+    private List<Long> intersect(List<Long> list1, List<Long> list2) {
+        if (list1 == null) return list2;
+        if (list2 == null) return list1;
+        list1.retainAll(list2);
+        return list1;
+    }
+
+    private QueryParams parseQuery(String query) {
         Long id = null;
-        String name = null;
-        String surname = null;
-        String email = null;
-        String mobile = null;
-        String genericSearch = null;
+        String name = null, surname = null, email = null, mobile = null;
         if (query != null && !query.isBlank()) {
             if (!query.contains("=")) {
-                genericSearch = query.trim();
+                String generic = query.trim();
+                name = surname = email = mobile = generic;
             } else {
-                String[] parts = query.split(";");
-                for (String part : parts) {
+                for (String part : query.split(";")) {
                     String[] kv = part.split("=", 2);
                     if (kv.length == 2) {
                         String key = kv[0].trim().toLowerCase();
                         String value = kv[1].trim();
                         switch (key) {
-                            case "id":
-                                try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                                break;
-                            case "name":
-                                name = value;
-                                break;
-                            case "surname":
-                                surname = value;
-                                break;
-                            case "email":
-                                email = value;
-                                break;
-                            case "mobile":
-                                mobile = value;
-                                break;
+                            case "id" -> { try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {} }
+                            case "name" -> name = value;
+                            case "surname" -> surname = value;
+                            case "email" -> email = value;
+                            case "mobile" -> mobile = value;
                         }
                     }
                 }
             }
         }
-        if (genericSearch != null) {
-            name = genericSearch;
-            surname = genericSearch;
-            email = genericSearch;
-            mobile = genericSearch;
-        }
-        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        Page<User> userPage = userRepository.searchUsersAdvanced(id, name, surname, email, mobile, pageable);
-        List<User> filteredUsers = userPage.getContent();
-        if (packageID != null) {
-            try {
-                List<Long> packageUserIds = userSubscriptionGrpcClient.getUserIdsByPackageId(packageID);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> packageUserIds.contains(user.getId()))
-                    .toList();
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by package ID {} via gRPC. Skipping package filter.", packageID, e);
-            }
-        }
-        if (durationMonths != null) {
-            try {
-                List<Long> durationUserIds = userSubscriptionGrpcClient.getUserIdsByDurationMonths(durationMonths);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> durationUserIds.contains(user.getId()))
-                    .toList();
-            } catch (UnsupportedOperationException e) {
-                log.warn("Duration months filtering not implemented in gRPC client.");
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by duration months {} via gRPC. Skipping duration filter.", durationMonths, e);
-            }
-        }
-        if (type != null && !type.isBlank()) {
-            try {
-                List<Long> typeUserIds = userSubscriptionGrpcClient.getUserIdsByType(type);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> typeUserIds.contains(user.getId()))
-                    .toList();
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by type {} via gRPC. Skipping type filter.", type, e);
-            }
-        }
-        List<az.fitnest.identity.dto.response.AdminUserResponse> adminResponses = filteredUsers.stream()
-            .map(user -> {
-                az.fitnest.order.grpc.ActiveSubscriptionResponse sub = null;
-                try {
-                    sub = userSubscriptionGrpcClient.getActiveSubscription(user.getId());
-                } catch (Exception e) {
-                    log.warn("Failed to fetch subscription info for user {}", user.getId(), e);
-                }
-                String subscriptionStatus = (sub != null && sub.getSubscriptionStatus() != null && !sub.getSubscriptionStatus().isEmpty()) ? sub.getSubscriptionStatus() : null;
-                return new az.fitnest.identity.dto.response.AdminUserResponse(
-                    user.getId(),
-                    null,
-                    null,
-                    user.getMobile(),
-                    null,
-                    user.getStatus() != null ? user.getStatus().name() : null,
-                    subscriptionStatus
-                );
-            })
-            .toList();
-        return new org.springframework.data.domain.PageImpl<>(adminResponses, pageable, userPage.getTotalElements());
+        return new QueryParams(id, name, surname, email, mobile);
     }
+
+    private record QueryParams(Long id, String name, String surname, String email, String mobile) {}
 
     @Override
     @Transactional

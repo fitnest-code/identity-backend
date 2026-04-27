@@ -51,7 +51,7 @@ public class OtpServiceImpl implements OtpService {
     private final UserRepository userRepository;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
     private final OtpStore otpStore;
-    private final OtpRateLimiter otpRateLimiter;
+    private final OtpRateLimiterFacade otpRateLimiter;
     private final OtpGenerator otpGenerator;
     private final PasswordService passwordService;
     private final OtpSessionIdGenerator otpSessionIdGenerator;
@@ -114,38 +114,25 @@ public class OtpServiceImpl implements OtpService {
     public OtpSendResponse sendOtp(OtpSendRequest request) {
         OtpPurpose purpose = request.getPurpose();
         if (purpose == null) {
-            if (request.getEmail() != null) {
-                purpose = OtpPurpose.EMAIL_CHANGE;
-            } else if (request.getMobile() != null) {
-                purpose = OtpPurpose.MOBILE_CHANGE;
-            } else {
-                purpose = OtpPurpose.REGISTRATION;
-            }
+            purpose = resolvePurpose(request);
             request.setPurpose(purpose);
         }
-        String globalKey = getOtpGlobalKey(az.fitnest.identity.util.UserContext.getCurrentUserId());
-        OtpUserState state = getOrInitOtpUserState(globalKey);
-        Instant now = Instant.now(clock);
-        if (state.getLastSentAt() != null && state.getResendCount() != null && state.getResendCount() > 0) {
-            long cooldown = 60L * state.getResendCount();
-            if (now.isBefore(state.getLastSentAt().plusSeconds(cooldown))) {
-                long wait = state.getLastSentAt().plusSeconds(cooldown).getEpochSecond() - now.getEpochSecond();
-                throw new OtpRateLimitedException(getMessage("error.otp.resend_cooldown", wait), "error.otp.resend_cooldown", wait);
-            }
+
+        String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? request.getEmail() : request.getMobile();
+        if (identifier == null) {
+            throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? getMessage("error.service.missing_email") : getMessage("error.service.missing_mobile"));
         }
-        if (state.getDailySendCount() != null && state.getDailySendCount() >= 10) {
-            long wait = 24 * 3600;
-            if (state.getLastSentAt() != null) {
-                wait = state.getLastSentAt().plusSeconds(24 * 3600).getEpochSecond() - now.getEpochSecond();
-                if (wait < 0) wait = 0;
-            }
-            throw new OtpRateLimitedException(getMessage("error.otp.daily_limit"), "error.otp.daily_limit", wait);
-        }
-        state.setResendCount(state.getResendCount() == null ? 1 : state.getResendCount() + 1);
-        state.setLastSentAt(now);
-        state.setDailySendCount(state.getDailySendCount() == null ? 1 : state.getDailySendCount() + 1);
-        otpStateRepository.save(state);
+
+        // Consolidated rate limit check using the dedicated component
+        validateRateLimit(purpose, identifier);
+
         return sendOtp(request, null, null, null, null);
+    }
+
+    private OtpPurpose resolvePurpose(OtpSendRequest request) {
+        if (request.getEmail() != null) return OtpPurpose.EMAIL_CHANGE;
+        if (request.getMobile() != null) return OtpPurpose.MOBILE_CHANGE;
+        return OtpPurpose.REGISTRATION;
     }
 
     @Override
@@ -171,7 +158,11 @@ public class OtpServiceImpl implements OtpService {
             throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? getMessage("error.service.missing_email") : getMessage("error.service.missing_mobile"));
         }
 
-        validateRateLimit(purpose, identifier);
+        // Rate limit validation is now handled in the public sendOtp method
+        // but we keep it here for the internal calls if necessary.
+        if (userId == null) { // For anonymous requests, we always validate
+             validateRateLimit(purpose, identifier);
+        }
 
         boolean exists = (purpose == OtpPurpose.EMAIL_CHANGE)
                 ? userProfileGrpcClient.getUserByEmail(email) != null
@@ -494,7 +485,8 @@ public class OtpServiceImpl implements OtpService {
             byte[] hash = digest.digest(otp.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
+            log.error("SHA-256 algorithm not found", e);
+            throw new IllegalStateException("Security configuration error", e);
         }
     }
 

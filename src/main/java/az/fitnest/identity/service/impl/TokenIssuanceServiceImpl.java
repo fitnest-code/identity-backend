@@ -37,27 +37,8 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
 
     @Override
     public LoginResponse issueTokens(User user, String deviceType) {
-        String roleName = (user.getRole() != null) ? user.getRole().getName() : "ROLE_USER";
-        List<String> roles = List.of(roleName);
-
-        String accessToken = jwtService.generateAccessToken(user.getId(), roles, user.getLanguage());
-        String refreshToken = jwtService.generateRefreshToken(user.getId());
-
-        Instant accessExpiresAt = jwtService.parseExpiration(accessToken);
-        Instant refreshExpiresAt = jwtService.parseExpiration(refreshToken);
-
-        Duration accessTtl = Duration.between(Instant.now(), accessExpiresAt);
-        String jti = jwtService.parseJti(accessToken);
-        redisTokenService.activateAccessToken(jti, accessTtl);
-
-        redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
-
-        saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
-
         boolean consentRequired = legalService.isConsentRequired(user.getId());
-        UserResponse userResponse = userResponseMapper.toResponse(user, consentRequired);
-
-        return loginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
+        return issueTokens(user, deviceType, consentRequired);
     }
 
     @Override
@@ -68,19 +49,20 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         String accessToken = jwtService.generateAccessToken(user.getId(), roles, user.getLanguage());
         String refreshToken = jwtService.generateRefreshToken(user.getId());
 
+        // jwtService should ideally provide a way to get these without re-parsing, 
+        // but since we are refactoring existing code, we'll keep it for now unless we refactor jwtService too.
         Instant accessExpiresAt = jwtService.parseExpiration(accessToken);
         Instant refreshExpiresAt = jwtService.parseExpiration(refreshToken);
 
         Duration accessTtl = Duration.between(Instant.now(), accessExpiresAt);
         String jti = jwtService.parseJti(accessToken);
+        
         redisTokenService.activateAccessToken(jti, accessTtl);
-
         redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
 
         saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
 
         UserResponse userResponse = userResponseMapper.toResponse(user, consentRequired);
-
         return loginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
     }
 

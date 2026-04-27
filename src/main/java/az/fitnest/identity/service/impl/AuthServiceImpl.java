@@ -99,45 +99,57 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("error.auth.account_deleted");
         }
 
-        if (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
+        if (isAccountLocked(user, now)) {
             throw new InvalidCredentialsException("error.auth.account_locked");
         }
 
         if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null) {
-            if (user.getInactiveAt().plusSeconds(30 * 24 * 60 * 60).isAfter(now)) {
-                PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
-                if (user.getPasswordHash() == null || !verification.matches()) {
-                    userRepository.incrementFailedLoginAttempts(user.getId());
-                    throw new InvalidCredentialsException("error.auth.invalid_credentials");
-                }
+            // Check if reactivation period (30 days) is still active
+            if (user.getInactiveAt().plus(java.time.Duration.ofDays(30)).isAfter(now)) {
+                verifyPassword(user, password);
                 return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
             } else {
                 throw new InvalidCredentialsException("error.auth.account_deleted");
             }
         }
 
-        PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
-        if (user.getPasswordHash() == null || !verification.matches()) {
-            incrementFailedLoginAttempts(user.getId(), user.getFailedLoginAttempts(), now);
-            throw new InvalidCredentialsException("error.auth.invalid_credentials");
-        }
+        verifyPassword(user, password);
 
+        boolean updated = false;
+        PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
         if (verification.upgradeRecommended()) {
-            String newHash = passwordService.hashPassword(password);
-            user.setPasswordHash(newHash);
-            userRepository.save(user);
+            user.setPasswordHash(passwordService.hashPassword(password));
+            updated = true;
         }
 
         if (user.getSessionStatus() == SessionStatus.NO_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
+            updated = true;
+        }
+
+        // Reset failed login attempts and update status in one go if possible
+        // Instead of calling resetFailedLoginAttempts(user.getId()) which is a native query,
+        // we update the object and let JPA handle it if we already have an update pending,
+        // OR we just use the native query if it's more efficient. 
+        // But since we might have updated password/session status, it's better to stay in JPA if possible.
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
+        user.setStatus(UserStatus.ACTIVE);
+        updated = true;
+
+        if (updated) {
             userRepository.save(user);
         }
 
-        resetFailedLoginAttempts(user.getId());
-        if (user.getStatus() == UserStatus.ACTIVE && user.getFailedLoginAttempts() > 0) {
-        }
-
         return new AuthenticationResult(user, AuthenticationStatus.SUCCESS);
+    }
+
+    private void verifyPassword(User user, String password) {
+        PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
+        if (user.getPasswordHash() == null || !verification.matches()) {
+            incrementFailedLoginAttempts(user.getId(), user.getFailedLoginAttempts(), Instant.now());
+            throw new InvalidCredentialsException("error.auth.invalid_credentials");
+        }
     }
 
     @Override
@@ -216,6 +228,7 @@ public class AuthServiceImpl implements AuthService {
 
             internalLogout(userId, accessToken);
         } catch (Exception e) {
+            log.warn("Error during logout for token: {}", e.getMessage());
         }
     }
 
@@ -233,6 +246,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             authTokenRepository.deleteByAccessTokenHash(tokenHasher.hash(accessToken));
         } catch (Exception e) {
+            log.error("Failed to delete token from DB during logout for userId {}", userId, e);
         }
 
         userRepository.markNoSessionsIfNone(userId, SessionStatus.NO_SESSIONS);
