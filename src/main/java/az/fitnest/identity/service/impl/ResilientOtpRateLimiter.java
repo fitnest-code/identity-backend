@@ -52,4 +52,8 @@ public class ResilientOtpRateLimiter {
     public az.fitnest.identity.service.impl.OtpRateLimiter.RateLimitResult checkRateLimit(OtpPurpose purpose, String phoneNumber) {
         return checkRateLimit(purpose, phoneNumber, null);
     }
+
+    public OtpRateLimitProperties getProperties() {
+        return delegate.getProperties();
+    }
 }
