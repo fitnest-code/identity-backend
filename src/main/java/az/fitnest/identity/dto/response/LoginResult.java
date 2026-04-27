@@ -1,6 +1,5 @@
 package az.fitnest.identity.dto.response;
 
-import az.fitnest.identity.model.entity.User;
 
 public record LoginResult(
         FlowStep flowStep,
