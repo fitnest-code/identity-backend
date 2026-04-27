@@ -137,12 +137,28 @@ spring:
             read-timeout: ${FEIGN_READ_TIMEOUT:2000}
             logger-level: BASIC
 
+    vault:
+      enabled: true
+      uri: ${SPRING_CLOUD_VAULT_URI:http://vault.fitnest-development.svc.cluster.local:8200}
+      token: ${SPRING_CLOUD_VAULT_TOKEN:}
+      kv:
+        enabled: true
+        backend: secrets
+        default-context: identity-backend
+
 auth:
   google:
     client-id: ${GOOGLE_CLIENT_ID:} # Can be a comma-separated list of IDs (e.g. for Debug, Release)
   apple:
     client-id: ${APPLE_CLIENT_ID:}
     team-id: ${APPLE_TEAM_ID:}
+  token:
+    hash-pepper: ${AUTH_TOKEN_HASH_PEPPER:}
+  account-lock:
+    max-failed-attempts: ${AUTH_ACCOUNT_LOCK_MAX_FAILED_ATTEMPTS:5}
+    lock-duration-minutes: ${AUTH_ACCOUNT_LOCK_LOCK_DURATION_MINUTES:30}
+  reactivation:
+    window-days: ${AUTH_REACTIVATION_WINDOW_DAYS:30}
 
 springdoc:
   server-url: ${SPRINGDOC_SERVER_URL:}
