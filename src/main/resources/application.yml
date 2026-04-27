@@ -137,15 +137,6 @@ spring:
             read-timeout: ${FEIGN_READ_TIMEOUT:2000}
             logger-level: BASIC
 
-    vault:
-      enabled: true
-      uri: ${SPRING_CLOUD_VAULT_URI:http://vault.fitnest-development.svc.cluster.local:8200}
-      token: ${SPRING_CLOUD_VAULT_TOKEN:}
-      kv:
-        enabled: true
-        backend: secrets
-        default-context: identity-backend
-
 auth:
   google:
     client-id: ${GOOGLE_CLIENT_ID:} # Can be a comma-separated list of IDs (e.g. for Debug, Release)
