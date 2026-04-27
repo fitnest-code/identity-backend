@@ -75,5 +75,23 @@ public final class TokenHasher {
                 existingHash.getBytes(StandardCharsets.UTF_8)
         );
     }
+
+    private static byte[] validateAndDecodePepper(final String pepperBase64) {
+        if (pepperBase64 == null || pepperBase64.isBlank()) {
+            throw new IllegalArgumentException("HMAC pepper must not be null or blank. Set auth.token.hash-pepper.");
+        }
+        byte[] decoded;
+        try {
+            decoded = Base64.getDecoder().decode(pepperBase64);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("HMAC pepper must be a valid Base64 string", e);
+        }
+        if (decoded.length < MIN_PEPPER_LENGTH_BYTES) {
+            throw new IllegalArgumentException(
+                    "HMAC pepper must be at least " + MIN_PEPPER_LENGTH_BYTES + " bytes (got " + decoded.length + ")"
+            );
+        }
+        return decoded;
+    }
 }
 
