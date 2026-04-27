@@ -104,12 +104,12 @@ public class JwtService {
         String jti = UUID.randomUUID().toString().replace("-", "");
 
         return Jwts.builder()
+                .claims(extraClaims)
                 .issuer(issuer)
                 .subject(String.valueOf(userId))
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .id(jti)
-                .claims(extraClaims)
                 .signWith(key)
                 .compact();
     }
