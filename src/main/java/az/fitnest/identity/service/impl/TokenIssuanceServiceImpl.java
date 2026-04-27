@@ -47,7 +47,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         String roleName = (user.getRole() != null) ? user.getRole().getName() : "ROLE_USER";
         List<String> roles = List.of(roleName);
 
-        String accessToken = jwtService.generateAccessToken(user.getId(), roles, user.getLanguage());
+        String accessToken = jwtService.generateAccessToken(user, roles);
         String refreshToken = jwtService.generateRefreshToken(user.getId());
 
         Instant accessExpiresAt = jwtService.parseExpiration(accessToken);
