@@ -29,10 +29,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByMobile(String mobile);
 
-    @Modifying
-    @Transactional
-    @Query("UPDATE User u SET u.failedLoginAttempts = u.failedLoginAttempts + 1 WHERE u.id = :userId")
-    int incrementFailedLoginAttempts(@Param("userId") Long userId);
+    @Query(value = "UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE user_id = :userId RETURNING failed_login_attempts", nativeQuery = true)
+    Integer incrementFailedLoginAttemptsAndReturn(@Param("userId") Long userId);
 
     @Modifying
     @Transactional
@@ -55,15 +53,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Transactional
     @Query("""
-        UPDATE User u SET u.status = 'INACTIVE', u.inactiveAt = :now
-        WHERE u.status != 'INACTIVE' AND u.role.name != 'ROLE_SUPER_ADMIN'
-    """)
+                UPDATE User u SET u.status = 'INACTIVE', u.inactiveAt = :now
+                WHERE u.status != 'INACTIVE' AND u.role.name != 'ROLE_SUPER_ADMIN'
+            """)
     int deactivateAllNonAdmins(@Param("now") Instant now);
 
     @Query("""
-        SELECT u.id FROM User u
-        WHERE u.status = 'INACTIVE' AND u.inactiveAt < :threshold
-    """)
+                SELECT u.id FROM User u
+                WHERE u.status = 'INACTIVE' AND u.inactiveAt < :threshold
+            """)
     Page<Long> findInactiveUserIds(@Param("threshold") Instant threshold, Pageable pageable);
 
     @Modifying
@@ -82,8 +80,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Transactional
     @Query("""
-        DELETE FROM User u WHERE u.id IN :ids
-    """)
+                DELETE FROM User u WHERE u.id IN :ids
+            """)
     int deleteUsersByIds(@Param("ids") List<Long> ids);
 
     @Modifying
@@ -94,34 +92,34 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByRole(Role role);
 
     @Query(value = """
-        SELECT * FROM users u1_0
-        WHERE (:id IS NULL OR u1_0.user_id = :id)
-          AND (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
-          AND (:userIds IS NULL OR u1_0.user_id IN :userIds)
-    """, nativeQuery = true)
+                SELECT * FROM users u1_0
+                WHERE (:id IS NULL OR u1_0.user_id = :id)
+                  AND (:mobile IS NULL OR u1_0.mobile LIKE :mobile || '%')
+                  AND (:userIds IS NULL OR u1_0.user_id IN :userIds)
+            """, nativeQuery = true)
     Page<User> searchUsersAdvanced(@Param("id") Long id,
-                              @Param("name") String name,
-                              @Param("surname") String surname,
-                              @Param("email") String email,
-                              @Param("mobile") String mobile,
-                              @Param("userIds") List<Long> userIds,
-                              Pageable pageable);
+                                   @Param("name") String name,
+                                   @Param("surname") String surname,
+                                   @Param("email") String email,
+                                   @Param("mobile") String mobile,
+                                   @Param("userIds") List<Long> userIds,
+                                   Pageable pageable);
 
     @Query(value = """
-        SELECT * FROM users u1_0
-        WHERE (:id IS NULL OR u1_0.user_id = :id)
-          AND (:mobile IS NULL OR u1_0.mobile LIKE '%' || :mobile || '%')
-    """, nativeQuery = true)
+                SELECT * FROM users u1_0
+                WHERE (:id IS NULL OR u1_0.user_id = :id)
+                  AND (:mobile IS NULL OR u1_0.mobile LIKE :mobile || '%')
+            """, nativeQuery = true)
     Page<User> searchUsers(@Param("id") Long id,
-                      @Param("name") String name,
-                      @Param("surname") String surname,
-                      @Param("email") String email,
-                      @Param("mobile") String mobile,
-                      Pageable pageable);
+                           @Param("name") String name,
+                           @Param("surname") String surname,
+                           @Param("email") String email,
+                           @Param("mobile") String mobile,
+                           Pageable pageable);
 
     Page<User> findByIdIn(List<Long> userIds, Pageable pageable);
 
-    @Query("SELECT u.id FROM User u WHERE u.mobile LIKE %:query%")
+    @Query("SELECT u.id FROM User u WHERE u.mobile LIKE :query%")
     List<Long> findUserIdsByMobileContaining(@Param("query") String query);
 
 }

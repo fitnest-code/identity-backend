@@ -330,7 +330,7 @@ grpc:
       private-key: ${GRPC_SERVER_KEY:}
       trust-cert-collection: ${GRPC_TRUST_CERT:}
   client:
-    identity-backend:   # This is self-reference, unchanged
+    identity-backend: # This is self-reference, unchanged
       address: 'static://localhost:9090'
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
       security:
@@ -347,7 +347,7 @@ grpc:
         trust-cert-collection: ${GRPC_TRUST_CERT:}
         client-cert-chain: ${GRPC_CLIENT_CERT:}
         client-private-key: ${GRPC_CLIENT_KEY:}
-  # ✅ Updated to order-backend
+    # ✅ Updated to order-backend
     order-backend:
       address: 'static://${ORDER_BACKEND_GRPC_HOST:order-backend}:${ORDER_BACKEND_GRPC_PORT:9090}'
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}

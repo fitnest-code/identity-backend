@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.regex.Pattern;
 
 @Service
@@ -64,8 +65,8 @@ public class PasswordServiceImpl implements PasswordService {
         if (password == null || password.length() < MIN_PASSWORD_LENGTH) return false;
         if (WHITESPACE.matcher(password).find()) return false;
         return LETTER.matcher(password).find() &&
-               DIGIT.matcher(password).find() &&
-               SPECIAL.matcher(password).find();
+                DIGIT.matcher(password).find() &&
+                SPECIAL.matcher(password).find();
     }
 
     @Override
@@ -92,8 +93,8 @@ public class PasswordServiceImpl implements PasswordService {
             throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
         if (!LETTER.matcher(rawPassword).find() ||
-            !DIGIT.matcher(rawPassword).find() ||
-            !SPECIAL.matcher(rawPassword).find()) {
+                !DIGIT.matcher(rawPassword).find() ||
+                !SPECIAL.matcher(rawPassword).find()) {
             throw new IllegalArgumentException(getMessage("error.service.password_invalid"));
         }
     }

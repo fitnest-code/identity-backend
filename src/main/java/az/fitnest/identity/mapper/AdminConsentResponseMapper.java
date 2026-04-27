@@ -8,14 +8,14 @@ import org.springframework.stereotype.Component;
 public class AdminConsentResponseMapper {
     public AdminConsentResponse toResponse(UserConsent consent) {
         return new AdminConsentResponse(
-            consent.getId(),
-            consent.getUserId(),
-            consent.getPrivacyPolicyVersion(),
-            consent.getTermsOfUseVersion(),
-            consent.getAcceptedAt(),
-            consent.getIpAddress(),
-            consent.getUserAgent(),
-            consent.getPlatform()
+                consent.getId(),
+                consent.getUserId(),
+                consent.getPrivacyPolicyVersion(),
+                consent.getTermsOfUseVersion(),
+                consent.getAcceptedAt(),
+                consent.getIpAddress(),
+                consent.getUserAgent(),
+                consent.getPlatform()
         );
     }
 }

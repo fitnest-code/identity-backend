@@ -6,6 +6,7 @@ import lombok.Builder;
 
 @Builder
 public record UpdateSessionStatusRequest(
-    @NotNull(message = "Session status must not be null")
-    SessionStatus sessionStatus
-) {}
+        @NotNull(message = "Session status must not be null")
+        SessionStatus sessionStatus
+) {
+}

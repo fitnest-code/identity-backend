@@ -80,11 +80,11 @@ public class OtpStore {
             VERIFY_OTP_SCRIPT_STRING,
             List.class
     );
+    private static final Logger log = LoggerFactory.getLogger(OtpStore.class);
     private final RedisKeyBuilder redisKeyBuilder;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final MessageSource messageSource;
-    private static final Logger log = LoggerFactory.getLogger(OtpStore.class);
 
     public OtpStore(StringRedisTemplate redisTemplate, ObjectMapper objectMapper, RedisKeyBuilder redisKeyBuilder, MessageSource messageSource) {
         this.redisTemplate = redisTemplate;

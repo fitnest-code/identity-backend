@@ -6,8 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 
 @Schema(description = "Request body for changing email address")
 public record ChangeEmailRequest(
-    @NotBlank
-    @Email
-    @Schema(description = "New email address", example = "newuser@example.com", requiredMode = Schema.RequiredMode.REQUIRED)
-    String newEmail
-) {}
+        @NotBlank
+        @Email
+        @Schema(description = "New email address", example = "newuser@example.com", requiredMode = Schema.RequiredMode.REQUIRED)
+        String newEmail
+) {
+}

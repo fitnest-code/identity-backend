@@ -74,14 +74,37 @@ public class User extends BaseAuditableEntity {
     @Column(name = "inactive_at")
     private Instant inactiveAt;
 
-    public String getMobile() { return mobile; }
-    public UserStatus getStatus() { return status; }
-    public SessionStatus getSessionStatus() { return sessionStatus; }
-    public Role getRole() { return role; }
-    public String getPasswordHash() { return passwordHash; }
-    public String getLanguage() { return language; }
-    public int getFailedLoginAttempts() { return failedLoginAttempts; }
-    public Instant getLockedUntil() { return lockedUntil; }
+    public String getMobile() {
+        return mobile;
+    }
+
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public SessionStatus getSessionStatus() {
+        return sessionStatus;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
 
     public boolean hasAccount() {
         return hasAccount;

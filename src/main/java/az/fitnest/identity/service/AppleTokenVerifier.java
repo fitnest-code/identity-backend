@@ -34,12 +34,11 @@ public class AppleTokenVerifier {
     private static final String APPLE_ISSUER = "https://appleid.apple.com";
     private static final String APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final MessageSource messageSource;
     @Value("${auth.apple.client-id:}")
     private String appleClientId;
     @Value("${auth.apple.team-id:}")
     private String appleTeamId;
-
-    private final MessageSource messageSource;
 
     private String getMessage(String key) {
         return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
@@ -115,6 +114,7 @@ public class AppleTokenVerifier {
         }
     }
 
-    public record AppleTokenClaims(String userId, String email, boolean emailVerified, String firstName, String lastName) {
+    public record AppleTokenClaims(String userId, String email, boolean emailVerified, String firstName,
+                                   String lastName) {
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 
 @RestController
@@ -44,8 +45,8 @@ public class RoleAdminController {
     @GetMapping("/{roleId}")
     public ResponseEntity<Role> getRoleById(@PathVariable Long roleId) {
         return roleRepository.findById(roleId)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @Operation(summary = "Rol adını yeniləyin", description = "Rol adını yeniləyir.")
@@ -53,7 +54,7 @@ public class RoleAdminController {
     @PutMapping("/{roleId}")
     public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @RequestParam String name) {
         Role role = roleRepository.findById(roleId)
-            .orElse(null);
+                .orElse(null);
         if (role == null) return ResponseEntity.notFound().build();
         if (roleRepository.findByName(name).isPresent()) {
             return ResponseEntity.status(409).build();

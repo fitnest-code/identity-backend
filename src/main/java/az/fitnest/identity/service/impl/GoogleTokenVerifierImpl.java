@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+
 import java.util.Collections;
 
 import org.slf4j.Logger;
@@ -24,12 +25,10 @@ import org.slf4j.LoggerFactory;
 @RequiredArgsConstructor
 public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
 
+    private static final Logger log = LoggerFactory.getLogger(GoogleTokenVerifierImpl.class);
     @Value("${auth.google.client-id:}")
     private String googleClientId;
-
     private GoogleIdTokenVerifier verifier;
-
-    private static final Logger log = LoggerFactory.getLogger(GoogleTokenVerifierImpl.class);
 
     @PostConstruct
     private void initVerifier() {

@@ -1,12 +1,14 @@
-package az.fitnest.identity.util;
+package az.fitnest.identity.service;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-public class DeviceDetector {
+@Service
+public class DeviceDetectionService {
 
-    public static String detectDeviceType() {
+    public String detectDeviceType() {
         HttpServletRequest request = getCurrentRequest();
         if (request == null) {
             return "UNKNOWN";
@@ -40,7 +42,7 @@ public class DeviceDetector {
         return "UNKNOWN";
     }
 
-    private static HttpServletRequest getCurrentRequest() {
+    private HttpServletRequest getCurrentRequest() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         return attributes != null ? attributes.getRequest() : null;
     }

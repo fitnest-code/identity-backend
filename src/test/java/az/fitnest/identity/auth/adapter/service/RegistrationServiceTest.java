@@ -52,13 +52,13 @@ public class RegistrationServiceTest {
     @BeforeEach
     void setUp() {
         registrationService = new RegistrationServiceImpl(
-            userService,
-            passwordService,
-            userRepository,
-            tokenIssuanceService,
-            otpService,
-            registrationTokenService,
-            legalService
+                userService,
+                passwordService,
+                userRepository,
+                tokenIssuanceService,
+                otpService,
+                registrationTokenService,
+                legalService
         );
     }
 
@@ -71,11 +71,11 @@ public class RegistrationServiceTest {
         registrationService.startRegistration(request);
 
         verify(otpService).sendOtp(
-            any(OtpSendRequest.class),
-            eq(null),
-            eq(null),
-            eq(null),
-            eq("+994501234567")
+                any(OtpSendRequest.class),
+                eq(null),
+                eq(null),
+                eq(null),
+                eq("+994501234567")
         );
     }
 

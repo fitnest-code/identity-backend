@@ -3,6 +3,7 @@ package az.fitnest.identity.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record DeactivateAccountRequest(
-    @JsonProperty("reason")
-    String reason
-) {}
+        @JsonProperty("reason")
+        String reason
+) {
+}

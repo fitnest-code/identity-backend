@@ -61,17 +61,17 @@ public class UserAdminController {
     public ResponseEntity<UserProfileDetailsResponse> getUserProfileDetails(@PathVariable Long userId) {
         var grpcResponse = userProfileGrpcClient.getUserProfileDetails(userId);
         UserProfileDetailsResponse response = UserProfileDetailsResponse.builder()
-            .id(grpcResponse.getUserId())
-            .registrationDate(grpcResponse.getRegistrationDate())
-            .platform(grpcResponse.getPlatform())
-            .phoneNumber(grpcResponse.getPhoneNumber())
-            .email(grpcResponse.getEmail())
-            .birthDate(java.time.LocalDate.parse(grpcResponse.getBirthDate()))
-            .goal(grpcResponse.getGoal())
-            .height(grpcResponse.getHeight())
-            .weight(grpcResponse.getWeight())
-            .bmiIndex(grpcResponse.getBmiIndex())
-            .build();
+                .id(grpcResponse.getUserId())
+                .registrationDate(grpcResponse.getRegistrationDate())
+                .platform(grpcResponse.getPlatform())
+                .phoneNumber(grpcResponse.getPhoneNumber())
+                .email(grpcResponse.getEmail())
+                .birthDate(java.time.LocalDate.parse(grpcResponse.getBirthDate()))
+                .goal(grpcResponse.getGoal())
+                .height(grpcResponse.getHeight())
+                .weight(grpcResponse.getWeight())
+                .bmiIndex(grpcResponse.getBmiIndex())
+                .build();
         return ResponseEntity.ok(response);
     }
 

@@ -26,19 +26,20 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+
 import az.fitnest.identity.mapper.OtpSendResponseMapper;
 import az.fitnest.identity.mapper.OtpVerifyResponseMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import az.fitnest.identity.model.otp.OtpUserState;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -65,12 +66,8 @@ public class OtpServiceImpl implements OtpService {
     private final OtpSendResponseMapper otpSendResponseMapper;
     private final OtpVerifyResponseMapper otpVerifyResponseMapper;
     private final PhoneNormalizer phoneNormalizer;
-
     @Autowired
     private OtpStateRepository otpStateRepository;
-
-    private static final Logger log = LoggerFactory.getLogger(OtpServiceImpl.class);
-
     @Value("${otp.ttl-seconds}")
     private int otpTtlSeconds;
 
@@ -99,17 +96,6 @@ public class OtpServiceImpl implements OtpService {
         }
     }
 
-    @PostConstruct
-    private void logRateLimitConfig() {
-        log.info("OTP Rate Limit Config: maxAttempts={}, windowMinutes={}, cooldownSeconds={}, dailyMaxAttempts={}, minCooldownSeconds={}, errorMessageThresholdSeconds={}",
-                otpRateLimiter.getProperties().getMaxAttempts(),
-                otpRateLimiter.getProperties().getWindowMinutes(),
-                otpRateLimiter.getProperties().getCooldownSeconds(),
-                otpRateLimiter.getProperties().getDailyMaxAttempts(),
-                otpRateLimiter.getProperties().getMinCooldownSeconds(),
-                otpRateLimiter.getProperties().getErrorMessageThresholdSeconds());
-    }
-
     @Override
     public OtpSendResponse sendOtp(OtpSendRequest request) {
         OtpPurpose purpose = request.getPurpose();
@@ -126,6 +112,12 @@ public class OtpServiceImpl implements OtpService {
         validateRateLimit(purpose, identifier);
 
         return sendOtp(request, null, null, null, null);
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<OtpSendResponse> sendOtpAsync(OtpSendRequest request) {
+        return CompletableFuture.completedFuture(sendOtp(request));
     }
 
     private OtpPurpose resolvePurpose(OtpSendRequest request) {
@@ -158,7 +150,7 @@ public class OtpServiceImpl implements OtpService {
         }
 
         if (userId == null) {
-             validateRateLimit(purpose, identifier);
+            validateRateLimit(purpose, identifier);
         }
 
         boolean exists = (purpose == OtpPurpose.EMAIL_CHANGE)
@@ -177,9 +169,9 @@ public class OtpServiceImpl implements OtpService {
         String sessionId = request.getSessionId() != null ? request.getSessionId() : createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
-                emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
-            } else {
-            }
+            emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
+        } else {
+        }
         int resendCount = 1;
         int cooldown = 60 * resendCount;
         return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, cooldown, getMessage("success.otp.sent"));
@@ -215,13 +207,10 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private void validateRateLimit(OtpPurpose purpose, String identifier) {
-        log.info("[validateRateLimit] Checking rate limit for purpose={}, identifier={}", purpose, identifier);
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
-        log.info("[validateRateLimit] Rate limit result: allowed={}, waitTimeSeconds={}", rateLimitResult.allowed(), rateLimitResult.waitTimeSeconds());
         if (!rateLimitResult.allowed()) {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
             String message = getMessage("error.otp.rate_limit_generic");
-            log.warn("[validateRateLimit] Rate limit exceeded for purpose={}, identifier={}, waitTimeSeconds={}", purpose, identifier, waitTimeSeconds);
             throw new OtpRateLimitedException(message, "error.otp.rate_limit_generic", waitTimeSeconds);
         }
     }
@@ -250,59 +239,44 @@ public class OtpServiceImpl implements OtpService {
                 .userId(userId)
                 .build();
         String identifier = (purpose == OtpPurpose.EMAIL_CHANGE) ? email : mobile;
-        log.info("Creating OTP session: sessionId={}, purpose={}, otp={}, otpHash={}, identifier={}, ttl={}, payload={}", sessionId, purpose, otp, otpHash, identifier, otpTtlSeconds, payload);
         otpStore.saveOtpSessionAtomically(purpose, identifier, sessionId, payload, otpTtlSeconds);
         if (userId != null) {
             otpStore.setActiveSessionPointer(purpose, "user:" + userId, sessionId, otpTtlSeconds);
-            log.info("Set active session pointer for userId={}, sessionId={}, purpose={}, ttl={}", userId, sessionId, purpose, otpTtlSeconds);
         }
         return sessionId;
     }
 
     @Override
     public OtpVerificationResult verifyOtp(String sessionId, String otpCode) {
-        log.info("Verifying OTP: sessionId={}, otpCode={}", sessionId, otpCode);
         Optional<OtpSessionPayload> sessionOpt = otpStore.getSessionForVerification(sessionId);
         if (sessionOpt.isEmpty()) {
-            log.warn("Session not found for sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.invalid");
         }
         OtpSessionPayload session = sessionOpt.get();
-        log.info("Session payload: {}", session);
         if (session.locked()) {
-            log.warn("Session is locked: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.locked");
         }
         if (session.verified()) {
-            log.warn("Session is already verified: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.already_verified");
         }
         boolean isValid = hashOtp(otpCode).equals(session.otpHash());
-        log.info("OTP hash comparison: inputHash={}, storedHash={}, isValid={}", hashOtp(otpCode), session.otpHash(), isValid);
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
-        log.info("VerifyOtpResult: found={}, status={}, session={}", result.isFound(), result.getStatus(), result.getSession());
         if (!result.isFound()) {
-            log.warn("Session not found after verifyOtpAndUpdate: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.invalid");
         }
         if (result.isLocked()) {
-            log.warn("Session locked after verifyOtpAndUpdate: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.locked");
         }
         if (result.isAlreadyVerified()) {
-            log.warn("Session already verified after verifyOtpAndUpdate: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.already_verified");
         }
         if (result.isExpired()) {
-            log.warn("Session expired after verifyOtpAndUpdate: sessionId={}", sessionId);
             throw new OtpVerificationException("error.otp.invalid");
         }
         if (!isValid) {
-            log.warn("OTP code is invalid: sessionId={}, otpCode={}", sessionId, otpCode);
             throw new OtpVerificationException("error.otp.invalid");
         }
         OtpSessionPayload verifiedSession = result.getSession();
-        log.info("OTP verified successfully: sessionId={}, userId={}, purpose={}", sessionId, verifiedSession.userId(), verifiedSession.purpose());
         return OtpVerificationResult.builder()
                 .purpose(verifiedSession.purpose())
                 .firstName(verifiedSession.firstName())
@@ -369,8 +343,7 @@ public class OtpServiceImpl implements OtpService {
             user.setLockedUntil(null);
             userRepository.save(user);
 
-            String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
-            az.fitnest.identity.dto.response.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
+            az.fitnest.identity.dto.response.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, "UNKNOWN");
 
             return otpVerifyResponseMapper.toResponse(
                     true,
@@ -416,14 +389,11 @@ public class OtpServiceImpl implements OtpService {
         }
 
         if (identifier == null || identifier.isEmpty()) {
-            log.warn("[resendOtp] Missing or invalid identifier for rate limit: purpose={}, sessionId={}", purpose, sessionId);
             throw new IllegalArgumentException("Missing identifier for resend");
         }
 
-        log.info("[resendOtp] Checking rate limit: purpose={}, identifier={}, sessionId={}", purpose, identifier, sessionId);
         validateRateLimit(purpose, identifier);
 
-        log.info("[resendOtp] TTL seconds for session {}: {}", sessionId, ttlSeconds);
         int resendCount = (session.resendCount() != null) ? session.resendCount() + 1 : 1;
         int incrementalCooldown = 60 * resendCount;
 
@@ -482,7 +452,6 @@ public class OtpServiceImpl implements OtpService {
             byte[] hash = digest.digest(otp.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            log.error("SHA-256 algorithm not found", e);
             throw new IllegalStateException("Security configuration error", e);
         }
     }
@@ -519,3 +488,4 @@ public class OtpServiceImpl implements OtpService {
         return otpStateRepository.get(key).orElseGet(() -> new OtpUserState(key));
     }
 }
+

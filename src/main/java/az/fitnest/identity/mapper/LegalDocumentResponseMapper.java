@@ -9,10 +9,10 @@ import org.springframework.stereotype.Component;
 public class LegalDocumentResponseMapper {
     public LegalDocumentResponse toResponse(LegalDocument doc, LegalDocumentType type) {
         return new LegalDocumentResponse(
-            doc.getVersion(),
-            type.name(),
-            doc.getContent(),
-            doc.getLastModifiedDate()
+                doc.getVersion(),
+                type.name(),
+                doc.getContent(),
+                doc.getLastModifiedDate()
         );
     }
 }

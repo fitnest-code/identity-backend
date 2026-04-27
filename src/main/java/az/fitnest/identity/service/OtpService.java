@@ -10,8 +10,10 @@ import az.fitnest.identity.model.entity.OtpVerificationResult;
 public interface OtpService {
     OtpSendResponse sendOtp(OtpSendRequest request);
 
+    java.util.concurrent.CompletableFuture<OtpSendResponse> sendOtpAsync(OtpSendRequest request);
+
     OtpSendResponse sendOtp(OtpSendRequest request, String firstName, String lastName, String userPasswordHash,
-            String mobile);
+                            String mobile);
 
     OtpSendResponse sendOtpByUserId(Long userId, OtpSendRequest request);
 

@@ -27,6 +27,11 @@ public abstract class BaseAuditableEntity extends BaseEntity {
     @Column(name = "last_modified_date")
     private LocalDateTime lastModifiedDate;
 
-    public LocalDateTime getCreatedDate() { return createdDate; }
-    public LocalDateTime getLastModifiedDate() { return lastModifiedDate; }
+    public LocalDateTime getCreatedDate() {
+        return createdDate;
+    }
+
+    public LocalDateTime getLastModifiedDate() {
+        return lastModifiedDate;
+    }
 }

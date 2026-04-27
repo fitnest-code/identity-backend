@@ -42,4 +42,8 @@ public interface AuthTokenRepository extends JpaRepository<AuthToken, Long> {
                   AND (t.refreshExpiresAt IS NULL OR t.refreshExpiresAt > :now)
             """)
     int consumeRefreshToken(@Param("userId") Long userId, @Param("hash") String hash, @Param("now") Instant now);
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AuthToken t WHERE t.refreshExpiresAt < :now")
+    int deleteExpiredTokens(@Param("now") Instant now);
 }

@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface AuthService {
-    Object login(LoginRequest request);
+    az.fitnest.identity.dto.response.LoginResult login(LoginRequest request);
 
     RefreshResponse refresh(String refreshToken);
 

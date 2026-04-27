@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import az.fitnest.identity.repository.UserRepository;
 
 @Component

@@ -128,11 +128,11 @@ public class UserServiceImpl implements UserService {
 
     private Role getDefaultUserRole() {
         return roleRepository.findByName("ROLE_USER")
-            .orElseGet(() -> {
-                Role role = new Role();
-                role.setName("ROLE_USER");
-                return roleRepository.save(role);
-            });
+                .orElseGet(() -> {
+                    Role role = new Role();
+                    role.setName("ROLE_USER");
+                    return roleRepository.save(role);
+                });
     }
 
     @CacheEvict(value = "users", key = "#userId")
@@ -363,7 +363,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteRole(Long roleId) {
         Role role = roleRepository.findById(roleId)
-            .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
         if (userRepository.existsByRole(role)) {
             throw new ConflictException("error.role.in_use", "ROLE_IN_USE");
         }
@@ -426,11 +426,11 @@ public class UserServiceImpl implements UserService {
     private void publishUserEvent(String eventType, Long userId) {
         UserEvent event = new UserEvent(eventType, userId, System.currentTimeMillis());
         kafkaTemplate.send("user-events", userId.toString(), event)
-            .whenComplete((result, ex) -> {
-                if (ex != null) {
-                    log.error("Failed to publish user event", ex);
-                }
-            });
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to publish user event", ex);
+                    }
+                });
     }
 
     @Transactional(readOnly = true)
@@ -464,8 +464,8 @@ public class UserServiceImpl implements UserService {
         }
 
         Page<User> userPage = userRepository.searchUsersAdvanced(
-            params.id(), params.name(), params.surname(), params.email(), params.mobile(),
-            subscriptionUserIds, pageable
+                params.id(), params.name(), params.surname(), params.email(), params.mobile(),
+                subscriptionUserIds, pageable
         );
 
         return userPage.map(userResponseMapper::toResponse);
@@ -485,8 +485,8 @@ public class UserServiceImpl implements UserService {
         }
 
         Page<User> userPage = userRepository.searchUsersAdvanced(
-            params.id(), params.name(), params.surname(), params.email(), params.mobile(),
-            subscriptionUserIds, pageable
+                params.id(), params.name(), params.surname(), params.email(), params.mobile(),
+                subscriptionUserIds, pageable
         );
 
         return userPage.map(user -> {
@@ -498,9 +498,9 @@ public class UserServiceImpl implements UserService {
                 log.warn("Failed to fetch subscription for user {}: {}", user.getId(), e.getMessage());
             }
             return new az.fitnest.identity.dto.response.AdminUserResponse(
-                user.getId(), null, null, user.getMobile(), null,
-                user.getStatus() != null ? user.getStatus().name() : null,
-                subscriptionStatus
+                    user.getId(), null, null, user.getMobile(), null,
+                    user.getStatus() != null ? user.getStatus().name() : null,
+                    subscriptionStatus
             );
         });
     }
@@ -540,7 +540,12 @@ public class UserServiceImpl implements UserService {
                         String key = kv[0].trim().toLowerCase();
                         String value = kv[1].trim();
                         switch (key) {
-                            case "id" -> { try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {} }
+                            case "id" -> {
+                                try {
+                                    id = Long.parseLong(value);
+                                } catch (NumberFormatException ignored) {
+                                }
+                            }
                             case "name" -> name = value;
                             case "surname" -> surname = value;
                             case "email" -> email = value;
@@ -552,8 +557,6 @@ public class UserServiceImpl implements UserService {
         }
         return new QueryParams(id, name, surname, email, mobile);
     }
-
-    private record QueryParams(Long id, String name, String surname, String email, String mobile) {}
 
     @Override
     @Transactional
@@ -586,9 +589,18 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private record UserEvent(String eventType, Long userId, long timestamp) {}
-    private record UserUpdatedEvent(Long userId) {}
-    private record PasswordChangedEvent(Long userId) {}
+    private record QueryParams(Long id, String name, String surname, String email, String mobile) {
+    }
+
+    private record UserEvent(String eventType, Long userId, long timestamp) {
+    }
+
+    private record UserUpdatedEvent(Long userId) {
+    }
+
+    private record PasswordChangedEvent(Long userId) {
+    }
+
     private record UserAccountDeletedEventLocal(Long userId) {
     }
 
