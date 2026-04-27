@@ -104,7 +104,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null) {
-            // Check if reactivation period (30 days) is still active
             if (user.getInactiveAt().plus(java.time.Duration.ofDays(30)).isAfter(now)) {
                 verifyPassword(user, password);
                 return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
@@ -127,11 +126,6 @@ public class AuthServiceImpl implements AuthService {
             updated = true;
         }
 
-        // Reset failed login attempts and update status in one go if possible
-        // Instead of calling resetFailedLoginAttempts(user.getId()) which is a native query,
-        // we update the object and let JPA handle it if we already have an update pending,
-        // OR we just use the native query if it's more efficient. 
-        // But since we might have updated password/session status, it's better to stay in JPA if possible.
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
         user.setStatus(UserStatus.ACTIVE);
@@ -182,7 +176,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         RefreshResponse response = new RefreshResponse(tokens.accessToken(), tokens.refreshToken());
-        log.info("[refresh] Token refresh successful for userId: {}. New AccessToken: {}, New RefreshToken: {}", 
+        log.info("[refresh] Token refresh successful for userId: {}. New AccessToken: {}, New RefreshToken: {}",
                 userId, response.accessToken(), response.refreshToken());
         return response;
     }
@@ -196,7 +190,7 @@ public class AuthServiceImpl implements AuthService {
 
         Instant now = Instant.now();
         if (user.getStatus() == UserStatus.INACTIVE || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))) {
-            log.warn("[refresh] User status prevents refresh. userId: {}, status: {}, lockedUntil: {}", 
+            log.warn("[refresh] User status prevents refresh. userId: {}, status: {}, lockedUntil: {}",
                     userId, user.getStatus(), user.getLockedUntil());
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
@@ -205,7 +199,7 @@ public class AuthServiceImpl implements AuthService {
         int consumed = authTokenRepository.consumeRefreshToken(userId, refreshTokenHash, now);
 
         if (consumed == 0) {
-            log.warn("[refresh] Refresh token not found, already consumed, or expired in DB. userId: {}, tokenHash: {}", 
+            log.warn("[refresh] Refresh token not found, already consumed, or expired in DB. userId: {}, tokenHash: {}",
                     userId, refreshTokenHash);
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }

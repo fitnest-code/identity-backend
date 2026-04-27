@@ -37,7 +37,6 @@ public class UserAdminController {
     private final RateLimitAdminService rateLimitAdminService;
     private final UserProfileGrpcClient userProfileGrpcClient;
 
-
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PatchMapping("/{userId}/role")

@@ -123,7 +123,6 @@ public class OtpServiceImpl implements OtpService {
             throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? getMessage("error.service.missing_email") : getMessage("error.service.missing_mobile"));
         }
 
-        // Consolidated rate limit check using the dedicated component
         validateRateLimit(purpose, identifier);
 
         return sendOtp(request, null, null, null, null);
@@ -158,9 +157,7 @@ public class OtpServiceImpl implements OtpService {
             throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? getMessage("error.service.missing_email") : getMessage("error.service.missing_mobile"));
         }
 
-        // Rate limit validation is now handled in the public sendOtp method
-        // but we keep it here for the internal calls if necessary.
-        if (userId == null) { // For anonymous requests, we always validate
+        if (userId == null) {
              validateRateLimit(purpose, identifier);
         }
 
@@ -497,7 +494,7 @@ public class OtpServiceImpl implements OtpService {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs != null) {
             HttpServletRequest req = attrs.getRequest();
-            
+
             String ip = req.getHeader("X-Client-IP");
             if (ip == null || ip.isBlank()) {
                 ip = req.getHeader("X-Forwarded-For");
@@ -507,7 +504,7 @@ public class OtpServiceImpl implements OtpService {
                     ip = req.getRemoteAddr();
                 }
             }
-            
+
             String userAgent = req.getHeader("User-Agent");
             if (userAgent != null && !userAgent.isBlank()) {
                 ip = ip + ":" + Math.abs(userAgent.hashCode());

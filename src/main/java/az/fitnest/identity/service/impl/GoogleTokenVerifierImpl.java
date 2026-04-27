@@ -104,7 +104,6 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
             Object audience = payload.getAudience();
             boolean audMatch = false;
 
-            // Extract the list of configured audiences for manual check
             java.util.List<String> allowedAudiences = java.util.Arrays.stream(googleClientId.split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())

@@ -141,7 +141,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OtpRateLimitedException.class)
     public ResponseEntity<ApiResponse<Void>> handleOtpRateLimitedException(OtpRateLimitedException exception, WebRequest request) {
         logger.error("OTP rate limit error: {}", exception.getMessage(), exception);
-        
+
         String formattedMessage = messageSource.getMessage(
                 exception.getErrorCode(),
                 new Object[]{exception.getWaitTimeSeconds()},

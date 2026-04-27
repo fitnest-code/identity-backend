@@ -62,7 +62,7 @@ public class PasswordRecoveryController {
         try {
             OtpSendResponse response = passwordResetService.forgotPassword(request);
             logger.info("ForgotPassword success for mobile: {}", request != null ? request.mobile() : null);
-            
+
             ApiSuccessResponse apiSuccess = ApiSuccessResponse.builder()
                     .code("success.otp.sent")
                     .message(response.message())
@@ -71,7 +71,7 @@ public class PasswordRecoveryController {
                     .timestamp(OffsetDateTime.now())
                     .details(response)
                     .build();
-            
+
             return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(apiSuccess));
         } catch (Exception ex) {
             logger.error("Error in forgotPassword for request: {}", request, ex);
@@ -103,7 +103,7 @@ public class PasswordRecoveryController {
             @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
             @RequestParam(required = false) String lang) {
         ResetPasswordResponse response = passwordResetService.resetPassword(request);
-        
+
         ApiSuccessResponse apiSuccess = ApiSuccessResponse.builder()
                 .code("success.password.changed")
                 .message(response.message())
@@ -111,7 +111,7 @@ public class PasswordRecoveryController {
                 .path(httpRequest.getRequestURI())
                 .timestamp(OffsetDateTime.now())
                 .build();
-                
+
         return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(apiSuccess));
     }
 }

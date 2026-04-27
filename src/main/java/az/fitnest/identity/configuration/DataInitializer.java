@@ -1,6 +1,5 @@
 package az.fitnest.identity.configuration;
 
-
 import az.fitnest.identity.model.enums.LegalDocumentType;
 import az.fitnest.identity.model.entity.*;
 import az.fitnest.identity.repository.*;

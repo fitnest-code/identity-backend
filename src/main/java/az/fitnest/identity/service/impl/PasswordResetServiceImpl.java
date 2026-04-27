@@ -48,7 +48,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
         String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
-        
+
         userRepository.findFirstByMobile(mobile).ifPresent(user -> {
             if (!user.isHasLocalPassword()) {
                 throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
@@ -74,7 +74,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
         User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials"));
-        
+
         if (!user.isHasLocalPassword()) {
             throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
         }

@@ -11,19 +11,19 @@ import java.time.OffsetDateTime;
 public class ApiSuccessResponse {
     @Schema(description = "Uğur kodu", example = "success.password.changed")
     String code;
-    
+
     @Schema(description = "Məlumat mesajı", example = "Şifrə uğurla dəyişdirildi")
     String message;
-    
+
     @Schema(description = "HTTP status kodu", example = "200")
     Integer status;
-    
+
     @Schema(description = "Sorğu yolu", example = "/api/v1/auth/password-recovery/reset-password")
     String path;
-    
+
     @Schema(description = "Zaman damğası")
     OffsetDateTime timestamp;
-    
+
     @Schema(description = "Əlavə təfərrüatlar")
     Object details;
 
