@@ -47,7 +47,7 @@ public class JwtService {
                 "roles", roles,
                 "lang", user.getLanguage() != null ? user.getLanguage() : "AZ",
                 "userId", user.getId(),
-                "email", user.getEmail() != null ? user.getEmail() : ""
+                "mobile", user.getMobile() != null ? user.getMobile() : ""
         ));
     }
 
