@@ -92,7 +92,8 @@ public class UserServiceImpl implements UserService {
         if (normalizedMobile == null || normalizedMobile.isBlank()) {
             throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_MOBILE");
         }
-        return createNewUserInternal(normalizeNamePart(firstName), normalizeNamePart(lastName), passwordHash, normalizedMobile);
+        return createNewUserInternal(normalizeNamePart(firstName), normalizeNamePart(lastName), passwordHash,
+                normalizedMobile);
     }
 
     @Override
@@ -170,7 +171,9 @@ public class UserServiceImpl implements UserService {
                 throw new az.fitnest.identity.exception.ValidationException("error.service.same_email", "SAME_EMAIL");
             }
         } catch (Exception e) {
-            log.warn("Failed to fetch profile during email change request for user {}. Proceeding without same-email check.", userId);
+            log.warn(
+                    "Failed to fetch profile during email change request for user {}. Proceeding without same-email check.",
+                    userId);
         }
 
         boolean alreadyExists = trimmedEmail != null && userProfileGrpcClient.getUserByEmail(trimmedEmail) != null;
@@ -188,7 +191,8 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
         if (verificationResult.purpose() != OtpPurpose.EMAIL_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException(
+                    "error.service.invalid_operation_context");
         }
         String newEmail = verificationResult.email();
         log.info("Confirming email change to {} in user-backend for user ID: {}", newEmail, userId);
@@ -227,7 +231,8 @@ public class UserServiceImpl implements UserService {
         var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
 
         if (verificationResult.purpose() != OtpPurpose.MOBILE_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException(
+                    "error.service.invalid_operation_context");
         }
 
         String normalizedMobile = verificationResult.mobile();
@@ -414,7 +419,8 @@ public class UserServiceImpl implements UserService {
             return null;
         }
         String v = value.trim();
-        if (v.isEmpty()) return null;
+        if (v.isEmpty())
+            return null;
         java.util.regex.Matcher matcher = NAME_PART_PATTERN.matcher(v);
         if (matcher.matches()) {
             return v;
@@ -443,7 +449,8 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile) {
+    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email,
+            String mobile) {
         size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
         return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
@@ -452,7 +459,8 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths) {
+    public Page<UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID,
+            Integer durationMonths) {
         size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
 
@@ -465,15 +473,15 @@ public class UserServiceImpl implements UserService {
 
         Page<User> userPage = userRepository.searchUsersAdvanced(
                 params.id(), params.name(), params.surname(), params.email(), params.mobile(),
-                subscriptionUserIds, pageable
-        );
+                subscriptionUserIds, pageable);
 
         return userPage.map(userResponseMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type) {
+    public Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query,
+            Long packageID, Integer durationMonths, String type) {
         size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
 
@@ -486,22 +494,22 @@ public class UserServiceImpl implements UserService {
 
         Page<User> userPage = userRepository.searchUsersAdvanced(
                 params.id(), params.name(), params.surname(), params.email(), params.mobile(),
-                subscriptionUserIds, pageable
-        );
+                subscriptionUserIds, pageable);
 
         return userPage.map(user -> {
             String subscriptionStatus = null;
             try {
                 var sub = userSubscriptionGrpcClient.getActiveSubscription(user.getId());
-                subscriptionStatus = (sub != null && !sub.getSubscriptionStatus().isEmpty()) ? sub.getSubscriptionStatus() : null;
+                subscriptionStatus = (sub != null && !sub.getSubscriptionStatus().isEmpty())
+                        ? sub.getSubscriptionStatus()
+                        : null;
             } catch (Exception e) {
                 log.warn("Failed to fetch subscription for user {}: {}", user.getId(), e.getMessage());
             }
             return new az.fitnest.identity.dto.response.AdminUserResponse(
                     user.getId(), null, null, user.getMobile(), null,
                     user.getStatus() != null ? user.getStatus().name() : null,
-                    subscriptionStatus
-            );
+                    subscriptionStatus);
         });
     }
 
@@ -520,8 +528,10 @@ public class UserServiceImpl implements UserService {
     }
 
     private List<Long> intersect(List<Long> list1, List<Long> list2) {
-        if (list1 == null) return list2;
-        if (list2 == null) return list1;
+        if (list1 == null)
+            return list2;
+        if (list2 == null)
+            return list1;
         list1.retainAll(list2);
         return list1;
     }
@@ -564,7 +574,8 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         var session = otpService.getOtpSession(otpSessionId);
         if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException(
+                    "error.service.invalid_operation_context");
         }
         return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE);
     }
@@ -575,13 +586,15 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         var session = otpService.getOtpSession(otpSessionId);
         if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException(
+                    "error.service.invalid_operation_context");
         }
         return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE);
     }
 
     @Override
-    public az.fitnest.identity.dto.response.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request) {
+    public az.fitnest.identity.dto.response.OtpSendResponse sendOtp(
+            az.fitnest.identity.dto.request.OtpSendRequest request) {
         if (request.getPurpose() == az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
             return otpService.sendOtp(request);
         } else {
