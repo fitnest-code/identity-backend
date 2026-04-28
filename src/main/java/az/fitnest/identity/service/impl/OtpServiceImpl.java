@@ -109,8 +109,6 @@ public class OtpServiceImpl implements OtpService {
             throw new IllegalArgumentException(purpose == OtpPurpose.EMAIL_CHANGE ? getMessage("error.service.missing_email") : getMessage("error.service.missing_mobile"));
         }
 
-        validateRateLimit(purpose, identifier);
-
         return sendOtp(request, null, null, null, null);
     }
 
@@ -210,8 +208,20 @@ public class OtpServiceImpl implements OtpService {
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
         if (!rateLimitResult.allowed()) {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
-            String message = getMessage("error.otp.rate_limit_generic");
-            throw new OtpRateLimitedException(message, "error.otp.rate_limit_generic", waitTimeSeconds);
+            String messageKey = "error.otp.rate_limit_generic";
+            String message;
+
+            if (waitTimeSeconds >= 60) {
+                messageKey = "error.otp.rate_limit_minutes";
+                message = getMessage(messageKey, (waitTimeSeconds + 59) / 60);
+            } else if (waitTimeSeconds > 0) {
+                messageKey = "error.otp.rate_limit_seconds";
+                message = getMessage(messageKey, waitTimeSeconds);
+            } else {
+                message = getMessage(messageKey);
+            }
+
+            throw new OtpRateLimitedException(message, messageKey, waitTimeSeconds);
         }
     }
 

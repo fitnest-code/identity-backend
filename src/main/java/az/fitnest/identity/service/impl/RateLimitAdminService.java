@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import az.fitnest.identity.repository.UserRepository;
@@ -88,29 +89,9 @@ public class RateLimitAdminService {
     }
 
     public void resetAllRateLimitsForAllUsers() {
-        var users = userRepository.findAll();
-        for (var user : users) {
-            for (OtpPurpose purpose : OtpPurpose.values()) {
-                String identifier = null;
-                if (purpose == OtpPurpose.EMAIL_CHANGE) {
-                    try {
-                        var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
-                        if (profile != null && !profile.getEmail().isEmpty()) {
-                            identifier = profile.getEmail();
-                        }
-                    } catch (Exception e) {
-                    }
-                } else {
-                    identifier = user.getMobile();
-                }
-
-                if (identifier != null) {
-                    RedisKeyBuilder.RedisKeys keys = redisKeyBuilder.rateLimitKeys(purpose, identifier);
-                    redisTemplate.delete(List.of(keys.windowKey(), keys.cooldownKey()));
-                    String dailyKey = redisKeyBuilder.rateLimitDailyAttemptsKey(purpose, identifier);
-                    redisTemplate.delete(dailyKey);
-                }
-            }
+        Set<String> keys = redisTemplate.keys("otp:*rl:*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
         }
     }
 
