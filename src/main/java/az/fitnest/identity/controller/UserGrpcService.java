@@ -55,6 +55,25 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
+    public void getUsersByIds(az.fitnest.user.grpc.GetUsersByIdsRequest request, StreamObserver<az.fitnest.user.grpc.GetUsersByIdsResponse> responseObserver) {
+        try {
+            java.util.List<User> users = userRepository.findAllById(request.getUserIdsList());
+            az.fitnest.user.grpc.GetUsersByIdsResponse.Builder responseBuilder = az.fitnest.user.grpc.GetUsersByIdsResponse.newBuilder();
+            for (User user : users) {
+                responseBuilder.addUsers(buildUserResponse(user));
+            }
+            responseObserver.onNext(responseBuilder.build());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Error in getUsersByIds: {}", e.getMessage(), e);
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to get users: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
+    @Override
     public void updateUserProfile(UpdateUserProfileRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
         try {
             az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest command = new az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest(
