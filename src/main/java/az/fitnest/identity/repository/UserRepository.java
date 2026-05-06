@@ -54,7 +54,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Transactional
     @Query("""
                 UPDATE User u SET u.status = 'INACTIVE', u.inactiveAt = :now
-                WHERE u.status != 'INACTIVE' AND u.role.name != 'ROLE_SUPER_ADMIN'
+                WHERE u.status != 'INACTIVE' AND u.role.name != 'ROLE_ADMIN'
             """)
     int deactivateAllNonAdmins(@Param("now") Instant now);
 

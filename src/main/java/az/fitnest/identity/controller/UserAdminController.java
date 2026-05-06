@@ -29,7 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
-@Tag(name = "İstifadəçi İdarəetmə Admin", description = "İstifadəçilərin, rolların, limitlərin və axtarışın idarə olunması üçün admin endpointləri. Bütün endpointlər üçün ADMIN və ya SUPER_ADMIN rolu tələb olunur.")
+@Tag(name = "İstifadəçi İdarəetmə Admin", description = "İstifadəçilərin, rolların, limitlərin və axtarışın idarə olunması üçün admin endpointləri. Bütün endpointlər üçün ADMIN rolu tələb olunur.")
 @SecurityRequirement(name = "bearerAuth")
 public class UserAdminController {
 
@@ -37,8 +37,8 @@ public class UserAdminController {
     private final RateLimitAdminService rateLimitAdminService;
     private final UserProfileGrpcClient userProfileGrpcClient;
 
-    @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{userId}/role")
     public ResponseEntity<Void> updateUserRole(
             @PathVariable Long userId,
@@ -47,8 +47,8 @@ public class UserAdminController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "BÜTÜN istifadəçiləri deaktiv edin (Kritik)", description = "Sistemdəki bütün istifadəçi hesablarını deaktiv edir. Bu əməliyyat yalnız SUPER_ADMIN tərəfindən həyata keçirilə bilər.")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Operation(summary = "BÜTÜN istifadəçiləri deaktiv edin (Kritik)", description = "Sistemdəki bütün istifadəçi hesablarını deaktiv edir. Bu əməliyyat yalnız ADMIN tərəfindən həyata keçirilə bilər.")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/all")
     public ResponseEntity<Void> deactivateAllUsers() {
         userService.deactivateAllUsers();
