@@ -65,7 +65,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateUserRole(Long userId, String roleName) {
         User user = getUserById(userId);
-        Role role = roleRepository.findByName(roleName)
+        String finalRoleName = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+        Role role = roleRepository.findByName(finalRoleName)
                 .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
 
         user.setRole(role);
