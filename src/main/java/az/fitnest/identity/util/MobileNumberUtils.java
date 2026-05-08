@@ -14,17 +14,28 @@ public class MobileNumberUtils {
             return null;
         }
 
+        // 1. Remove all non-digits
         String digits = mobile.replaceAll("\\D", "");
 
         String normalizedDigits;
-        if (mobile.startsWith("+994") && digits.length() == 12) {
+        
+        // 2. Handle 994551234567 or +994551234567 (12 digits)
+        if (digits.length() == 12 && digits.startsWith("994")) {
             normalizedDigits = digits;
-        } else if (mobile.startsWith("0") && digits.length() == 10) {
+        } 
+        // 3. Handle 0551234567 (10 digits)
+        else if (digits.length() == 10 && digits.startsWith("0")) {
             normalizedDigits = "994" + digits.substring(1);
-        } else {
+        }
+        // 4. Handle 551234567 (9 digits)
+        else if (digits.length() == 9) {
+            normalizedDigits = "994" + digits;
+        }
+        else {
             return null;
         }
 
+        // 5. Check operator prefix (positions 3 and 4 in 994XXYYYYYY)
         String operator = normalizedDigits.substring(3, 5);
         if (!ALLOWED_PREFIXES.contains(operator)) {
             return null;

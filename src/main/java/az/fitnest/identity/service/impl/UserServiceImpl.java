@@ -121,7 +121,7 @@ public class UserServiceImpl implements UserService {
         try {
             User saved = userRepository.save(user);
             log.info("Creating user profile in user-backend for user ID: {}", saved.getId());
-            userProfileGrpcClient.createUserProfile(saved.getId(), firstName, lastName, null);
+            userProfileGrpcClient.createUserProfile(saved.getId(), firstName, lastName, null); // Email is null here because createNewUser doesn't take email.
             return saved;
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
@@ -148,7 +148,7 @@ public class UserServiceImpl implements UserService {
         if (namePartsProvided) {
             NameParts parts = resolveNameParts(firstName, lastName, null);
             log.info("Updating user profile in user-backend for user ID: {}", userId);
-            userProfileGrpcClient.createUserProfile(userId, parts.firstName(), parts.lastName(), null);
+            userProfileGrpcClient.createUserProfile(userId, parts.firstName(), parts.lastName(), command.getEmail());
         }
         User saved = userRepository.save(user);
         localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
