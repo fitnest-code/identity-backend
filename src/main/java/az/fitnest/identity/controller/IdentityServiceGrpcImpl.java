@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import io.grpc.Status;
+import az.fitnest.identity.service.UserProfileGrpcClient;
 
 @Slf4j
 @GrpcService
