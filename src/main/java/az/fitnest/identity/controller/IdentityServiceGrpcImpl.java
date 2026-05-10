@@ -24,14 +24,25 @@ public class IdentityServiceGrpcImpl extends IdentityServiceGrpc.IdentityService
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserProfileGrpcClient userProfileGrpcClient;
 
     @Override
     public void createGymAdmin(CreateGymAdminRequest request, StreamObserver<CreateGymAdminResponse> responseObserver) {
         log.info("gRPC: Creating gym admin for email: {}", request.getEmail());
         try {
+            // 1. Global uniqueness check
+            String normalizedMobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getPhoneNumber());
+            if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
+                throw new IllegalArgumentException("USER_WITH_MOBILE_ALREADY_EXISTS");
+            }
+
+            if (userProfileGrpcClient.getUserByEmail(request.getEmail()) != null) {
+                throw new IllegalArgumentException("USER_WITH_EMAIL_ALREADY_EXISTS");
+            }
+
             String encodedPassword = passwordEncoder.encode(request.getPassword());
             
-            // 1. Ensure the role exists
+            // 2. Ensure the role exists
             String roleName = "ROLE_GYM_SUPER_ADMIN";
             roleRepository.findByName(roleName).orElseGet(() -> {
                 log.info("Role {} not found, creating it...", roleName);
@@ -40,31 +51,18 @@ public class IdentityServiceGrpcImpl extends IdentityServiceGrpc.IdentityService
                 return roleRepository.save(newRole);
             });
 
-            // 2. Check if user already exists by normalized mobile
-            String normalizedMobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getPhoneNumber());
-            java.util.Optional<User> existingUser = userRepository.findFirstByMobile(normalizedMobile);
+            // 3. Create new user
+            User user = userService.createNewUser(request.getName(), request.getSurname(), encodedPassword, request.getPhoneNumber());
             
-            User user;
-            if (existingUser.isPresent()) {
-                user = existingUser.get();
-                log.info("User already exists with mobile {}, using existing user ID: {}", normalizedMobile, user.getId());
-                // Update password if it's a retry/reset
-                user.setPasswordHash(encodedPassword);
-                userRepository.save(user);
-            } else {
-                // Create new user
-                user = userService.createNewUser(request.getName(), request.getSurname(), encodedPassword, request.getPhoneNumber());
-            }
-            
-            // 3. Update profile with email
+            // 4. Update profile with email
             az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest profileReq = 
                 new az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest(request.getName(), request.getSurname(), request.getEmail(), request.getPhoneNumber());
             userService.updateUserProfile(user.getId(), profileReq);
             
-            // 4. Assign role
+            // 5. Assign role
             userService.updateUserRole(user.getId(), "GYM_SUPER_ADMIN");
             
-            log.info("Successfully processed gym admin with ID: {}", user.getId());
+            log.info("Successfully created gym admin with ID: {}", user.getId());
             
             CreateGymAdminResponse response = CreateGymAdminResponse.newBuilder()
                     .setUserId(user.getId())
@@ -72,6 +70,11 @@ public class IdentityServiceGrpcImpl extends IdentityServiceGrpc.IdentityService
             
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        } catch (IllegalArgumentException e) {
+            log.warn("Validation failed for gym admin creation: {}", e.getMessage());
+            responseObserver.onError(Status.ALREADY_EXISTS
+                    .withDescription(e.getMessage())
+                    .asRuntimeException());
         } catch (Exception e) {
             log.error("Failed to create gym admin: {}", e.getMessage(), e);
             responseObserver.onError(Status.INTERNAL
