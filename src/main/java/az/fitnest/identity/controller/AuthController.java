@@ -106,7 +106,7 @@ public class AuthController {
     }
 
     @PostMapping("/social/google")
-    @Operation(summary = "Google ilə sosial giriş")
+    @Operation(summary = "Google ilə sosial giriş", security = @SecurityRequirement(name = "none"))
     public ResponseEntity<LoginResponse> socialLoginGoogle(
             @Valid @RequestBody GoogleSocialRequest request,
             @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
