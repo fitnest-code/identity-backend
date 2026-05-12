@@ -169,6 +169,7 @@ public class OtpServiceImpl implements OtpService {
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
             emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
         } else {
+            smsService.sendSms(mobileNumber, "Fitnest doğrulama kodunuz: " + otp + ". Bu kodu heç kimlə paylaşmayın!");
         }
         int resendCount = 1;
         int cooldown = 60 * resendCount;
@@ -431,6 +432,7 @@ public class OtpServiceImpl implements OtpService {
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
             emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
         } else {
+            smsService.sendSms(mobile, "Fitnest doğrulama kodunuz: " + otp + ". Bu kodu heç kimlə paylaşmayın!");
         }
 
         return otpSendResponseMapper.toResponse(sessionId, otpTtlSeconds, incrementalCooldown, getMessage("success.otp.sent"));
