@@ -14,8 +14,8 @@ public class SmsServiceImpl implements SmsService {
 
     @Override
     public void sendSms(String to, String message) {
-        // Dispatch real SMS instantly via gRPC to the notifications-backend
-        notificationsGrpcClient.sendSms(to, message);
+        // Dispatch real SMS via Kafka for decoupling and reliable delivery
+        // notificationsGrpcClient.sendSms(to, message); // Removed to prevent double SMS
 
         // Keep publishing the async event for audit/logging purposes
         NotificationEvent event = NotificationEvent.builder()
