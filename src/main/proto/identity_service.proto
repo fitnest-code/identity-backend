@@ -18,6 +18,17 @@ message CreateGymAdminResponse {
   int64 user_id = 1;
 }
 
+message CheckUserExistsRequest {
+  string phone_number = 1;
+  string email = 2;
+}
+
+message CheckUserExistsResponse {
+  bool exists = 1;
+  string message = 2;
+}
+
 service IdentityService {
   rpc CreateGymAdmin(CreateGymAdminRequest) returns (CreateGymAdminResponse);
+  rpc CheckUserExists(CheckUserExistsRequest) returns (CheckUserExistsResponse);
 }

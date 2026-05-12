@@ -83,4 +83,40 @@ public class IdentityServiceGrpcImpl extends IdentityServiceGrpc.IdentityService
                     .asRuntimeException());
         }
     }
+    @Override
+    public void checkUserExists(az.fitnest.identity.grpc.CheckUserExistsRequest request, StreamObserver<az.fitnest.identity.grpc.CheckUserExistsResponse> responseObserver) {
+        log.info("gRPC: Checking user existence for email: {} and phone: {}", request.getEmail(), request.getPhoneNumber());
+        try {
+            boolean exists = false;
+            String message = "";
+
+            if (!request.getPhoneNumber().isEmpty()) {
+                String normalizedMobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.getPhoneNumber());
+                if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
+                    exists = true;
+                    message = "USER_WITH_MOBILE_ALREADY_EXISTS";
+                }
+            }
+
+            if (!exists && !request.getEmail().isEmpty()) {
+                if (userProfileGrpcClient.getUserByEmail(request.getEmail()) != null) {
+                    exists = true;
+                    message = "USER_WITH_EMAIL_ALREADY_EXISTS";
+                }
+            }
+
+            az.fitnest.identity.grpc.CheckUserExistsResponse response = az.fitnest.identity.grpc.CheckUserExistsResponse.newBuilder()
+                    .setExists(exists)
+                    .setMessage(message)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Failed to check user existence: {}", e.getMessage(), e);
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to check user existence: " + e.getMessage())
+                    .asRuntimeException());
+        }
+    }
 }
