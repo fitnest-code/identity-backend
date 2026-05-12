@@ -71,6 +71,11 @@ public class IdentityServiceGrpcImpl extends IdentityServiceGrpc.IdentityService
             
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        } catch (az.fitnest.identity.exception.BaseException e) {
+            log.warn("Business error during gym admin creation: {}", e.getErrorCode());
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription(e.getErrorCode())
+                    .asRuntimeException());
         } catch (IllegalArgumentException e) {
             log.warn("Validation failed for gym admin creation: {}", e.getMessage());
             responseObserver.onError(Status.ALREADY_EXISTS
