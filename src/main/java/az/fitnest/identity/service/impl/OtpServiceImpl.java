@@ -167,7 +167,9 @@ public class OtpServiceImpl implements OtpService {
         String sessionId = request.getSessionId() != null ? request.getSessionId() : createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
-            emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
+            java.util.Map<String, Object> vars = new java.util.HashMap<>();
+            vars.put("otp", otp);
+            emailService.sendHtmlEmail(email, "Fitnest Təsdiq Kodu", "otp.html", vars);
         } else {
             smsService.sendSms(mobileNumber, "Təhlükəsizlik kodunuzu heç kimlə paylaşmayın!\nCode: " + otp);
         }
@@ -430,7 +432,9 @@ public class OtpServiceImpl implements OtpService {
         otpStore.updateOtpSession(sessionId, updatedSession);
 
         if (purpose == OtpPurpose.EMAIL_CHANGE) {
-            emailService.sendSimpleEmail(email, "Fitnest Verification Code", "Your Fitnest verification code: " + otp);
+            java.util.Map<String, Object> vars = new java.util.HashMap<>();
+            vars.put("otp", otp);
+            emailService.sendHtmlEmail(email, "Fitnest Təsdiq Kodu", "otp.html", vars);
         } else {
             smsService.sendSms(mobile, "Təhlükəsizlik kodunuzu heç kimlə paylaşmayın!\nCode: " + otp);
         }
