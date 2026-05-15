@@ -59,7 +59,12 @@ public class AppleTokenVerifier {
             String email = claims.getStringClaim("email");
             Boolean emailVerified = claims.getBooleanClaim("email_verified");
 
-            if (!APPLE_ISSUER.equals(issuer) || !appleClientId.equals(audience) || subject == null || subject.isEmpty()) {
+            java.util.List<String> allowedAudiences = java.util.Arrays.stream(appleClientId.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+
+            if (!APPLE_ISSUER.equals(issuer) || !allowedAudiences.contains(audience) || subject == null || subject.isEmpty()) {
                 throw new UnauthorizedException(getMessage("error.auth.external_token_invalid"));
             }
 

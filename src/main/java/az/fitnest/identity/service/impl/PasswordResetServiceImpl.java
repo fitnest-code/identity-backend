@@ -49,11 +49,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String rawMobile = request.mobile();
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
 
-        userRepository.findFirstByMobile(mobile).ifPresent(user -> {
-            if (!user.isHasLocalPassword()) {
-                throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
-            }
-        });
+        User user = userRepository.findFirstByMobile(mobile)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found"));
 
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.PASSWORD_RESET, mobile, null, null);
         return otpService.sendOtp(otpRequest);
@@ -74,10 +71,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
         User user = userRepository.findFirstByMobile(identifier)
                 .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials"));
-
-        if (!user.isHasLocalPassword()) {
-            throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
-        }
 
         if (passwordService.verifyPassword(newPassword, user.getPasswordHash()).matches()) {
             throw new az.fitnest.identity.exception.ValidationException("error.service.password_not_allowed", "VALIDATION_ERROR");
