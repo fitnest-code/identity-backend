@@ -123,6 +123,10 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("error.auth.account_deleted");
         }
 
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new InvalidCredentialsException("error.auth.account_blocked");
+        }
+
         if (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
             throw new InvalidCredentialsException("error.auth.account_locked");
         }
@@ -202,8 +206,9 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UnauthorizedException("error.auth.invalid_credentials"));
 
         Instant now = Instant.now();
-        if (user.getStatus() == UserStatus.INACTIVE || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))) {
-            throw new UnauthorizedException("error.auth.invalid_credentials");
+        if (user.getStatus() == UserStatus.INACTIVE || user.getStatus() == UserStatus.BLOCKED || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))) {
+            String errorCode = user.getStatus() == UserStatus.BLOCKED ? "error.auth.account_blocked" : "error.auth.invalid_credentials";
+            throw new UnauthorizedException(errorCode);
         }
 
         String refreshTokenHash = tokenHasher.hash(refreshToken);

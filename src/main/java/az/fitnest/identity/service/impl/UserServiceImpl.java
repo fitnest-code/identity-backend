@@ -623,4 +623,29 @@ public class UserServiceImpl implements UserService {
 
     private record NameParts(String firstName, String lastName) {
     }
+    @Override
+    @Transactional
+    @CacheEvict(value = "users", key = "#userId")
+    public void blockUser(Long userId) {
+        User user = getUserOrThrow(userId);
+        user.setStatus(UserStatus.BLOCKED);
+        userRepository.save(user);
+        
+        // Terminate all sessions
+        redisTokenService.removeAllSessions(userId);
+        authTokenRepository.deleteByUserId(userId);
+        
+        log.info("User {} has been BLOCKED by admin", userId);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "users", key = "#userId")
+    public void unblockUser(Long userId) {
+        User user = getUserOrThrow(userId);
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+        
+        log.info("User {} has been UNBLOCKED by admin", userId);
+    }
 }

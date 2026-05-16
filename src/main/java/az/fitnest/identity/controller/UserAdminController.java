@@ -109,4 +109,20 @@ public class UserAdminController {
         rateLimitAdminService.resetAllRateLimitsForAllUsers();
         return ResponseEntity.ok().build();
     }
+
+    @Operation(summary = "İstifadəçini bloklayın", description = "İstifadəçini bloklayır və bütün sessiyalarını sonlandırır. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{userId}/block")
+    public ResponseEntity<Void> blockUser(@PathVariable Long userId) {
+        userService.blockUser(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "İstifadəçinin blokunu açın", description = "Bloklanmış istifadəçinin blokunu açır. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{userId}/unblock")
+    public ResponseEntity<Void> unblockUser(@PathVariable Long userId) {
+        userService.unblockUser(userId);
+        return ResponseEntity.ok().build();
+    }
 }
