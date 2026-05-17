@@ -3,6 +3,7 @@ package az.fitnest.identity.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
+
 import java.time.OffsetDateTime;
 
 @Builder
@@ -11,16 +12,16 @@ import java.time.OffsetDateTime;
 public class ApiErrorResponse {
     @Schema(description = "Xəta kodu", example = "error.server.internal")
     String code;
-    
+
     @Schema(description = "Xəta mesajı", example = "Texniki xəta baş verdi. Bir az sonra yenidən cəhd edin")
     String message;
-    
+
     @Schema(description = "HTTP status kodu", example = "500")
     Integer status;
-    
+
     @Schema(description = "Sorğu yolu", example = "/api/v1/auth/password-recovery/reset-password")
     String path;
-    
+
     @Schema(description = "Zaman damğası")
     OffsetDateTime timestamp;
     Object details;

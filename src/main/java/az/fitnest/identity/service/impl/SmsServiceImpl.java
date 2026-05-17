@@ -10,9 +10,14 @@ import org.springframework.stereotype.Service;
 public class SmsServiceImpl implements SmsService {
 
     private final IdentityEventPublisher eventPublisher;
+    private final az.fitnest.identity.client.NotificationsGrpcClient notificationsGrpcClient;
 
     @Override
     public void sendSms(String to, String message) {
+        // Dispatch real SMS via Kafka for decoupling and reliable delivery
+        // notificationsGrpcClient.sendSms(to, message); // Removed to prevent double SMS
+
+        // Keep publishing the async event for audit/logging purposes
         NotificationEvent event = NotificationEvent.builder()
                 .type(NotificationEvent.NotificationType.SMS)
                 .recipient(to)

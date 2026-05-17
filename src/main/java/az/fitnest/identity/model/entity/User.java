@@ -63,7 +63,7 @@ public class User extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "session_status")
     private SessionStatus sessionStatus = SessionStatus.NO_SESSIONS;
-    
+
     @Builder.Default
     @Column(name = "has_local_password", nullable = false, columnDefinition = "boolean default false")
     private boolean hasLocalPassword = false;
@@ -74,14 +74,37 @@ public class User extends BaseAuditableEntity {
     @Column(name = "inactive_at")
     private Instant inactiveAt;
 
-    public String getMobile() { return mobile; }
-    public UserStatus getStatus() { return status; }
-    public SessionStatus getSessionStatus() { return sessionStatus; }
-    public Role getRole() { return role; }
-    public String getPasswordHash() { return passwordHash; }
-    public String getLanguage() { return language; }
-    public int getFailedLoginAttempts() { return failedLoginAttempts; }
-    public Instant getLockedUntil() { return lockedUntil; }
+    public String getMobile() {
+        return mobile;
+    }
+
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public SessionStatus getSessionStatus() {
+        return sessionStatus;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
 
     public boolean hasAccount() {
         return hasAccount;

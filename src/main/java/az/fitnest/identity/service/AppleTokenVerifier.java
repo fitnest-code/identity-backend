@@ -34,12 +34,11 @@ public class AppleTokenVerifier {
     private static final String APPLE_ISSUER = "https://appleid.apple.com";
     private static final String APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final MessageSource messageSource;
     @Value("${auth.apple.client-id:}")
     private String appleClientId;
     @Value("${auth.apple.team-id:}")
     private String appleTeamId;
-
-    private final MessageSource messageSource;
 
     private String getMessage(String key) {
         return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
@@ -60,7 +59,12 @@ public class AppleTokenVerifier {
             String email = claims.getStringClaim("email");
             Boolean emailVerified = claims.getBooleanClaim("email_verified");
 
-            if (!APPLE_ISSUER.equals(issuer) || !appleClientId.equals(audience) || subject == null || subject.isEmpty()) {
+            java.util.List<String> allowedAudiences = java.util.Arrays.stream(appleClientId.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+
+            if (!APPLE_ISSUER.equals(issuer) || !allowedAudiences.contains(audience) || subject == null || subject.isEmpty()) {
                 throw new UnauthorizedException(getMessage("error.auth.external_token_invalid"));
             }
 
@@ -115,6 +119,7 @@ public class AppleTokenVerifier {
         }
     }
 
-    public record AppleTokenClaims(String userId, String email, boolean emailVerified, String firstName, String lastName) {
+    public record AppleTokenClaims(String userId, String email, boolean emailVerified, String firstName,
+                                   String lastName) {
     }
 }

@@ -11,21 +11,21 @@ public class UserConsentStatusResponseMapper {
         boolean termsUpToDate = latestTermsVersion != null && latestTermsVersion.equals(consent.getTermsOfUseVersion());
 
         return new UserConsentStatusResponse(
-            new UserConsentStatusResponse.ConsentDetail(
-                true,
-                privacyUpToDate,
-                consent.getPrivacyPolicyVersion(),
-                latestPrivacyVersion,
-                consent.getAcceptedAt()
-            ),
-            new UserConsentStatusResponse.ConsentDetail(
-                true,
-                termsUpToDate,
-                consent.getTermsOfUseVersion(),
-                latestTermsVersion,
-                consent.getAcceptedAt()
-            ),
-            privacyUpToDate && termsUpToDate
+                new UserConsentStatusResponse.ConsentDetail(
+                        true,
+                        privacyUpToDate,
+                        consent.getPrivacyPolicyVersion(),
+                        latestPrivacyVersion,
+                        consent.getAcceptedAt()
+                ),
+                new UserConsentStatusResponse.ConsentDetail(
+                        true,
+                        termsUpToDate,
+                        consent.getTermsOfUseVersion(),
+                        latestTermsVersion,
+                        consent.getAcceptedAt()
+                ),
+                privacyUpToDate && termsUpToDate
         );
     }
 }

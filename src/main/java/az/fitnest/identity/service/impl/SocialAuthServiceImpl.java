@@ -79,7 +79,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     }
 
     private LoginResponse processSocialLogin(SocialProvider provider, String providerId, String email,
-                                            String firstName, String lastName, String fullName, String pictureUrl) {
+                                             String firstName, String lastName, String fullName, String pictureUrl) {
         log.info("Processing social login for provider: {}, providerId: {}, email: {}", provider, providerId, email);
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(provider, providerId);
 

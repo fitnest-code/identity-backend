@@ -6,12 +6,13 @@ import lombok.Builder;
 
 @Builder
 public record UpdateUserProfileRequest(
-    @JsonProperty("first_name")
-    String firstName,
+        @JsonProperty("first_name")
+        String firstName,
 
-    @JsonProperty("last_name")
-    String lastName,
+        @JsonProperty("last_name")
+        String lastName,
 
-    @Email(message = "Email düzgün deyil")
-    String email
-) {}
+        @Email(message = "Email düzgün deyil")
+        String email
+) {
+}

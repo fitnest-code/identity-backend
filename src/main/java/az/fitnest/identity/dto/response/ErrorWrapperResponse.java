@@ -2,6 +2,7 @@ package az.fitnest.identity.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -50,10 +51,12 @@ public record ErrorWrapperResponse(
             @JsonFormat(pattern = "dd/MM/yyyy")
             LocalDateTime timestamp,
             Map<String, Object> details
-    ) {}
+    ) {
+    }
 
     public record FieldIssueResponse(
             String field,
             String issue
-    ) {}
+    ) {
+    }
 }

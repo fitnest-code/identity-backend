@@ -2,6 +2,7 @@ package az.fitnest.identity.security;
 
 import az.fitnest.identity.model.enums.UserStatus;
 
+import az.fitnest.identity.model.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -40,11 +41,13 @@ public class JwtService {
         this.refreshTtlSeconds = refreshTtlSeconds;
     }
 
-    public String generateAccessToken(Long userId, java.util.Collection<String> roles, String language) {
-        return buildToken(userId, accessTtlSeconds, Map.of(
+    public String generateAccessToken(User user, java.util.Collection<String> roles) {
+        return buildToken(user.getId(), accessTtlSeconds, Map.of(
                 "typ", "access",
                 "roles", roles,
-                "lang", language != null ? language : "AZ"
+                "lang", user.getLanguage() != null ? user.getLanguage() : "AZ",
+                "userId", user.getId(),
+                "mobile", user.getMobile() != null ? user.getMobile() : ""
         ));
     }
 
@@ -104,12 +107,12 @@ public class JwtService {
         String jti = UUID.randomUUID().toString().replace("-", "");
 
         return Jwts.builder()
+                .claims(extraClaims)
                 .issuer(issuer)
                 .subject(String.valueOf(userId))
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .id(jti)
-                .claims(extraClaims)
                 .signWith(key)
                 .compact();
     }

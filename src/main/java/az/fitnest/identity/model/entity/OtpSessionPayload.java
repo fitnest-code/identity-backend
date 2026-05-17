@@ -9,18 +9,19 @@ import java.time.Instant;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record OtpSessionPayload(
-    OtpPurpose purpose,
-    String otpHash,
-    Integer attempts,
-    Boolean locked,
-    Boolean verified,
-    Instant createdAt,
-    String firstName,
-    String lastName,
-    String userPasswordHash,
-    String mobile,
-    String email,
-    Instant lockedUntil,
-    Long userId,
-    Integer resendCount
-) {}
+        OtpPurpose purpose,
+        String otpHash,
+        Integer attempts,
+        Boolean locked,
+        Boolean verified,
+        Instant createdAt,
+        String firstName,
+        String lastName,
+        String userPasswordHash,
+        String mobile,
+        String email,
+        Instant lockedUntil,
+        Long userId,
+        Integer resendCount
+) {
+}

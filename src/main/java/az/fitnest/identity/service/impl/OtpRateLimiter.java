@@ -21,13 +21,13 @@ public class OtpRateLimiter {
                 -- ARGV[1] = windowMs
                 -- ARGV[2] = cooldownMs
                 -- ARGV[3] = maxAttempts
-
+            
                 local windowKey = KEYS[1]
                 local cdKey     = KEYS[2]
                 local windowMs   = tonumber(ARGV[1])
                 local cooldownMs = tonumber(ARGV[2])
                 local maxA       = tonumber(ARGV[3])
-
+            
                 -- 1. Cooldown gate (cheap check)
                 if cooldownMs > 0 then
                     local cdTtl = redis.call('PTTL', cdKey)
@@ -35,24 +35,24 @@ public class OtpRateLimiter {
                         return {0, math.floor((cdTtl + 999) / 1000)} -- denied, waitSec
                     end
                 end
-
+            
                 -- 2. Fixed window counter
                 local n = redis.call('INCR', windowKey)
                 if n == 1 then
                     redis.call('PEXPIRE', windowKey, windowMs)
                 end
-
+            
                 if n > maxA then
                     local wTtl = redis.call('PTTL', windowKey)
                     if wTtl < 0 then wTtl = windowMs end -- safety fallback
                     return {0, math.floor((wTtl + 999) / 1000)} -- denied, waitSec
                 end
-
+            
                 -- 3. Set/update cooldown
                 if cooldownMs > 0 then
                     redis.call('PSETEX', cdKey, cooldownMs, '1')
                 end
-
+            
                 return {1, 0} -- allowed
             """;
     @SuppressWarnings("rawtypes")

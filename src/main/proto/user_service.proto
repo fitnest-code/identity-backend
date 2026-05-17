@@ -20,6 +20,16 @@ service UserService {
   rpc ConfirmEmailChange(ConfirmEmailChangeRequest) returns (UserResponse);
   rpc RequestMobileChange(RequestMobileChangeRequest) returns (OtpSendResponseProto);
   rpc ConfirmMobileChange(ConfirmMobileChangeRequest) returns (UserResponse);
+  rpc SearchUserIdsByMobile(SearchUserIdsByMobileRequest) returns (SearchUserIdsByMobileResponse);
+  rpc GetUsersByIds(GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
+}
+
+message GetUsersByIdsRequest {
+  repeated int64 user_ids = 1;
+}
+
+message GetUsersByIdsResponse {
+  repeated UserResponse users = 1;
 }
 
 message GetUserByIdRequest {
@@ -103,4 +113,12 @@ message ConfirmMobileChangeRequest {
   int64 user_id = 1;
   string otp_code = 2;
   string otp_session_id = 3;
+}
+
+message SearchUserIdsByMobileRequest {
+  string query = 1;
+}
+
+message SearchUserIdsByMobileResponse {
+  repeated int64 user_ids = 1;
 }

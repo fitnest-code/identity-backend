@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import az.fitnest.identity.dto.response.ApiErrorResponse;
 
 @Slf4j
@@ -59,54 +60,54 @@ public class MeController {
         }
 
         MinimalIdentityResponse response = new MinimalIdentityResponse(
-            user.getId(),
-            user.getMobile(),
-            email,
-            user.isHasLocalPassword()
+                user.getId(),
+                user.getMobile(),
+                email,
+                user.isHasLocalPassword()
         );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Operation(
-        summary = "E-poçt dəyişmə sorğusu",
-        description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.",
-        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            required = true,
-            description = "Yeni e-poçt ünvanı üçün sorğu",
-            content = @io.swagger.v3.oas.annotations.media.Content(
-                schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.request.ChangeEmailRequest.class)
-            )
-        ),
-        responses = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "OTP uğurla göndərildi",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.OtpSendResponse.class)
-                )
+            summary = "E-poçt dəyişmə sorğusu",
+            description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Yeni e-poçt ünvanı üçün sorğu",
+                    content = @io.swagger.v3.oas.annotations.media.Content(
+                            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.request.ChangeEmailRequest.class)
+                    )
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "400",
-                description = "Yanlış və ya natamam sorğu",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
-                )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "409",
-                description = "E-poçt artıq istifadə olunur və ya dəyişdirilə bilməz",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
-                )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "500",
-                description = "Daxili server xətası",
-                content = @io.swagger.v3.oas.annotations.media.Content(
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
-                )
-            )
-        }
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "200",
+                            description = "OTP uğurla göndərildi",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.OtpSendResponse.class)
+                            )
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "400",
+                            description = "Yanlış və ya natamam sorğu",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
+                            )
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "409",
+                            description = "E-poçt artıq istifadə olunur və ya dəyişdirilə bilməz",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
+                            )
+                    ),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "500",
+                            description = "Daxili server xətası",
+                            content = @io.swagger.v3.oas.annotations.media.Content(
+                                    schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = az.fitnest.identity.dto.response.ApiErrorResponse.class)
+                            )
+                    )
+            }
     )
     @PostMapping("/api/v1/me/change-email/request")
     public ResponseEntity<az.fitnest.identity.dto.response.OtpSendResponse> requestEmailChange(
@@ -173,11 +174,11 @@ public class MeController {
             String errorMsg = "Unexpected error during account deletion: " + e.getMessage();
             return ResponseEntity.status(500).body(ApiResponse.error(
                     ApiErrorResponse.builder()
-                        .code("INTERNAL_SERVER_ERROR")
-                        .message(errorMsg)
-                        .status(500)
-                        .path(request.getRequestURI())
-                        .build()
+                            .code("INTERNAL_SERVER_ERROR")
+                            .message(errorMsg)
+                            .status(500)
+                            .path(request.getRequestURI())
+                            .build()
             ));
         }
     }

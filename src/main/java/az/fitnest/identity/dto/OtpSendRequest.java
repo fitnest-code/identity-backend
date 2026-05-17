@@ -8,15 +8,16 @@ import jakarta.validation.constraints.NotNull;
 
 @Schema(description = "Request to send an OTP code to a mobile number")
 public record OtpSendRequest(
-    @NotNull
-    @Schema(description = "Purpose of the OTP (REGISTRATION, LOGIN, PASSWORD_RESET, REACTIVATION, EMAIL_CHANGE, MOBILE_CHANGE)", example = "REGISTRATION", requiredMode = Schema.RequiredMode.REQUIRED)
-    OtpPurpose purpose,
+        @NotNull
+        @Schema(description = "Purpose of the OTP (REGISTRATION, LOGIN, PASSWORD_RESET, REACTIVATION, EMAIL_CHANGE, MOBILE_CHANGE)", example = "REGISTRATION", requiredMode = Schema.RequiredMode.REQUIRED)
+        OtpPurpose purpose,
 
-    @Schema(description = "Mobile number to receive the OTP", example = "0501234567")
-    @jakarta.validation.constraints.Pattern(regexp = "^(0|\\+994)(50|51|10|55|99|70|77|60)\\d{7}$", message = "Invalid mobile number format. Must be in Azerbaijan format (e.g., 0501234567 or +994501234567).")
-    String mobile,
+        @Schema(description = "Mobile number to receive the OTP", example = "0501234567")
+        @jakarta.validation.constraints.Pattern(regexp = "^(0|\\+994)(50|51|10|55|99|70|77|60)\\d{7}$", message = "Invalid mobile number format. Must be in Azerbaijan format (e.g., 0501234567 or +994501234567).")
+        String mobile,
 
-    @Email
-    @Schema(description = "Email address to receive the OTP", example = "user@example.com")
-    String email
-) {}
+        @Email
+        @Schema(description = "Email address to receive the OTP", example = "user@example.com")
+        String email
+) {
+}

@@ -6,19 +6,20 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateLegalDocumentRequest(
-    @NotNull
-    LegalDocumentType type,
+        @NotNull
+        LegalDocumentType type,
 
-    @NotBlank
-    String version,
+        @NotBlank
+        String version,
 
-    @NotBlank
-    String language,
+        @NotBlank
+        String language,
 
-    @NotBlank
-    String content,
+        @NotBlank
+        String content,
 
-    @JsonProperty("is_active")
-    @NotNull
-    Boolean isActive
-) {}
+        @JsonProperty("is_active")
+        @NotNull
+        Boolean isActive
+) {
+}

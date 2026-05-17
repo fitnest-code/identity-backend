@@ -160,5 +160,6 @@ public class OtpRateLimiter {
         }
     }
 
-    public record RateLimitResult(boolean allowed, long waitTimeSeconds) {}
+    public record RateLimitResult(boolean allowed, long waitTimeSeconds) {
+    }
 }

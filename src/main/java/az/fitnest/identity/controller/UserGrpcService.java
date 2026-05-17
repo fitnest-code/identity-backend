@@ -25,12 +25,17 @@ import az.fitnest.user.grpc.ConfirmEmailChangeRequest;
 import az.fitnest.user.grpc.RequestMobileChangeRequest;
 import az.fitnest.user.grpc.ConfirmMobileChangeRequest;
 
+import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.user.grpc.SearchUserIdsByMobileRequest;
+import az.fitnest.user.grpc.SearchUserIdsByMobileResponse;
+
 @Slf4j
 @GrpcService
 @RequiredArgsConstructor
 public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @Override
     public void getUserById(GetUserByIdRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
@@ -44,6 +49,25 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
             log.error("Error in getUserById for userId {}: {}", request.getUserId(), e.getMessage(), e);
             responseObserver.onError(Status.INTERNAL
                     .withDescription("Failed to get user: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
+    @Override
+    public void getUsersByIds(az.fitnest.user.grpc.GetUsersByIdsRequest request, StreamObserver<az.fitnest.user.grpc.GetUsersByIdsResponse> responseObserver) {
+        try {
+            java.util.List<User> users = userRepository.findAllById(request.getUserIdsList());
+            az.fitnest.user.grpc.GetUsersByIdsResponse.Builder responseBuilder = az.fitnest.user.grpc.GetUsersByIdsResponse.newBuilder();
+            for (User user : users) {
+                responseBuilder.addUsers(buildUserResponse(user));
+            }
+            responseObserver.onNext(responseBuilder.build());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Error in getUsersByIds: {}", e.getMessage(), e);
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to get users: " + e.getMessage())
                     .withCause(e)
                     .asException());
         }
@@ -200,6 +224,26 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         } catch (Exception e) {
             responseObserver.onError(Status.INTERNAL
                     .withDescription("Failed to confirm mobile change: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
+    @Override
+    public void searchUserIdsByMobile(SearchUserIdsByMobileRequest request, StreamObserver<SearchUserIdsByMobileResponse> responseObserver) {
+        try {
+            String query = request.getQuery();
+            log.info("Searching user IDs by mobile query: {}", query);
+            java.util.List<Long> userIds = userRepository.findUserIdsByMobileContaining(query);
+            SearchUserIdsByMobileResponse response = SearchUserIdsByMobileResponse.newBuilder()
+                    .addAllUserIds(userIds)
+                    .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Error in searchUserIdsByMobile: {}", e.getMessage(), e);
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to search users by mobile: " + e.getMessage())
                     .withCause(e)
                     .asException());
         }

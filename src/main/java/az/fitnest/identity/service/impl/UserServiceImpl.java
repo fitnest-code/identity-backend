@@ -46,7 +46,7 @@ import java.util.Map;
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
-    private static final java.util.regex.Pattern NAME_PART_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}]+$");
+    private static final java.util.regex.Pattern NAME_PART_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}\\s\\-]+$");
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -65,7 +65,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateUserRole(Long userId, String roleName) {
         User user = getUserById(userId);
-        Role role = roleRepository.findByName(roleName)
+        String finalRoleName = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+        Role role = roleRepository.findByName(finalRoleName)
                 .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
 
         user.setRole(role);
@@ -92,7 +93,8 @@ public class UserServiceImpl implements UserService {
         if (normalizedMobile == null || normalizedMobile.isBlank()) {
             throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_MOBILE");
         }
-        return createNewUserInternal(normalizeNamePart(firstName), normalizeNamePart(lastName), passwordHash, normalizedMobile);
+        return createNewUserInternal(normalizeNamePart(firstName), normalizeNamePart(lastName), passwordHash,
+                normalizedMobile);
     }
 
     @Override
@@ -119,7 +121,7 @@ public class UserServiceImpl implements UserService {
         try {
             User saved = userRepository.save(user);
             log.info("Creating user profile in user-backend for user ID: {}", saved.getId());
-            userProfileGrpcClient.createUserProfile(saved.getId(), firstName, lastName, null);
+            userProfileGrpcClient.createUserProfile(saved.getId(), firstName, lastName, null); // Email is null here because createNewUser doesn't take email.
             return saved;
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
@@ -128,11 +130,11 @@ public class UserServiceImpl implements UserService {
 
     private Role getDefaultUserRole() {
         return roleRepository.findByName("ROLE_USER")
-            .orElseGet(() -> {
-                Role role = new Role();
-                role.setName("ROLE_USER");
-                return roleRepository.save(role);
-            });
+                .orElseGet(() -> {
+                    Role role = new Role();
+                    role.setName("ROLE_USER");
+                    return roleRepository.save(role);
+                });
     }
 
     @CacheEvict(value = "users", key = "#userId")
@@ -146,7 +148,7 @@ public class UserServiceImpl implements UserService {
         if (namePartsProvided) {
             NameParts parts = resolveNameParts(firstName, lastName, null);
             log.info("Updating user profile in user-backend for user ID: {}", userId);
-            userProfileGrpcClient.createUserProfile(userId, parts.firstName(), parts.lastName(), null);
+            userProfileGrpcClient.createUserProfile(userId, parts.firstName(), parts.lastName(), command.getEmail());
         }
         User saved = userRepository.save(user);
         localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
@@ -170,7 +172,9 @@ public class UserServiceImpl implements UserService {
                 throw new az.fitnest.identity.exception.ValidationException("error.service.same_email", "SAME_EMAIL");
             }
         } catch (Exception e) {
-            log.warn("Failed to fetch profile during email change request for user {}. Proceeding without same-email check.", userId);
+            log.warn(
+                    "Failed to fetch profile during email change request for user {}. Proceeding without same-email check.",
+                    userId);
         }
 
         boolean alreadyExists = trimmedEmail != null && userProfileGrpcClient.getUserByEmail(trimmedEmail) != null;
@@ -188,7 +192,8 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
         if (verificationResult.purpose() != OtpPurpose.EMAIL_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException(
+                    "error.service.invalid_operation_context");
         }
         String newEmail = verificationResult.email();
         log.info("Confirming email change to {} in user-backend for user ID: {}", newEmail, userId);
@@ -227,7 +232,8 @@ public class UserServiceImpl implements UserService {
         var verificationResult = otpService.verifyOtp(otpSessionId, otpCode);
 
         if (verificationResult.purpose() != OtpPurpose.MOBILE_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException(
+                    "error.service.invalid_operation_context");
         }
 
         String normalizedMobile = verificationResult.mobile();
@@ -363,7 +369,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteRole(Long roleId) {
         Role role = roleRepository.findById(roleId)
-            .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
+                .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
         if (userRepository.existsByRole(role)) {
             throw new ConflictException("error.role.in_use", "ROLE_IN_USE");
         }
@@ -414,7 +420,8 @@ public class UserServiceImpl implements UserService {
             return null;
         }
         String v = value.trim();
-        if (v.isEmpty()) return null;
+        if (v.isEmpty())
+            return null;
         java.util.regex.Matcher matcher = NAME_PART_PATTERN.matcher(v);
         if (matcher.matches()) {
             return v;
@@ -426,11 +433,11 @@ public class UserServiceImpl implements UserService {
     private void publishUserEvent(String eventType, Long userId) {
         UserEvent event = new UserEvent(eventType, userId, System.currentTimeMillis());
         kafkaTemplate.send("user-events", userId.toString(), event)
-            .whenComplete((result, ex) -> {
-                if (ex != null) {
-                    log.error("Failed to publish user event", ex);
-                }
-            });
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to publish user event", ex);
+                    }
+                });
     }
 
     @Transactional(readOnly = true)
@@ -443,7 +450,8 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email, String mobile) {
+    public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email,
+            String mobile) {
         size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
         return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
@@ -452,187 +460,113 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths) {
+    public Page<UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID,
+            Integer durationMonths) {
         size = Math.min(size, 100);
-        Long id = null;
-        String name = null;
-        String surname = null;
-        String email = null;
-        String mobile = null;
-        String genericSearch = null;
-        if (query != null && !query.isBlank()) {
-            if (!query.contains("=")) {
-                genericSearch = query.trim();
-            } else {
-                String[] parts = query.split(";");
-                for (String part : parts) {
-                    String[] kv = part.split("=", 2);
-                    if (kv.length == 2) {
-                        String key = kv[0].trim().toLowerCase();
-                        String value = kv[1].trim();
-                        switch (key) {
-                            case "id":
-                                try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                                break;
-                            case "name":
-                                name = value;
-                                break;
-                            case "surname":
-                                surname = value;
-                                break;
-                            case "email":
-                                email = value;
-                                break;
-                            case "mobile":
-                                mobile = value;
-                                break;
-                        }
-                    }
-                }
-            }
-        }
-        if (genericSearch != null) {
-            name = genericSearch;
-            surname = genericSearch;
-            email = genericSearch;
-            mobile = genericSearch;
-        }
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        Page<User> userPage = userRepository.searchUsersAdvanced(id, name, surname, email, mobile, pageable);
-        List<User> filteredUsers = userPage.getContent();
-        if (packageID != null) {
-            try {
-                List<Long> packageUserIds = userSubscriptionGrpcClient.getUserIdsByPackageId(packageID);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> packageUserIds.contains(user.getId()))
-                    .toList();
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by package ID {} via gRPC. Skipping package filter.", packageID, e);
-            }
+
+        QueryParams params = parseQuery(query);
+        List<Long> subscriptionUserIds = resolveSubscriptionFilteredIds(packageID, durationMonths, null);
+
+        if (subscriptionUserIds != null && subscriptionUserIds.isEmpty()) {
+            return Page.empty(pageable);
         }
-        if (durationMonths != null) {
-            try {
-                List<Long> durationUserIds = userSubscriptionGrpcClient.getUserIdsByDurationMonths(durationMonths);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> durationUserIds.contains(user.getId()))
-                    .toList();
-            } catch (UnsupportedOperationException e) {
-                log.warn("Duration months filtering not implemented in gRPC client.");
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by duration months {} via gRPC. Skipping duration filter.", durationMonths, e);
-            }
-        }
-        int start = Math.min(page * size, filteredUsers.size());
-        int end = Math.min(start + size, filteredUsers.size());
-        List<UserResponse> pagedResponses = filteredUsers.subList(start, end).stream()
-            .map(userResponseMapper::toResponse)
-            .toList();
-        return new org.springframework.data.domain.PageImpl<>(pagedResponses, pageable, filteredUsers.size());
+
+        Page<User> userPage = userRepository.searchUsersAdvanced(
+                params.id(), params.name(), params.surname(), params.email(), params.mobile(),
+                subscriptionUserIds, pageable);
+
+        return userPage.map(userResponseMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type) {
+    public Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query,
+            Long packageID, Integer durationMonths, String type) {
         size = Math.min(size, 100);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
+
+        QueryParams params = parseQuery(query);
+        List<Long> subscriptionUserIds = resolveSubscriptionFilteredIds(packageID, durationMonths, type);
+
+        if (subscriptionUserIds != null && subscriptionUserIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        Page<User> userPage = userRepository.searchUsersAdvanced(
+                params.id(), params.name(), params.surname(), params.email(), params.mobile(),
+                subscriptionUserIds, pageable);
+
+        return userPage.map(user -> {
+            String subscriptionStatus = null;
+            try {
+                var sub = userSubscriptionGrpcClient.getActiveSubscription(user.getId());
+                subscriptionStatus = (sub != null && !sub.getSubscriptionStatus().isEmpty())
+                        ? sub.getSubscriptionStatus()
+                        : null;
+            } catch (Exception e) {
+                log.warn("Failed to fetch subscription for user {}: {}", user.getId(), e.getMessage());
+            }
+            return new az.fitnest.identity.dto.response.AdminUserResponse(
+                    user.getId(), null, null, user.getMobile(), null,
+                    user.getStatus() != null ? user.getStatus().name() : null,
+                    subscriptionStatus);
+        });
+    }
+
+    private List<Long> resolveSubscriptionFilteredIds(Long packageID, Integer durationMonths, String type) {
+        List<Long> ids = null;
+        if (packageID != null) {
+            ids = intersect(ids, userSubscriptionGrpcClient.getUserIdsByPackageId(packageID));
+        }
+        if (durationMonths != null) {
+            ids = intersect(ids, userSubscriptionGrpcClient.getUserIdsByDurationMonths(durationMonths));
+        }
+        if (type != null && !type.isBlank()) {
+            ids = intersect(ids, userSubscriptionGrpcClient.getUserIdsByType(type));
+        }
+        return ids;
+    }
+
+    private List<Long> intersect(List<Long> list1, List<Long> list2) {
+        if (list1 == null)
+            return list2;
+        if (list2 == null)
+            return list1;
+        list1.retainAll(list2);
+        return list1;
+    }
+
+    private QueryParams parseQuery(String query) {
         Long id = null;
-        String name = null;
-        String surname = null;
-        String email = null;
-        String mobile = null;
-        String genericSearch = null;
+        String name = null, surname = null, email = null, mobile = null;
         if (query != null && !query.isBlank()) {
             if (!query.contains("=")) {
-                genericSearch = query.trim();
+                String generic = query.trim();
+                name = surname = email = mobile = generic;
             } else {
-                String[] parts = query.split(";");
-                for (String part : parts) {
+                for (String part : query.split(";")) {
                     String[] kv = part.split("=", 2);
                     if (kv.length == 2) {
                         String key = kv[0].trim().toLowerCase();
                         String value = kv[1].trim();
                         switch (key) {
-                            case "id":
-                                try { id = Long.parseLong(value); } catch (NumberFormatException ignored) {}
-                                break;
-                            case "name":
-                                name = value;
-                                break;
-                            case "surname":
-                                surname = value;
-                                break;
-                            case "email":
-                                email = value;
-                                break;
-                            case "mobile":
-                                mobile = value;
-                                break;
+                            case "id" -> {
+                                try {
+                                    id = Long.parseLong(value);
+                                } catch (NumberFormatException ignored) {
+                                }
+                            }
+                            case "name" -> name = value;
+                            case "surname" -> surname = value;
+                            case "email" -> email = value;
+                            case "mobile" -> mobile = value;
                         }
                     }
                 }
             }
         }
-        if (genericSearch != null) {
-            name = genericSearch;
-            surname = genericSearch;
-            email = genericSearch;
-            mobile = genericSearch;
-        }
-        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
-        Page<User> userPage = userRepository.searchUsersAdvanced(id, name, surname, email, mobile, pageable);
-        List<User> filteredUsers = userPage.getContent();
-        if (packageID != null) {
-            try {
-                List<Long> packageUserIds = userSubscriptionGrpcClient.getUserIdsByPackageId(packageID);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> packageUserIds.contains(user.getId()))
-                    .toList();
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by package ID {} via gRPC. Skipping package filter.", packageID, e);
-            }
-        }
-        if (durationMonths != null) {
-            try {
-                List<Long> durationUserIds = userSubscriptionGrpcClient.getUserIdsByDurationMonths(durationMonths);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> durationUserIds.contains(user.getId()))
-                    .toList();
-            } catch (UnsupportedOperationException e) {
-                log.warn("Duration months filtering not implemented in gRPC client.");
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by duration months {} via gRPC. Skipping duration filter.", durationMonths, e);
-            }
-        }
-        if (type != null && !type.isBlank()) {
-            try {
-                List<Long> typeUserIds = userSubscriptionGrpcClient.getUserIdsByType(type);
-                filteredUsers = filteredUsers.stream()
-                    .filter(user -> typeUserIds.contains(user.getId()))
-                    .toList();
-            } catch (Exception e) {
-                log.error("Failed to fetch user IDs by type {} via gRPC. Skipping type filter.", type, e);
-            }
-        }
-        List<az.fitnest.identity.dto.response.AdminUserResponse> adminResponses = filteredUsers.stream()
-            .map(user -> {
-                az.fitnest.order.grpc.ActiveSubscriptionResponse sub = null;
-                try {
-                    sub = userSubscriptionGrpcClient.getActiveSubscription(user.getId());
-                } catch (Exception e) {
-                    log.warn("Failed to fetch subscription info for user {}", user.getId(), e);
-                }
-                String subscriptionStatus = (sub != null && sub.getSubscriptionStatus() != null && !sub.getSubscriptionStatus().isEmpty()) ? sub.getSubscriptionStatus() : null;
-                return new az.fitnest.identity.dto.response.AdminUserResponse(
-                    user.getId(),
-                    null,
-                    null,
-                    user.getMobile(),
-                    null,
-                    user.getStatus() != null ? user.getStatus().name() : null,
-                    subscriptionStatus
-                );
-            })
-            .toList();
-        return new org.springframework.data.domain.PageImpl<>(adminResponses, pageable, userPage.getTotalElements());
+        return new QueryParams(id, name, surname, email, mobile);
     }
 
     @Override
@@ -641,7 +575,8 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         var session = otpService.getOtpSession(otpSessionId);
         if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException(
+                    "error.service.invalid_operation_context");
         }
         return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE);
     }
@@ -652,13 +587,15 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         var session = otpService.getOtpSession(otpSessionId);
         if (session.purpose() != az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+            throw new az.fitnest.identity.exception.InvalidCredentialsException(
+                    "error.service.invalid_operation_context");
         }
         return otpService.resendOtp(otpSessionId, az.fitnest.identity.model.enums.OtpPurpose.EMAIL_CHANGE);
     }
 
     @Override
-    public az.fitnest.identity.dto.response.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request) {
+    public az.fitnest.identity.dto.response.OtpSendResponse sendOtp(
+            az.fitnest.identity.dto.request.OtpSendRequest request) {
         if (request.getPurpose() == az.fitnest.identity.model.enums.OtpPurpose.MOBILE_CHANGE) {
             return otpService.sendOtp(request);
         } else {
@@ -666,9 +603,18 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private record UserEvent(String eventType, Long userId, long timestamp) {}
-    private record UserUpdatedEvent(Long userId) {}
-    private record PasswordChangedEvent(Long userId) {}
+    private record QueryParams(Long id, String name, String surname, String email, String mobile) {
+    }
+
+    private record UserEvent(String eventType, Long userId, long timestamp) {
+    }
+
+    private record UserUpdatedEvent(Long userId) {
+    }
+
+    private record PasswordChangedEvent(Long userId) {
+    }
+
     private record UserAccountDeletedEventLocal(Long userId) {
     }
 
@@ -676,5 +622,30 @@ public class UserServiceImpl implements UserService {
     }
 
     private record NameParts(String firstName, String lastName) {
+    }
+    @Override
+    @Transactional
+    @CacheEvict(value = "users", key = "#userId")
+    public void blockUser(Long userId) {
+        User user = getUserOrThrow(userId);
+        user.setStatus(UserStatus.BLOCKED);
+        userRepository.save(user);
+        
+        // Terminate all sessions
+        redisTokenService.removeAllSessions(userId);
+        authTokenRepository.deleteByUserId(userId);
+        
+        log.info("User {} has been BLOCKED by admin", userId);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "users", key = "#userId")
+    public void unblockUser(Long userId) {
+        User user = getUserOrThrow(userId);
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+        
+        log.info("User {} has been UNBLOCKED by admin", userId);
     }
 }

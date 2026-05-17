@@ -41,4 +41,8 @@ public class OtpRateLimiterFacade {
     public OtpRateLimiter.RateLimitResult checkRateLimit(OtpPurpose purpose, String phoneNumber) {
         return checkRateLimit(purpose, phoneNumber, null);
     }
+
+    public OtpRateLimitProperties getProperties() {
+        return resilientRateLimiter.getProperties();
+    }
 }

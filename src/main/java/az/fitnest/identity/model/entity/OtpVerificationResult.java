@@ -5,11 +5,12 @@ import lombok.Builder;
 
 @Builder
 public record OtpVerificationResult(
-    OtpPurpose purpose,
-    String firstName,
-    String lastName,
-    String passwordHash,
-    String mobile,
-    String email,
-    Long userId
-) {}
+        OtpPurpose purpose,
+        String firstName,
+        String lastName,
+        String passwordHash,
+        String mobile,
+        String email,
+        Long userId
+) {
+}

@@ -7,12 +7,13 @@ public interface GoogleTokenVerifier {
     GoogleTokenClaims verify(String idToken);
 
     record GoogleTokenClaims(
-        String userId,
-        String email,
-        boolean emailVerified,
-        String givenName,
-        String familyName,
-        String name,
-        String picture
-    ) {}
+            String userId,
+            String email,
+            boolean emailVerified,
+            String givenName,
+            String familyName,
+            String name,
+            String picture
+    ) {
+    }
 }

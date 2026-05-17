@@ -33,7 +33,7 @@ public class DeviceDetector {
         }
 
         if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("ipod")
-            || ua.contains("ios") || ua.contains("cfnetwork") || ua.contains("darwin")) {
+                || ua.contains("ios") || ua.contains("cfnetwork") || ua.contains("darwin")) {
             return "iOS";
         }
 

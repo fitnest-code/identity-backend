@@ -47,5 +47,6 @@ public class UserProfileGrpcClient {
         stub.createUserProfile(request);
     }
 
-    public record UserByEmailResponse(Long userId, String firstName, String lastName, String email) {}
+    public record UserByEmailResponse(Long userId, String firstName, String lastName, String email) {
+    }
 }

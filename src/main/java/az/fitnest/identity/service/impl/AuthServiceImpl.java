@@ -1,14 +1,18 @@
 package az.fitnest.identity.service.impl;
 
 import az.fitnest.identity.model.enums.UserStatus;
-
 import az.fitnest.identity.dto.response.PasswordVerificationResultResponse;
-import az.fitnest.identity.service.*;
+import az.fitnest.identity.service.AuthService;
+import az.fitnest.identity.service.OtpService;
+import az.fitnest.identity.service.PasswordService;
+import az.fitnest.identity.service.TokenIssuanceService;
+import az.fitnest.identity.service.DeviceDetectionService;
 import az.fitnest.identity.util.TokenHasher;
-
 import az.fitnest.identity.dto.request.LoginRequest;
 import az.fitnest.identity.dto.response.LoginResponse;
+import az.fitnest.identity.dto.response.LoginResult;
 import az.fitnest.identity.dto.response.RefreshResponse;
+import az.fitnest.identity.dto.response.OtpSendResponse;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
@@ -17,10 +21,8 @@ import az.fitnest.identity.model.enums.SessionStatus;
 import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
-import az.fitnest.identity.util.DeviceDetector;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -28,11 +30,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -42,6 +42,7 @@ public class AuthServiceImpl implements AuthService {
     private final RedisTokenService redisTokenService;
     private final TokenIssuanceService tokenIssuanceService;
     private final OtpService otpService;
+    private final DeviceDetectionService deviceDetectionService;
     private final TokenHasher tokenHasher;
     private final MessageSource messageSource;
 
@@ -51,8 +52,11 @@ public class AuthServiceImpl implements AuthService {
     @Value("${auth.account-lock.lock-duration-minutes:30}")
     private int accountLockDurationMinutes;
 
+    @Value("${auth.reactivation.window-days:30}")
+    private int reactivationWindowDays;
+
     @Override
-    public Object login(LoginRequest request) {
+    public LoginResult login(LoginRequest request) {
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
         AuthenticationResult result = authenticate(mobile, request.password());
 
@@ -63,20 +67,21 @@ public class AuthServiceImpl implements AuthService {
                     null,
                     null
             );
-            az.fitnest.identity.dto.response.OtpSendResponse otpResponse = otpService.sendOtp(otpRequest);
-            az.fitnest.identity.dto.response.OtpSendResponse reactivationResponse = new az.fitnest.identity.dto.response.OtpSendResponse(
-                otpResponse.otpSessionId(),
-                otpResponse.expiresInSeconds(),
-                otpResponse.resendAvailableInSeconds(),
-                getMessage("success.otp.reactivation_sent")
+            // Fire OTP asynchronously
+            otpService.sendOtpAsync(otpRequest);
+
+            OtpSendResponse reactivationResponse = new OtpSendResponse(
+                    null, // Session ID will be in the async context or handled by callback if needed, but here we return success message
+                    null,
+                    null,
+                    getMessage("success.otp.reactivation_sent")
             );
-            return reactivationResponse;
+            return LoginResult.reactivationRequired(reactivationResponse);
         }
 
         String activeJti = redisTokenService.getActiveSession(result.user().getId());
         if (activeJti != null) {
             redisTokenService.revokeAccessToken(activeJti);
-            redisTokenService.removeActiveSession(result.user().getId());
         }
 
         User user = result.user();
@@ -85,7 +90,8 @@ public class AuthServiceImpl implements AuthService {
             userRepository.save(user);
         }
 
-        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
+        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceDetectionService.detectDeviceType());
+        return LoginResult.success(tokens);
     }
 
     @Transactional
@@ -93,10 +99,32 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findFirstByMobile(mobile)
                 .orElseThrow(() -> new InvalidCredentialsException("error.auth.invalid_credentials"));
 
-        Instant now = Instant.now();
+        validateUserStatus(user);
 
+        PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
+        if (!verification.matches()) {
+            handleFailedLogin(user);
+            throw new InvalidCredentialsException("error.auth.invalid_credentials");
+        }
+
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
+        }
+
+        checkPasswordAndUpgrade(user, password, verification);
+        resetLockout(user);
+
+        return new AuthenticationResult(user, AuthenticationStatus.SUCCESS);
+    }
+
+    private void validateUserStatus(User user) {
+        Instant now = Instant.now();
         if (user.getStatus() == UserStatus.DELETED) {
             throw new InvalidCredentialsException("error.auth.account_deleted");
+        }
+
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new InvalidCredentialsException("error.auth.account_blocked");
         }
 
         if (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
@@ -104,105 +132,97 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null) {
-            if (user.getInactiveAt().plusSeconds(30 * 24 * 60 * 60).isAfter(now)) {
-                PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
-                if (user.getPasswordHash() == null || !verification.matches()) {
-                    userRepository.incrementFailedLoginAttempts(user.getId());
-                    throw new InvalidCredentialsException("error.auth.invalid_credentials");
-                }
-                return new AuthenticationResult(user, AuthenticationStatus.REACTIVATION_REQUIRED);
-            } else {
+            if (user.getInactiveAt().plus(java.time.Duration.ofDays(reactivationWindowDays)).isBefore(now)) {
                 throw new InvalidCredentialsException("error.auth.account_deleted");
             }
         }
+    }
 
-        PasswordVerificationResultResponse verification = passwordService.verifyPassword(password, user.getPasswordHash());
-        if (user.getPasswordHash() == null || !verification.matches()) {
-            incrementFailedLoginAttempts(user.getId(), user.getFailedLoginAttempts(), now);
-            throw new InvalidCredentialsException("error.auth.invalid_credentials");
+    private void handleFailedLogin(User user) {
+        Integer attempts = userRepository.incrementFailedLoginAttemptsAndReturn(user.getId());
+        if (attempts != null && attempts >= maxFailedLoginAttempts) {
+            userRepository.updateLockStatus(
+                    user.getId(),
+                    attempts,
+                    Instant.now().plus(java.time.Duration.ofMinutes(accountLockDurationMinutes)),
+                    UserStatus.LOCKED
+            );
         }
+    }
 
+    private void checkPasswordAndUpgrade(User user, String password, PasswordVerificationResultResponse verification) {
+        boolean updated = false;
         if (verification.upgradeRecommended()) {
-            String newHash = passwordService.hashPassword(password);
-            user.setPasswordHash(newHash);
-            userRepository.save(user);
+            user.setPasswordHash(passwordService.hashPassword(password));
+            updated = true;
         }
 
         if (user.getSessionStatus() == SessionStatus.NO_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
+            updated = true;
+        }
+
+        if (updated) {
             userRepository.save(user);
         }
+    }
 
-        resetFailedLoginAttempts(user.getId());
-        if (user.getStatus() == UserStatus.ACTIVE && user.getFailedLoginAttempts() > 0) {
-        }
-
-        return new AuthenticationResult(user, AuthenticationStatus.SUCCESS);
+    private void resetLockout(User user) {
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
     }
 
     @Override
     @Transactional
     public RefreshResponse refresh(String refreshToken) {
-        log.info("[refresh] Received refresh token request. RefreshToken: {}", refreshToken);
         Long userId;
         Instant expiration;
         try {
             userId = jwtService.parseUserId(refreshToken, "refresh");
             expiration = jwtService.parseExpiration(refreshToken);
-            log.info("[refresh] Parsed refresh token. userId: {}, expiration: {}", userId, expiration);
         } catch (JwtException | IllegalArgumentException e) {
-            log.error("[refresh] Failed to parse refresh token: {}", e.getMessage());
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
         if (expiration.isBefore(Instant.now())) {
-            log.warn("[refresh] Refresh token expired for userId: {}. Expiration: {}", userId, expiration);
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
         User user = internalRefresh(userId, refreshToken);
-
-        LoginResponse tokens = tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
+        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceDetectionService.detectDeviceType());
 
         if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
             userRepository.save(user);
         }
 
-        RefreshResponse response = new RefreshResponse(tokens.accessToken(), tokens.refreshToken());
-        log.info("[refresh] Token refresh successful for userId: {}. New AccessToken: {}, New RefreshToken: {}", 
-                userId, response.accessToken(), response.refreshToken());
-        return response;
+        return new RefreshResponse(tokens.accessToken(), tokens.refreshToken());
     }
 
     private User internalRefresh(Long userId, String refreshToken) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.warn("[refresh] User not found for userId: {}", userId);
-                    return new UnauthorizedException("error.auth.invalid_credentials");
-                });
+                .orElseThrow(() -> new UnauthorizedException("error.auth.invalid_credentials"));
 
         Instant now = Instant.now();
-        if (user.getStatus() == UserStatus.INACTIVE || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))) {
-            log.warn("[refresh] User status prevents refresh. userId: {}, status: {}, lockedUntil: {}", 
-                    userId, user.getStatus(), user.getLockedUntil());
-            throw new UnauthorizedException("error.auth.invalid_credentials");
+        if (user.getStatus() == UserStatus.INACTIVE || user.getStatus() == UserStatus.BLOCKED || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))) {
+            String errorCode = user.getStatus() == UserStatus.BLOCKED ? "error.auth.account_blocked" : "error.auth.invalid_credentials";
+            throw new UnauthorizedException(errorCode);
         }
 
         String refreshTokenHash = tokenHasher.hash(refreshToken);
         int consumed = authTokenRepository.consumeRefreshToken(userId, refreshTokenHash, now);
 
         if (consumed == 0) {
-            log.warn("[refresh] Refresh token not found, already consumed, or expired in DB. userId: {}, tokenHash: {}", 
-                    userId, refreshTokenHash);
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
-        log.info("[refresh] Refresh token consumed successfully in DB for userId: {}", userId);
         return user;
     }
 
     @Override
+    @Transactional
     public void logout(String accessToken) {
         try {
             Long userId = jwtService.parseUserId(accessToken);
@@ -214,8 +234,14 @@ public class AuthServiceImpl implements AuthService {
                 redisTokenService.removeActiveSession(userId);
             }
 
-            internalLogout(userId, accessToken);
+            // Revoke all refresh tokens for the user
+            authTokenRepository.deleteByUserId(userId);
+            userRepository.markNoSessionsIfNone(userId, SessionStatus.NO_SESSIONS);
+        } catch (JwtException e) {
+            // Only catch JWT related issues, let others bubble up or handle specifically
+            throw new UnauthorizedException("error.auth.invalid_token");
         } catch (Exception e) {
+            // Ignore other errors during logout to ensure best effort
         }
     }
 
@@ -228,46 +254,13 @@ public class AuthServiceImpl implements AuthService {
         logout(token);
     }
 
-    @Transactional
-    public void internalLogout(Long userId, String accessToken) {
-        try {
-            authTokenRepository.deleteByAccessTokenHash(tokenHasher.hash(accessToken));
-        } catch (Exception e) {
-        }
-
-        userRepository.markNoSessionsIfNone(userId, SessionStatus.NO_SESSIONS);
-    }
-
-    private void incrementFailedLoginAttempts(Long userId, int currentAttempts, Instant now) {
-        int attempts = currentAttempts + 1;
-
-        if (attempts >= maxFailedLoginAttempts) {
-            userRepository.updateLockStatus(
-                    userId,
-                    attempts,
-                    now.plus(java.time.Duration.ofMinutes(accountLockDurationMinutes)),
-                    UserStatus.LOCKED
-            );
-        } else {
-            userRepository.incrementFailedLoginAttempts(userId);
-        }
-    }
-
-    private void resetFailedLoginAttempts(Long userId) {
-        userRepository.updateLockStatus(userId, 0, null, UserStatus.ACTIVE);
-    }
-
-    private boolean isAccountLocked(User user, Instant now) {
-        return user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now);
+    private String getMessage(String code) {
+        return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
 
     private enum AuthenticationStatus {SUCCESS, REACTIVATION_REQUIRED}
 
     private record AuthenticationResult(User user, AuthenticationStatus status) {
-    }
-
-    private String getMessage(String code) {
-        return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
 
 }

@@ -52,10 +52,12 @@ public record ErrorWrapper(
             @com.fasterxml.jackson.annotation.JsonFormat(pattern = "dd/MM/yyyy")
             LocalDateTime timestamp,
             Map<String, Object> details
-    ) {}
+    ) {
+    }
 
     public record FieldIssue(
             String field,
             String issue
-    ) {}
+    ) {
+    }
 }

@@ -35,10 +35,11 @@ public class UserResponseMapper {
                 lastName = profile.getLastName();
                 email = profile.getEmail();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         boolean accountLocked = user.getStatus() == UserStatus.LOCKED &&
-            user.getLockedUntil() != null && user.getLockedUntil().isAfter(java.time.Instant.now());
+                user.getLockedUntil() != null && user.getLockedUntil().isAfter(java.time.Instant.now());
 
         return new UserResponse(
                 user.getId(),

@@ -7,12 +7,13 @@ import lombok.Builder;
 
 @Builder
 public record OtpVerifyRequest(
-    @NotBlank
-    @JsonProperty("otp_session_id")
-    String otpSessionId,
+        @NotBlank
+        @JsonProperty("otp_session_id")
+        String otpSessionId,
 
-    @NotBlank
-    @Pattern(regexp = "^\\d{4}$")
-    @JsonProperty("otp_code")
-    String otpCode
-) {}
+        @NotBlank
+        @Pattern(regexp = "^\\d{4}$")
+        @JsonProperty("otp_code")
+        String otpCode
+) {
+}

@@ -9,6 +9,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,8 +23,7 @@ public class DeduplicatingOtpRateLimiter {
 
     public DeduplicatingOtpRateLimiter(OtpRateLimiter delegate) {
         this.delegate = delegate;
-        this.rlExecutor = Executors.newFixedThreadPool(16,
-                new ThreadFactoryBuilder().setNameFormat("otp-rl-%d").build());
+        this.rlExecutor = Executors.newVirtualThreadPerTaskExecutor();
         this.requestCache = Caffeine.newBuilder()
                 .maximumSize(1000)
                 .expireAfterWrite(200, TimeUnit.MILLISECONDS)

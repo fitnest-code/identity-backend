@@ -29,7 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
-@Tag(name = "İstifadəçi İdarəetmə Admin", description = "İstifadəçilərin, rolların, limitlərin və axtarışın idarə olunması üçün admin endpointləri. Bütün endpointlər üçün ADMIN və ya SUPER_ADMIN rolu tələb olunur.")
+@Tag(name = "İstifadəçi İdarəetmə Admin", description = "İstifadəçilərin, rolların, limitlərin və axtarışın idarə olunması üçün admin endpointləri. Bütün endpointlər üçün ADMIN rolu tələb olunur.")
 @SecurityRequirement(name = "bearerAuth")
 public class UserAdminController {
 
@@ -37,38 +37,8 @@ public class UserAdminController {
     private final RateLimitAdminService rateLimitAdminService;
     private final UserProfileGrpcClient userProfileGrpcClient;
 
-    @Operation(
-        summary = "Bütün istifadəçiləri əldə edin",
-        description = "Sistemdəki bütün istifadəçilərin səhifələnmiş siyahısını qaytarır. İstifadəçi ID-si, ad, soyad, email, mobil, status və abunə statusu üzrə filtrləmə dəstəklənir.",
-        parameters = {
-            @Parameter(name = "page", description = "Səhifə nömrəsi (0-dan başlayır)", example = "0"),
-            @Parameter(name = "size", description = "Səhifə ölçüsü", example = "10"),
-            @Parameter(name = "query", description = "Filtr sətiri. Adi mətn (məsələn, 'kamal') və ya açar-dəyər cütləri (məsələn, 'name=Kamal;surname=Aliyev;email=kamal@example.com;mobile=0501234567') dəstəklənir.", example = "kamal və ya name=Kamal;surname=Aliyev;email=kamal@example.com;mobile=0501234567"),
-            @Parameter(name = "packageID", description = "İstifadəçiləri paket ID-sinə görə filtr edin", example = "5"),
-            @Parameter(name = "durationMonths", description = "Abunə müddətinə görə filtr edin (aylarla)", example = "5"),
-            @Parameter(name = "type", description = "Abunə növünə görə filtr edin (all, active, expired, upgraded, last_7_days)", example = "active")
-        }
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "İstifadəçilər uğurla əldə edildi", content = @Content(schema = @Schema(implementation = az.fitnest.identity.dto.response.AdminUserResponse.class))),
-        @ApiResponse(responseCode = "401", description = "İcazə verilmir. Giriş tələb olunur.", content = @Content),
-        @ApiResponse(responseCode = "403", description = "Qadağandır. Yetərli səlahiyyət yoxdur.", content = @Content)
-    })
+    @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. ADMIN rolu tələb olunur.")
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
-    public ResponseEntity<PaginatedResponse<AdminUserResponse>> getAllUsers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false) Long packageID,
-            @RequestParam(required = false) Integer durationMonths,
-            @RequestParam(required = false) String type) {
-        Page<AdminUserResponse> userPage = userService.getAdminUsers(page, size, query, packageID, durationMonths, type);
-        return ResponseEntity.ok(PaginatedResponse.of(userPage));
-    }
-
-    @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. SUPER_ADMIN rolu tələb olunur.")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PatchMapping("/{userId}/role")
     public ResponseEntity<Void> updateUserRole(
             @PathVariable Long userId,
@@ -77,8 +47,8 @@ public class UserAdminController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "BÜTÜN istifadəçiləri deaktiv edin (Kritik)", description = "Sistemdəki bütün istifadəçi hesablarını deaktiv edir. Bu əməliyyat yalnız SUPER_ADMIN tərəfindən həyata keçirilə bilər.")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Operation(summary = "BÜTÜN istifadəçiləri deaktiv edin (Kritik)", description = "Sistemdəki bütün istifadəçi hesablarını deaktiv edir. Bu əməliyyat yalnız ADMIN tərəfindən həyata keçirilə bilər.")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/all")
     public ResponseEntity<Void> deactivateAllUsers() {
         userService.deactivateAllUsers();
@@ -91,17 +61,17 @@ public class UserAdminController {
     public ResponseEntity<UserProfileDetailsResponse> getUserProfileDetails(@PathVariable Long userId) {
         var grpcResponse = userProfileGrpcClient.getUserProfileDetails(userId);
         UserProfileDetailsResponse response = UserProfileDetailsResponse.builder()
-            .id(grpcResponse.getUserId())
-            .registrationDate(grpcResponse.getRegistrationDate())
-            .platform(grpcResponse.getPlatform())
-            .phoneNumber(grpcResponse.getPhoneNumber())
-            .email(grpcResponse.getEmail())
-            .birthDate(java.time.LocalDate.parse(grpcResponse.getBirthDate()))
-            .goal(grpcResponse.getGoal())
-            .height(grpcResponse.getHeight())
-            .weight(grpcResponse.getWeight())
-            .bmiIndex(grpcResponse.getBmiIndex())
-            .build();
+                .id(grpcResponse.getUserId())
+                .registrationDate(grpcResponse.getRegistrationDate())
+                .platform(grpcResponse.getPlatform())
+                .phoneNumber(grpcResponse.getPhoneNumber())
+                .email(grpcResponse.getEmail())
+                .birthDate(java.time.LocalDate.parse(grpcResponse.getBirthDate()))
+                .goal(grpcResponse.getGoal())
+                .height(grpcResponse.getHeight())
+                .weight(grpcResponse.getWeight())
+                .bmiIndex(grpcResponse.getBmiIndex())
+                .build();
         return ResponseEntity.ok(response);
     }
 
@@ -137,6 +107,22 @@ public class UserAdminController {
     @PostMapping("/otp-rate-limit/reset-all")
     public ResponseEntity<Void> resetAllOtpRateLimits() {
         rateLimitAdminService.resetAllRateLimitsForAllUsers();
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "İstifadəçini bloklayın", description = "İstifadəçini bloklayır və bütün sessiyalarını sonlandırır. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{userId}/block")
+    public ResponseEntity<Void> blockUser(@PathVariable Long userId) {
+        userService.blockUser(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "İstifadəçinin blokunu açın", description = "Bloklanmış istifadəçinin blokunu açır. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{userId}/unblock")
+    public ResponseEntity<Void> unblockUser(@PathVariable Long userId) {
+        userService.unblockUser(userId);
         return ResponseEntity.ok().build();
     }
 }

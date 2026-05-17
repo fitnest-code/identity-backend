@@ -16,5 +16,7 @@ public abstract class BaseEntity {
     @Column(name = "id")
     private Long id;
 
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 }

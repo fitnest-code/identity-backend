@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 
 @RestController
@@ -20,7 +21,7 @@ public class RoleAdminController {
     private final UserServiceImpl userService;
 
     @Operation(summary = "Yeni rol yaradın", description = "Yeni sistem rolu yaradılır.")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Role> createRole(@RequestParam String name) {
         if (roleRepository.findByName(name).isPresent()) {
@@ -44,16 +45,16 @@ public class RoleAdminController {
     @GetMapping("/{roleId}")
     public ResponseEntity<Role> getRoleById(@PathVariable Long roleId) {
         return roleRepository.findById(roleId)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @Operation(summary = "Rol adını yeniləyin", description = "Rol adını yeniləyir.")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{roleId}")
     public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @RequestParam String name) {
         Role role = roleRepository.findById(roleId)
-            .orElse(null);
+                .orElse(null);
         if (role == null) return ResponseEntity.notFound().build();
         if (roleRepository.findByName(name).isPresent()) {
             return ResponseEntity.status(409).build();
@@ -64,7 +65,7 @@ public class RoleAdminController {
     }
 
     @Operation(summary = "Rol silin", description = "Rolu silir.")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{roleId}")
     public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
         userService.deleteRole(roleId);

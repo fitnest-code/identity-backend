@@ -31,31 +31,31 @@ spring:
   application:
     name: identity-backend   # ✅ Changed from identity-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:}
-    username: ${SPRING_DATASOURCE_USERNAME:}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      keep-alive-time: 300000
-      minimum-idle: ${HIKARI_MIN_IDLE:2}
-      maximum-pool-size: ${HIKARI_MAX_POOL:15}
       pool-name: HikariCP-Identity
-      auto-commit: true
+      maximum-pool-size: ${HIKARI_MAX_POOL:20}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+      connection-timeout: 20000
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      keep-alive-time: 60000
+      leak-detection-threshold: 2000
+      auto-commit: false
       connection-test-query: SELECT 1
       data-source-properties:
-        cachePrepStmts: true
-        prepStmtCacheSize: 250
-        prepStmtCacheSqlLimit: 2048
-        useServerPrepStmts: true
-        useLocalSessionState: true
-        rewriteBatchedStatements: true
-        cacheResultSetMetadata: true
-        cacheServerConfiguration: true
-        elideSetAutoCommits: true
-        maintainTimeStats: false
+        reWriteBatchedInserts: true
+        prepareThreshold: 5
+        preparedStatementCacheQueries: 250
+        preparedStatementCacheSizeMiB: 10
+        tcpKeepAlive: true
+        binaryTransfer: true
+        socketTimeout: 30
+        connectTimeout: 10
+        loginTimeout: 5
 
   jpa:
     hibernate:
@@ -67,16 +67,19 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
         jdbc:
-          batch_size: 20
+          batch_size: 50
+          batch_versioned_data: true
         order_inserts: true
         order_updates: true
         generate_statistics: false
+        connection:
+          provider_disables_autocommit: true
 
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:redis.fitnest-production.svc.cluster.local}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
-      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
+      password: ${SPRING_DATA_REDIS_PASSWORD}
       timeout: 2000ms
       lettuce:
         pool:
@@ -89,7 +92,7 @@ spring:
         enabled: false
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service.fitnest-production.svc.cluster.local:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     consumer:
       group-id: identity-backend
       auto-offset-reset: earliest
@@ -143,6 +146,13 @@ auth:
   apple:
     client-id: ${APPLE_CLIENT_ID:}
     team-id: ${APPLE_TEAM_ID:}
+  token:
+    hash-pepper: ${AUTH_TOKEN_HASH_PEPPER:}
+  account-lock:
+    max-failed-attempts: ${AUTH_ACCOUNT_LOCK_MAX_FAILED_ATTEMPTS:5}
+    lock-duration-minutes: ${AUTH_ACCOUNT_LOCK_LOCK_DURATION_MINUTES:30}
+  reactivation:
+    window-days: ${AUTH_REACTIVATION_WINDOW_DAYS:30}
 
 springdoc:
   server-url: ${SPRINGDOC_SERVER_URL:}
@@ -177,7 +187,7 @@ springdoc:
       enabled: false
 
 jwt:
-  secret: ${JWT_SECRET:your-jwt-secret-change-in-production}
+  secret: ${JWT_SECRET}
   issuer: ${JWT_ISSUER:fitnest}
   access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:3600}
   refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:604800}
@@ -235,7 +245,7 @@ management:
         include: health,info,prometheus,metrics
       base-path: /actuator
       cors:
-        allowed-origins: ${CORS_ALLOWED_ORIGINS:http://161.97.183.7,http://localhost}
+        allowed-origins: ${CORS_ALLOWED_ORIGINS}
         allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   endpoint:
     health:
@@ -330,7 +340,7 @@ grpc:
       private-key: ${GRPC_SERVER_KEY:}
       trust-cert-collection: ${GRPC_TRUST_CERT:}
   client:
-    identity-backend:   # This is self-reference, unchanged
+    identity-backend: # This is self-reference, unchanged
       address: 'static://localhost:9090'
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
       security:
@@ -340,20 +350,20 @@ grpc:
         client-private-key: ${GRPC_CLIENT_KEY:}
     # ✅ Updated to notifications-backend
     notifications-backend:
-      address: 'static://notifications-backend:9090'
+      address: ${NOTIFICATIONS_BACKEND_GRPC_ADDRESS}
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
       security:
         enabled: ${GRPC_TLS_ENABLED:false}
         trust-cert-collection: ${GRPC_TRUST_CERT:}
         client-cert-chain: ${GRPC_CLIENT_CERT:}
         client-private-key: ${GRPC_CLIENT_KEY:}
-  # ✅ Updated to order-backend
+    # ✅ Updated to order-backend
     order-backend:
-      address: 'static://${ORDER_BACKEND_GRPC_HOST:order-backend}:${ORDER_BACKEND_GRPC_PORT:9090}'
+      address: ${ORDER_BACKEND_GRPC_ADDRESS}
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
     # ✅ Updated to user-backend
     user-backend:
-      address: ${USER_BACKEND_GRPC_ADDRESS:static://user-backend:9090}
+      address: ${USER_BACKEND_GRPC_ADDRESS}
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
   notifications:
     deadline-ms: 10000

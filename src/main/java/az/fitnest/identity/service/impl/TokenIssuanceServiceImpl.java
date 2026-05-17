@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+
 import az.fitnest.identity.mapper.UserResponseMapper;
 import az.fitnest.identity.mapper.LoginResponseMapper;
 
@@ -37,27 +38,8 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
 
     @Override
     public LoginResponse issueTokens(User user, String deviceType) {
-        String roleName = (user.getRole() != null) ? user.getRole().getName() : "ROLE_USER";
-        List<String> roles = List.of(roleName);
-
-        String accessToken = jwtService.generateAccessToken(user.getId(), roles, user.getLanguage());
-        String refreshToken = jwtService.generateRefreshToken(user.getId());
-
-        Instant accessExpiresAt = jwtService.parseExpiration(accessToken);
-        Instant refreshExpiresAt = jwtService.parseExpiration(refreshToken);
-
-        Duration accessTtl = Duration.between(Instant.now(), accessExpiresAt);
-        String jti = jwtService.parseJti(accessToken);
-        redisTokenService.activateAccessToken(jti, accessTtl);
-
-        redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
-
-        saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
-
         boolean consentRequired = legalService.isConsentRequired(user.getId());
-        UserResponse userResponse = userResponseMapper.toResponse(user, consentRequired);
-
-        return loginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
+        return issueTokens(user, deviceType, consentRequired);
     }
 
     @Override
@@ -65,7 +47,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         String roleName = (user.getRole() != null) ? user.getRole().getName() : "ROLE_USER";
         List<String> roles = List.of(roleName);
 
-        String accessToken = jwtService.generateAccessToken(user.getId(), roles, user.getLanguage());
+        String accessToken = jwtService.generateAccessToken(user, roles);
         String refreshToken = jwtService.generateRefreshToken(user.getId());
 
         Instant accessExpiresAt = jwtService.parseExpiration(accessToken);
@@ -73,14 +55,13 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
 
         Duration accessTtl = Duration.between(Instant.now(), accessExpiresAt);
         String jti = jwtService.parseJti(accessToken);
-        redisTokenService.activateAccessToken(jti, accessTtl);
 
+        redisTokenService.activateAccessToken(jti, accessTtl);
         redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
 
         saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
 
         UserResponse userResponse = userResponseMapper.toResponse(user, consentRequired);
-
         return loginResponseMapper.toResponse(accessToken, refreshToken, userResponse);
     }
 

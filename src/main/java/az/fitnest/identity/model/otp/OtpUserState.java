@@ -11,7 +11,8 @@ public class OtpUserState implements Serializable {
     private Instant lockedUntil;
     private String key;
 
-    public OtpUserState() {}
+    public OtpUserState() {
+    }
 
     public OtpUserState(Long userId) {
         this.userId = userId;
@@ -25,21 +26,51 @@ public class OtpUserState implements Serializable {
         this.dailySendCount = 0;
     }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public Long getUserId() {
+        return userId;
+    }
 
-    public Integer getResendCount() { return resendCount; }
-    public void setResendCount(Integer resendCount) { this.resendCount = resendCount; }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
-    public Instant getLastSentAt() { return lastSentAt; }
-    public void setLastSentAt(Instant lastSentAt) { this.lastSentAt = lastSentAt; }
+    public Integer getResendCount() {
+        return resendCount;
+    }
 
-    public Integer getDailySendCount() { return dailySendCount; }
-    public void setDailySendCount(Integer dailySendCount) { this.dailySendCount = dailySendCount; }
+    public void setResendCount(Integer resendCount) {
+        this.resendCount = resendCount;
+    }
 
-    public Instant getLockedUntil() { return lockedUntil; }
-    public void setLockedUntil(Instant lockedUntil) { this.lockedUntil = lockedUntil; }
+    public Instant getLastSentAt() {
+        return lastSentAt;
+    }
 
-    public String getKey() { return key; }
-    public void setKey(String key) { this.key = key; }
+    public void setLastSentAt(Instant lastSentAt) {
+        this.lastSentAt = lastSentAt;
+    }
+
+    public Integer getDailySendCount() {
+        return dailySendCount;
+    }
+
+    public void setDailySendCount(Integer dailySendCount) {
+        this.dailySendCount = dailySendCount;
+    }
+
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
+
+    public void setLockedUntil(Instant lockedUntil) {
+        this.lockedUntil = lockedUntil;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
 }

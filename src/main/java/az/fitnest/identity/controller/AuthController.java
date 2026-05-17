@@ -57,7 +57,9 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "İstifadəçi girişi", description = "İstifadəçini mobil nömrə və şifrə ilə autentifikasiya edir.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Giriş uğurludur", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Giriş uğurludur və ya əlavə addım tələb olunur",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(oneOf = {LoginResponse.class, OtpSendResponse.class}))),
             @ApiResponse(responseCode = "401", description = "Yanlış məlumatlar", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"INVALID_CREDENTIALS\",\n    \"message\": \"Yanlış giriş məlumatları\",\n    \"status\": 401,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}"))),
             @ApiResponse(responseCode = "400", description = "Yanlış sorğu formatı", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Doğrulama uğursuz oldu\",\n    \"status\": 400,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}"))),
             @ApiResponse(responseCode = "429", description = "Çox sayda giriş cəhdi (limit keçilib)", content = @Content(mediaType = "application/json", examples = @ExampleObject(value = "{\n  \"error\": {\n    \"code\": \"LOGIN_RATE_LIMIT\",\n    \"message\": \"Çox sayda giriş cəhdi. Zəhmət olmasa bir az sonra yenidən cəhd edin.\",\n    \"status\": 429,\n    \"path\": \"/api/v1/auth/login\"\n  }\n}")))
@@ -66,11 +68,8 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request,
             @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
             @RequestParam(required = false) String lang) {
-        Object response = authService.login(request);
-        if (response instanceof az.fitnest.identity.dto.response.OtpSendResponse) {
-            return ResponseEntity.ok(response);
-        }
-        return ResponseEntity.ok(response);
+        LoginResult result = authService.login(request);
+        return ResponseEntity.ok(result.payload());
     }
 
     @PostMapping("/refresh")
@@ -107,7 +106,7 @@ public class AuthController {
     }
 
     @PostMapping("/social/google")
-    @Operation(summary = "Google ilə sosial giriş")
+    @Operation(summary = "Google ilə sosial giriş", security = @SecurityRequirement(name = "none"))
     public ResponseEntity<LoginResponse> socialLoginGoogle(
             @Valid @RequestBody GoogleSocialRequest request,
             @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)

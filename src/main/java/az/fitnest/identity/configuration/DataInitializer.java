@@ -1,6 +1,5 @@
 package az.fitnest.identity.configuration;
 
-
 import az.fitnest.identity.model.enums.LegalDocumentType;
 import az.fitnest.identity.model.entity.*;
 import az.fitnest.identity.repository.*;
@@ -28,7 +27,6 @@ public class DataInitializer {
         return args -> {
             initRoles();
             initAdminUser();
-            initSuperAdminUser();
             initRegularUser();
             initRegularUser2();
             initPartnerUser();
@@ -41,7 +39,6 @@ public class DataInitializer {
     private void initRoles() {
         createRoleIfNotFound("ROLE_USER");
         createRoleIfNotFound("ROLE_ADMIN");
-        createRoleIfNotFound("ROLE_SUPER_ADMIN");
         createRoleIfNotFound("ROLE_PARTNER");
     }
 
@@ -73,29 +70,6 @@ public class DataInitializer {
             admin.setRole(adminRole);
 
             userRepository.save(admin);
-        }
-    }
-
-    private void initSuperAdminUser() {
-        String superAdminMobile = az.fitnest.identity.util.MobileNumberUtils.normalize("0510000000");
-        Optional<User> superAdminOptional = userRepository.findFirstByMobile(superAdminMobile);
-
-        if (superAdminOptional.isEmpty()) {
-            Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN")
-                    .orElseGet(() -> {
-                        Role newRole = new Role();
-                        newRole.setName("ROLE_SUPER_ADMIN");
-                        return roleRepository.save(newRole);
-                    });
-
-            User superAdmin = new User();
-            superAdmin.setMobile(superAdminMobile);
-            superAdmin.setPasswordHash(passwordService.hashPassword("SuperAdmin123!"));
-            superAdmin.setHasAccount(true);
-            superAdmin.setSetupRequired(false);
-            superAdmin.setRole(superAdminRole);
-
-            userRepository.save(superAdmin);
         }
     }
 
