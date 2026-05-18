@@ -37,8 +37,10 @@ public class IdentityServiceGrpcImpl extends IdentityServiceGrpc.IdentityService
                 throw new IllegalArgumentException("USER_WITH_MOBILE_ALREADY_EXISTS");
             }
 
-            if (userProfileGrpcClient.getUserByEmail(request.getEmail()) != null) {
-                throw new IllegalArgumentException("USER_WITH_EMAIL_ALREADY_EXISTS");
+            if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+                if (userProfileGrpcClient.getUserByEmail(request.getEmail()) != null) {
+                    throw new IllegalArgumentException("USER_WITH_EMAIL_ALREADY_EXISTS");
+                }
             }
 
             String encodedPassword = passwordEncoder.encode(request.getPassword());
