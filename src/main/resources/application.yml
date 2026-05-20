@@ -350,7 +350,7 @@ grpc:
         client-private-key: ${GRPC_CLIENT_KEY:}
     # ✅ Updated to notifications-backend
     notifications-backend:
-      address: ${NOTIFICATIONS_BACKEND_GRPC_ADDRESS}
+      address: ${NOTIFICATIONS_BACKEND_GRPC_ADDRESS:dns:///notifications-backend:9090}
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
       security:
         enabled: ${GRPC_TLS_ENABLED:false}
@@ -359,11 +359,11 @@ grpc:
         client-private-key: ${GRPC_CLIENT_KEY:}
     # ✅ Updated to order-backend
     order-backend:
-      address: ${ORDER_BACKEND_GRPC_ADDRESS}
+      address: ${ORDER_BACKEND_GRPC_ADDRESS:dns:///order-backend:9090}
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
     # ✅ Updated to user-backend
     user-backend:
-      address: ${USER_BACKEND_GRPC_ADDRESS}
+      address: ${USER_BACKEND_GRPC_ADDRESS:dns:///user-backend:9090}
       negotiation-type: ${GRPC_CLIENT_NEGOTIATION:plaintext}
   notifications:
     deadline-ms: 10000
