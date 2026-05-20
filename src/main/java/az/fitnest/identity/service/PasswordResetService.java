@@ -28,4 +28,8 @@ public interface PasswordResetService {
     OtpSendResponse forgotPassword(ForgotPasswordRequest request);
 
     ResetPasswordResponse resetPassword(ResetPasswordRequest request);
+
+    OtpSendResponse adminForgotPassword(ForgotPasswordRequest request);
+
+    ResetPasswordResponse adminResetPassword(ResetPasswordRequest request);
 }

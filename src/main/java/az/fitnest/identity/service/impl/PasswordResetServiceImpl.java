@@ -91,6 +91,71 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         return resetPasswordResponseMapper.toResponse(getMessage("success.password.changed"));
     }
 
+    @Override
+    @Transactional
+    public OtpSendResponse adminForgotPassword(ForgotPasswordRequest request) {
+        if (request == null || !StringUtils.hasText(request.mobile())) {
+            return otpSendResponseMapper.toResponse(null, null, null, getMessage("success.otp.sent"));
+        }
+        String rawMobile = request.mobile();
+        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(rawMobile);
+
+        User user = userRepository.findFirstByMobile(mobile)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found"));
+
+        if (user.getRole() == null || 
+            (!user.getRole().getName().equals("ROLE_ADMIN") && 
+             !user.getRole().getName().equals("ROLE_GYM_SUPER_ADMIN") && 
+             !user.getRole().getName().equals("ROLE_GYM_ADMIN"))) {
+            throw new az.fitnest.identity.exception.ValidationException("error.authorization.forbidden", "FORBIDDEN");
+        }
+
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.PASSWORD_RESET, mobile, null, null);
+        return otpService.sendOtp(otpRequest);
+    }
+
+    @Override
+    @Transactional
+    public ResetPasswordResponse adminResetPassword(ResetPasswordRequest request) {
+        if (request == null || !StringUtils.hasText(request.resetToken()) ||
+                !StringUtils.hasText(request.newPassword())) {
+            throw new az.fitnest.identity.exception.ValidationException("error.request.invalid", "VALIDATION_ERROR");
+        }
+        String newPassword = request.newPassword();
+        if (newPassword.length() < 8) {
+            throw new az.fitnest.identity.exception.ValidationException("error.service.password_invalid", "VALIDATION_ERROR");
+        }
+
+        String identifier = resetPasswordTokenService.requireIdentifier(request.resetToken());
+        User user = userRepository.findFirstByMobile(identifier)
+                .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials"));
+
+        if (user.getRole() == null || 
+            (!user.getRole().getName().equals("ROLE_ADMIN") && 
+             !user.getRole().getName().equals("ROLE_GYM_SUPER_ADMIN") && 
+             !user.getRole().getName().equals("ROLE_GYM_ADMIN"))) {
+            throw new az.fitnest.identity.exception.ValidationException("error.authorization.forbidden", "FORBIDDEN");
+        }
+
+        if (passwordService.verifyPassword(newPassword, user.getPasswordHash()).matches()) {
+            throw new az.fitnest.identity.exception.ValidationException("error.service.password_not_allowed", "VALIDATION_ERROR");
+        }
+        String passwordHash = passwordService.hashPassword(newPassword);
+        user.setPasswordHash(passwordHash);
+        user.setHasLocalPassword(true);
+
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
+        }
+
+        userRepository.save(user);
+        resetPasswordTokenService.consume(request.resetToken());
+        revokeAllUserTokens(user.getId());
+        return resetPasswordResponseMapper.toResponse(getMessage("success.password.changed"));
+    }
+
     private String getMessage(String code, Object... args) {
         return messageSource.getMessage(code, args, org.springframework.context.i18n.LocaleContextHolder.getLocale());
     }
