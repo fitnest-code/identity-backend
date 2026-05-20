@@ -115,4 +115,52 @@ public class PasswordRecoveryController {
 
         return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(apiSuccess));
     }
+
+    @PostMapping("/admin/forgot-password")
+    @Operation(summary = "Admin şifrəni unutmuşam", description = "Admin şifrə bərpası üçün OTP göndərir. Yalnız admin rollarına icazə verilir.")
+    public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<ApiSuccessResponse>> adminForgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest httpRequest,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
+        logger.info("Received admin forgotPassword request: {}", request);
+        try {
+            OtpSendResponse response = passwordResetService.adminForgotPassword(request);
+            logger.info("Admin ForgotPassword success for mobile: {}", request != null ? request.mobile() : null);
+
+            ApiSuccessResponse apiSuccess = ApiSuccessResponse.builder()
+                    .code("success.otp.sent")
+                    .message(response.message())
+                    .status(HttpStatus.OK.value())
+                    .path(httpRequest.getRequestURI())
+                    .timestamp(OffsetDateTime.now())
+                    .details(response)
+                    .build();
+
+            return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(apiSuccess));
+        } catch (Exception ex) {
+            logger.error("Error in admin forgotPassword for request: {}", request, ex);
+            throw ex;
+        }
+    }
+
+    @PostMapping("/admin/reset-password")
+    @Operation(summary = "Admin şifrəni sıfırlayın", description = "OTP və yeni şifrə ilə admin şifrəsini sıfırlayır.")
+    public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<ApiSuccessResponse>> adminResetPassword(
+            @Valid @RequestBody ResetPasswordRequest request,
+            HttpServletRequest httpRequest,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
+        ResetPasswordResponse response = passwordResetService.adminResetPassword(request);
+
+        ApiSuccessResponse apiSuccess = ApiSuccessResponse.builder()
+                .code("success.password.changed")
+                .message(response.message())
+                .status(HttpStatus.OK.value())
+                .path(httpRequest.getRequestURI())
+                .timestamp(OffsetDateTime.now())
+                .build();
+
+        return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(apiSuccess));
+    }
 }
