@@ -46,6 +46,8 @@ public interface UserService {
 
     void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword);
 
+    void resetUserPasswordDirectly(Long userId, String newPassword);
+
     Page<az.fitnest.identity.dto.response.UserResponse> getAllUsersMapped(int page, int size);
 
     void deactivateAllUsers();

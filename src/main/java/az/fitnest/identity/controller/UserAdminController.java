@@ -125,4 +125,12 @@ public class UserAdminController {
         userService.unblockUser(userId);
         return ResponseEntity.ok().build();
     }
+
+    @Operation(summary = "İstifadəçi şifrəsini birbaşa sıfırlayın", description = "İstifadəçinin şifrəsini birbaşa sıfırlayır. Yalnız ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{userId}/password/reset")
+    public ResponseEntity<Void> resetUserPassword(@PathVariable Long userId, @RequestBody az.fitnest.identity.dto.request.ResetUserPasswordRequest request) {
+        userService.resetUserPasswordDirectly(userId, request.getNewPassword());
+        return ResponseEntity.ok().build();
+    }
 }

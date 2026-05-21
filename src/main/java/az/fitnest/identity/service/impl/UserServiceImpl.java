@@ -338,6 +338,24 @@ public class UserServiceImpl implements UserService {
         localEventPublisher.publishEvent(new PasswordChangedEvent(userId));
     }
 
+    @Transactional
+    @Override
+    public void resetUserPasswordDirectly(Long userId, String newPassword) {
+        User user = getUserById(userId);
+        if (newPassword.length() < 8) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "WEAK_PASSWORD");
+        }
+        user.setPasswordHash(passwordService.hashPassword(newPassword));
+        user.setHasLocalPassword(true);
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
+        }
+        userRepository.save(user);
+        localEventPublisher.publishEvent(new PasswordChangedEvent(userId));
+    }
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePasswordChanged(PasswordChangedEvent event) {
         redisTokenService.removeAllSessions(event.userId());

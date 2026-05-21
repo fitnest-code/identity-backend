@@ -104,9 +104,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found"));
 
         if (user.getRole() == null || 
-            (!user.getRole().getName().equals("ROLE_ADMIN") && 
-             !user.getRole().getName().equals("ROLE_GYM_SUPER_ADMIN") && 
-             !user.getRole().getName().equals("ROLE_GYM_ADMIN"))) {
+            !user.getRole().getName().equals("ROLE_ADMIN")) {
             throw new az.fitnest.identity.exception.ValidationException("error.authorization.forbidden", "FORBIDDEN");
         }
 
@@ -131,9 +129,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 .orElseThrow(() -> new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials"));
 
         if (user.getRole() == null || 
-            (!user.getRole().getName().equals("ROLE_ADMIN") && 
-             !user.getRole().getName().equals("ROLE_GYM_SUPER_ADMIN") && 
-             !user.getRole().getName().equals("ROLE_GYM_ADMIN"))) {
+            !user.getRole().getName().equals("ROLE_ADMIN")) {
             throw new az.fitnest.identity.exception.ValidationException("error.authorization.forbidden", "FORBIDDEN");
         }
 
