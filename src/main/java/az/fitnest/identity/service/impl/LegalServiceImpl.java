@@ -9,6 +9,7 @@ import az.fitnest.identity.model.entity.LegalDocument;
 import az.fitnest.identity.model.entity.UserConsent;
 import az.fitnest.identity.exception.ValidationException;
 import az.fitnest.identity.service.LegalService;
+import az.fitnest.identity.service.TranslationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +36,7 @@ public class LegalServiceImpl implements LegalService {
     private final LegalDocumentResponseMapper legalDocumentResponseMapper;
     private final UserConsentStatusResponseMapper userConsentStatusResponseMapper;
     private final AdminConsentResponseMapper adminConsentResponseMapper;
+    private final TranslationService translationService;
 
     @Override
     public LegalDocumentResponse getPrivacyPolicy(String lang, String format) {
@@ -49,10 +51,29 @@ public class LegalServiceImpl implements LegalService {
     private LegalDocumentResponse getDocument(LegalDocumentType type, String lang) {
         String normalizedLang = normalizeLanguage(lang);
 
-        LegalDocument doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
-                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
+        Optional<LegalDocument> docOpt = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, "AZ");
+        LegalDocument doc;
+        if (docOpt.isPresent()) {
+            doc = docOpt.get();
+        } else {
+            doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
+                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
+        }
 
-        return legalDocumentResponseMapper.toResponse(doc, type);
+        String content = doc.getContent();
+        if (!"AZ".equalsIgnoreCase(normalizedLang)) {
+            String translated = translationService.getTranslatedValue("LEGAL_DOCUMENT", doc.getId().toString(), "content", normalizedLang);
+            if (translated != null && !translated.isBlank()) {
+                content = translated;
+            }
+        }
+
+        return new LegalDocumentResponse(
+                doc.getVersion(),
+                type.name(),
+                content,
+                doc.getLastModifiedDate()
+        );
     }
 
     @Transactional
@@ -76,6 +97,10 @@ public class LegalServiceImpl implements LegalService {
                 .build();
 
         legalDocumentRepository.save(doc);
+
+        if ("AZ".equalsIgnoreCase(normalizedLang)) {
+            translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
+        }
     }
 
     @Transactional
@@ -241,6 +266,11 @@ public class LegalServiceImpl implements LegalService {
         }
 
         legalDocumentRepository.save(doc);
+
+        if ("AZ".equalsIgnoreCase(doc.getLanguage())) {
+            translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
+        }
+
         return toAdminResponse(doc);
     }
 
@@ -300,9 +330,11 @@ public class LegalServiceImpl implements LegalService {
     }
 
     private String getLatestVersion(LegalDocumentType type) {
-        return legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
+        return legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, "AZ")
                 .map(LegalDocument::getVersion)
-                .orElse(null);
+                .orElseGet(() -> legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
+                        .map(LegalDocument::getVersion)
+                        .orElse(null));
     }
 
     private void ensureVersionIsLatest(LegalDocumentType type, String language, String newVersion) {
