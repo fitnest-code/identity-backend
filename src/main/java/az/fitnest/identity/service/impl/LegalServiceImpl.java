@@ -67,8 +67,7 @@ public class LegalServiceImpl implements LegalService {
         if (Boolean.TRUE.equals(request.isActive())) {
             var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(request.type(), normalizedLang);
             if (!activeDocs.isEmpty()) {
-                activeDocs.forEach(d -> d.setActive(false));
-                legalDocumentRepository.saveAll(activeDocs);
+                throw new ValidationException("error.legal.active_document_exists", "LEGAL_ACTIVE_EXISTS");
             }
         }
 
@@ -247,8 +246,10 @@ public class LegalServiceImpl implements LegalService {
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
         var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(doc.getType(), doc.getLanguage());
-        activeDocs.forEach(d -> d.setActive(false));
-        legalDocumentRepository.saveAll(activeDocs);
+        boolean hasOtherActive = activeDocs.stream().anyMatch(active -> !active.getId().equals(doc.getId()));
+        if (hasOtherActive) {
+            throw new ValidationException("error.legal.active_document_exists", "LEGAL_ACTIVE_EXISTS");
+        }
 
         doc.setActive(true);
         doc.setPublishedAt(LocalDateTime.now());
