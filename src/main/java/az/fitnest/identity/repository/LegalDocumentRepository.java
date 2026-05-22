@@ -20,6 +20,8 @@ public interface LegalDocumentRepository extends JpaRepository<LegalDocument, Lo
 
     boolean existsByTypeAndVersion(LegalDocumentType type, String version);
 
+    boolean existsByTypeAndLanguageAndVersion(LegalDocumentType type, String language, String version);
+
     List<LegalDocument> findAllByTypeAndLanguageAndIsActiveTrue(LegalDocumentType type, String language);
 
     List<LegalDocument> findAllByOrderByPublishedAtDesc();
