@@ -138,8 +138,8 @@ public class LegalServiceImplTest {
                 .build();
         azDoc.setId(999L);
 
-        when(legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(
-                LegalDocumentType.PRIVACY_POLICY, "AZ"
+        when(legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(
+                LegalDocumentType.PRIVACY_POLICY
         )).thenReturn(Optional.of(azDoc));
 
         when(translationService.getTranslatedValue("LEGAL_DOCUMENT", "999", "content", "EN"))
@@ -165,8 +165,8 @@ public class LegalServiceImplTest {
                 .build();
         azDoc.setId(999L);
 
-        when(legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(
-                LegalDocumentType.PRIVACY_POLICY, "AZ"
+        when(legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(
+                LegalDocumentType.PRIVACY_POLICY
         )).thenReturn(Optional.of(azDoc));
 
         when(translationService.getTranslatedValue("LEGAL_DOCUMENT", "999", "content", "RU"))
