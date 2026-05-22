@@ -51,17 +51,11 @@ public class LegalServiceImpl implements LegalService {
     private LegalDocumentResponse getDocument(LegalDocumentType type, String lang) {
         String normalizedLang = normalizeLanguage(lang);
 
-        Optional<LegalDocument> docOpt = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, "AZ");
-        LegalDocument doc;
-        if (docOpt.isPresent()) {
-            doc = docOpt.get();
-        } else {
-            doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
-                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
-        }
+        LegalDocument doc = legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
         String content = doc.getContent();
-        if (!"AZ".equalsIgnoreCase(normalizedLang)) {
+        if (!doc.getLanguage().equalsIgnoreCase(normalizedLang)) {
             String translated = translationService.getTranslatedValue("LEGAL_DOCUMENT", doc.getId().toString(), "content", normalizedLang);
             if (translated != null && !translated.isBlank()) {
                 content = translated;
@@ -87,13 +81,23 @@ public class LegalServiceImpl implements LegalService {
 
         ensureVersionIsLatest(request.type(), normalizedLang, request.version());
 
+        boolean shouldActivate = Boolean.TRUE.equals(request.isActive());
+
+        if (shouldActivate) {
+            List<LegalDocument> activeDocs = legalDocumentRepository.findAllByTypeAndIsActiveOrderByPublishedAtDesc(request.type(), true);
+            for (LegalDocument activeDoc : activeDocs) {
+                activeDoc.setActive(false);
+                legalDocumentRepository.save(activeDoc);
+            }
+        }
+
         LegalDocument doc = LegalDocument.builder()
                 .type(request.type())
                 .version(request.version())
                 .language(normalizedLang)
                 .content(request.content())
-                .isActive(false)
-                .publishedAt(null)
+                .isActive(shouldActivate)
+                .publishedAt(shouldActivate ? LocalDateTime.now() : null)
                 .build();
 
         legalDocumentRepository.save(doc);
@@ -289,10 +293,12 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findById(id)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
-        var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(doc.getType(), doc.getLanguage());
-        boolean hasOtherActive = activeDocs.stream().anyMatch(active -> !active.getId().equals(doc.getId()));
-        if (hasOtherActive) {
-            throw new ValidationException("error.legal.active_document_exists", "LEGAL_ACTIVE_EXISTS");
+        var activeDocs = legalDocumentRepository.findAllByTypeAndIsActiveOrderByPublishedAtDesc(doc.getType(), true);
+        for (LegalDocument active : activeDocs) {
+            if (!active.getId().equals(doc.getId())) {
+                active.setActive(false);
+                legalDocumentRepository.save(active);
+            }
         }
 
         doc.setActive(true);
@@ -330,11 +336,9 @@ public class LegalServiceImpl implements LegalService {
     }
 
     private String getLatestVersion(LegalDocumentType type) {
-        return legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, "AZ")
+        return legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
                 .map(LegalDocument::getVersion)
-                .orElseGet(() -> legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
-                        .map(LegalDocument::getVersion)
-                        .orElse(null));
+                .orElse(null);
     }
 
     private void ensureVersionIsLatest(LegalDocumentType type, String language, String newVersion) {
