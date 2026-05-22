@@ -211,11 +211,30 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findById(id)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
+        String targetLanguage = doc.getLanguage();
+        String targetVersion = doc.getVersion();
+
+        if (request.language() != null && !request.language().isBlank()) {
+            targetLanguage = normalizeLanguage(request.language());
+        }
         if (request.version() != null && !request.version().isBlank()) {
-            doc.setVersion(request.version());
+            targetVersion = request.version().trim();
+        }
+
+        boolean hasVersionChange = !targetVersion.equals(doc.getVersion()) || !targetLanguage.equals(doc.getLanguage());
+        if (hasVersionChange) {
+            parseVersionParts(targetVersion);
+            if (legalDocumentRepository.existsByTypeAndLanguageAndVersionAndIdNot(doc.getType(), targetLanguage, targetVersion, doc.getId())) {
+                throw new ValidationException("error.legal.version_exists", "LEGAL_VERSION_EXISTS");
+            }
+            ensureVersionIsLatestExcludingId(doc.getType(), targetLanguage, targetVersion, doc.getId());
+        }
+
+        if (request.version() != null && !request.version().isBlank()) {
+            doc.setVersion(targetVersion);
         }
         if (request.language() != null && !request.language().isBlank()) {
-            doc.setLanguage(normalizeLanguage(request.language()));
+            doc.setLanguage(targetLanguage);
         }
         if (request.content() != null && !request.content().isBlank()) {
             doc.setContent(request.content());
@@ -291,6 +310,28 @@ public class LegalServiceImpl implements LegalService {
         String latest = null;
 
         for (LegalDocument doc : docs) {
+            String candidate = doc.getVersion();
+            if (candidate == null || candidate.isBlank()) {
+                continue;
+            }
+            if (latest == null || compareVersions(candidate, latest) > 0) {
+                latest = candidate;
+            }
+        }
+
+        if (latest != null && compareVersions(newVersion, latest) <= 0) {
+            throw new ValidationException("error.legal.version_not_latest", "LEGAL_VERSION_NOT_LATEST");
+        }
+    }
+
+    private void ensureVersionIsLatestExcludingId(LegalDocumentType type, String language, String newVersion, Long excludedId) {
+        List<LegalDocument> docs = legalDocumentRepository.findAllByTypeAndLanguageOrderByPublishedAtDesc(type, language);
+        String latest = null;
+
+        for (LegalDocument doc : docs) {
+            if (doc.getId().equals(excludedId)) {
+                continue;
+            }
             String candidate = doc.getVersion();
             if (candidate == null || candidate.isBlank()) {
                 continue;
