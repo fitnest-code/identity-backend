@@ -9,6 +9,7 @@ import az.fitnest.identity.model.entity.LegalDocument;
 import az.fitnest.identity.model.entity.UserConsent;
 import az.fitnest.identity.exception.ValidationException;
 import az.fitnest.identity.service.LegalService;
+import az.fitnest.identity.service.TranslationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +36,7 @@ public class LegalServiceImpl implements LegalService {
     private final LegalDocumentResponseMapper legalDocumentResponseMapper;
     private final UserConsentStatusResponseMapper userConsentStatusResponseMapper;
     private final AdminConsentResponseMapper adminConsentResponseMapper;
+    private final TranslationService translationService;
 
     @Override
     public LegalDocumentResponse getPrivacyPolicy(String lang, String format) {
@@ -49,38 +51,56 @@ public class LegalServiceImpl implements LegalService {
     private LegalDocumentResponse getDocument(LegalDocumentType type, String lang) {
         String normalizedLang = normalizeLanguage(lang);
 
-        LegalDocument doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
-                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
+        Optional<LegalDocument> docOpt = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, "AZ");
+        LegalDocument doc;
+        if (docOpt.isPresent()) {
+            doc = docOpt.get();
+        } else {
+            doc = legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, normalizedLang)
+                    .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
+        }
 
-        return legalDocumentResponseMapper.toResponse(doc, type);
+        String content = doc.getContent();
+        if (!"AZ".equalsIgnoreCase(normalizedLang)) {
+            String translated = translationService.getTranslatedValue("LEGAL_DOCUMENT", doc.getId().toString(), "content", normalizedLang);
+            if (translated != null && !translated.isBlank()) {
+                content = translated;
+            }
+        }
+
+        return new LegalDocumentResponse(
+                doc.getVersion(),
+                type.name(),
+                content,
+                doc.getLastModifiedDate()
+        );
     }
 
     @Transactional
     @Override
     public void createDocument(CreateLegalDocumentRequest request) {
-        if (legalDocumentRepository.existsByTypeAndVersion(request.type(), request.version())) {
-            throw new az.fitnest.identity.exception.ConflictException("Sənəd versiyası artıq mövcuddur");
-        }
-
         String normalizedLang = normalizeLanguage(request.language());
 
-        if (Boolean.TRUE.equals(request.isActive())) {
-            var activeDocs = legalDocumentRepository.findAllByTypeAndLanguageAndIsActiveTrue(request.type(), normalizedLang);
-            if (!activeDocs.isEmpty()) {
-                throw new ValidationException("error.legal.active_document_exists", "LEGAL_ACTIVE_EXISTS");
-            }
+        if (legalDocumentRepository.existsByTypeAndLanguageAndVersion(request.type(), normalizedLang, request.version())) {
+            throw new ValidationException("error.legal.version_exists", "LEGAL_VERSION_EXISTS");
         }
+
+        ensureVersionIsLatest(request.type(), normalizedLang, request.version());
 
         LegalDocument doc = LegalDocument.builder()
                 .type(request.type())
                 .version(request.version())
                 .language(normalizedLang)
                 .content(request.content())
-                .isActive(request.isActive())
-                .publishedAt(request.isActive() ? LocalDateTime.now() : null)
+                .isActive(false)
+                .publishedAt(null)
                 .build();
 
         legalDocumentRepository.save(doc);
+
+        if ("AZ".equalsIgnoreCase(normalizedLang)) {
+            translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
+        }
     }
 
     @Transactional
@@ -216,17 +236,41 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findById(id)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
+        String targetLanguage = doc.getLanguage();
+        String targetVersion = doc.getVersion();
+
+        if (request.language() != null && !request.language().isBlank()) {
+            targetLanguage = normalizeLanguage(request.language());
+        }
         if (request.version() != null && !request.version().isBlank()) {
-            doc.setVersion(request.version());
+            targetVersion = request.version().trim();
+        }
+
+        boolean hasVersionChange = !targetVersion.equals(doc.getVersion()) || !targetLanguage.equals(doc.getLanguage());
+        if (hasVersionChange) {
+            parseVersionParts(targetVersion);
+            if (legalDocumentRepository.existsByTypeAndLanguageAndVersionAndIdNot(doc.getType(), targetLanguage, targetVersion, doc.getId())) {
+                throw new ValidationException("error.legal.version_exists", "LEGAL_VERSION_EXISTS");
+            }
+            ensureVersionIsLatestExcludingId(doc.getType(), targetLanguage, targetVersion, doc.getId());
+        }
+
+        if (request.version() != null && !request.version().isBlank()) {
+            doc.setVersion(targetVersion);
         }
         if (request.language() != null && !request.language().isBlank()) {
-            doc.setLanguage(normalizeLanguage(request.language()));
+            doc.setLanguage(targetLanguage);
         }
         if (request.content() != null && !request.content().isBlank()) {
             doc.setContent(request.content());
         }
 
         legalDocumentRepository.save(doc);
+
+        if ("AZ".equalsIgnoreCase(doc.getLanguage())) {
+            translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
+        }
+
         return toAdminResponse(doc);
     }
 
@@ -286,9 +330,87 @@ public class LegalServiceImpl implements LegalService {
     }
 
     private String getLatestVersion(LegalDocumentType type) {
-        return legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
+        return legalDocumentRepository.findTopByTypeAndLanguageAndIsActiveTrueOrderByPublishedAtDesc(type, "AZ")
                 .map(LegalDocument::getVersion)
-                .orElse(null);
+                .orElseGet(() -> legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
+                        .map(LegalDocument::getVersion)
+                        .orElse(null));
+    }
+
+    private void ensureVersionIsLatest(LegalDocumentType type, String language, String newVersion) {
+        List<LegalDocument> docs = legalDocumentRepository.findAllByTypeAndLanguageOrderByPublishedAtDesc(type, language);
+        String latest = null;
+
+        for (LegalDocument doc : docs) {
+            String candidate = doc.getVersion();
+            if (candidate == null || candidate.isBlank()) {
+                continue;
+            }
+            if (latest == null || compareVersions(candidate, latest) > 0) {
+                latest = candidate;
+            }
+        }
+
+        if (latest != null && compareVersions(newVersion, latest) <= 0) {
+            throw new ValidationException("error.legal.version_not_latest", "LEGAL_VERSION_NOT_LATEST");
+        }
+    }
+
+    private void ensureVersionIsLatestExcludingId(LegalDocumentType type, String language, String newVersion, Long excludedId) {
+        List<LegalDocument> docs = legalDocumentRepository.findAllByTypeAndLanguageOrderByPublishedAtDesc(type, language);
+        String latest = null;
+
+        for (LegalDocument doc : docs) {
+            if (doc.getId().equals(excludedId)) {
+                continue;
+            }
+            String candidate = doc.getVersion();
+            if (candidate == null || candidate.isBlank()) {
+                continue;
+            }
+            if (latest == null || compareVersions(candidate, latest) > 0) {
+                latest = candidate;
+            }
+        }
+
+        if (latest != null && compareVersions(newVersion, latest) <= 0) {
+            throw new ValidationException("error.legal.version_not_latest", "LEGAL_VERSION_NOT_LATEST");
+        }
+    }
+
+    private int compareVersions(String left, String right) {
+        int[] leftParts = parseVersionParts(left);
+        int[] rightParts = parseVersionParts(right);
+        int max = Math.max(leftParts.length, rightParts.length);
+
+        for (int i = 0; i < max; i++) {
+            int leftValue = i < leftParts.length ? leftParts[i] : 0;
+            int rightValue = i < rightParts.length ? rightParts[i] : 0;
+            if (leftValue != rightValue) {
+                return Integer.compare(leftValue, rightValue);
+            }
+        }
+
+        return 0;
+    }
+
+    private int[] parseVersionParts(String version) {
+        if (version == null || version.isBlank()) {
+            throw new ValidationException("error.legal.version_invalid", "LEGAL_VERSION_INVALID");
+        }
+
+        String[] parts = version.trim().split("\\.");
+        int[] values = new int[parts.length];
+
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i].trim();
+            if (part.isEmpty() || !part.matches("\\d+")) {
+                throw new ValidationException("error.legal.version_invalid", "LEGAL_VERSION_INVALID");
+            }
+            values[i] = Integer.parseInt(part);
+        }
+
+        return values;
     }
 
     private AdminLegalDocumentResponse toAdminResponse(LegalDocument doc) {
