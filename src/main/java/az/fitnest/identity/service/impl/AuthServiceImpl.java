@@ -79,7 +79,8 @@ public class AuthServiceImpl implements AuthService {
             return LoginResult.reactivationRequired(reactivationResponse);
         }
 
-        String activeJti = redisTokenService.getActiveSession(result.user().getId());
+        String deviceType = deviceDetectionService.detectDeviceType();
+        String activeJti = redisTokenService.getActiveSession(result.user().getId(), deviceType);
         if (activeJti != null) {
             redisTokenService.revokeAccessToken(activeJti);
         }
@@ -90,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
             userRepository.save(user);
         }
 
-        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceDetectionService.detectDeviceType());
+        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceType);
         return LoginResult.success(tokens);
     }
 
@@ -229,10 +230,7 @@ public class AuthServiceImpl implements AuthService {
             String jti = jwtService.parseJti(accessToken);
 
             redisTokenService.revokeAccessToken(jti);
-            String activeJti = redisTokenService.getActiveSession(userId);
-            if (jti.equals(activeJti)) {
-                redisTokenService.removeActiveSession(userId);
-            }
+            redisTokenService.removeActiveSession(userId, jti);
 
             // Revoke all refresh tokens for the user
             authTokenRepository.deleteByUserId(userId);

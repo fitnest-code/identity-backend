@@ -50,16 +50,25 @@ public class RedisTokenService {
         redisTemplate.delete(accessKey(jti));
     }
 
-    public void setActiveSession(Long userId, String jti, Duration ttl) {
-        redisTemplate.opsForValue().set(sessionKey(userId), jti, ttl);
+    public void setActiveSession(Long userId, String jti, String deviceType, Duration ttl) {
+        redisTemplate.opsForValue().set(sessionKey(userId, deviceType), jti, ttl);
     }
 
-    public String getActiveSession(Long userId) {
-        return redisTemplate.opsForValue().get(sessionKey(userId));
+    public String getActiveSession(Long userId, String deviceType) {
+        return redisTemplate.opsForValue().get(sessionKey(userId, deviceType));
     }
 
-    public void removeActiveSession(Long userId) {
-        redisTemplate.delete(sessionKey(userId));
+    public void removeActiveSession(Long userId, String jti) {
+        if (jti == null || jti.isBlank()) {
+            return;
+        }
+        String webKey = sessionKey(userId, "web");
+        String mobileKey = sessionKey(userId, "mobile");
+        if (jti.equals(redisTemplate.opsForValue().get(webKey))) {
+            redisTemplate.delete(webKey);
+        } else if (jti.equals(redisTemplate.opsForValue().get(mobileKey))) {
+            redisTemplate.delete(mobileKey);
+        }
     }
 
     public void addSessionToIndex(Long userId, String jti, Duration ttl) {
@@ -77,14 +86,27 @@ public class RedisTokenService {
             }
         }
         redisTemplate.delete(key);
+        redisTemplate.delete(sessionKey(userId, "web"));
+        redisTemplate.delete(sessionKey(userId, "mobile"));
     }
 
     private String accessKey(String token) {
         return accessPrefix + token;
     }
 
-    private String sessionKey(Long userId) {
-        return sessionPrefix + userId;
+    private String getDeviceCategory(String deviceType) {
+        if (deviceType == null) {
+            return "web";
+        }
+        String dt = deviceType.toLowerCase().trim();
+        if (dt.contains("ios") || dt.contains("android")) {
+            return "mobile";
+        }
+        return "web";
+    }
+
+    private String sessionKey(Long userId, String deviceType) {
+        return sessionPrefix + userId + ":" + getDeviceCategory(deviceType);
     }
 
     private String getSessionIndexKey(Long userId) {
