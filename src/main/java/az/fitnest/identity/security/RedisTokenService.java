@@ -98,8 +98,8 @@ public class RedisTokenService {
         if (deviceType == null) {
             return "web";
         }
-        String dt = deviceType.toLowerCase().trim();
-        if (dt.contains("ios") || dt.contains("android")) {
+        String dt = deviceType.trim();
+        if ("ios".equalsIgnoreCase(dt) || "android".equalsIgnoreCase(dt)) {
             return "mobile";
         }
         return "web";
