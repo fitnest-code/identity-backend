@@ -16,6 +16,7 @@ public class UserResponseMapper {
 
     private final UserProfileGrpcClient userProfileGrpcClient;
     private final LegalService legalService;
+    private final az.fitnest.identity.service.TranslationService translationService;
 
     public UserResponse toResponse(User user) {
         return toResponse(user, legalService.isConsentRequired(user.getId()));
@@ -51,7 +52,7 @@ public class UserResponseMapper {
                 user.isSetupRequired(),
                 profileImageUrl,
                 user.getLanguage(),
-                user.getStatus() != null ? user.getStatus().name() : null,
+                user.getStatus() != null ? (translationService.getTranslatedValue("USER_STATUS", user.getStatus().name(), "name", user.getLanguage()) != null ? translationService.getTranslatedValue("USER_STATUS", user.getStatus().name(), "name", user.getLanguage()) : user.getStatus().name()) : null,
                 accountLocked,
                 user.getCreatedDate(),
                 consentRequired,
