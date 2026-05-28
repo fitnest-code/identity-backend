@@ -10,6 +10,10 @@ import az.fitnest.identity.model.entity.UserConsent;
 import az.fitnest.identity.exception.ValidationException;
 import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.TranslationService;
+import az.fitnest.identity.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +41,7 @@ public class LegalServiceImpl implements LegalService {
     private final UserConsentStatusResponseMapper userConsentStatusResponseMapper;
     private final AdminConsentResponseMapper adminConsentResponseMapper;
     private final TranslationService translationService;
+    private final UserRepository userRepository;
 
     @Override
     public LegalDocumentResponse getPrivacyPolicy(String lang, String format) {
@@ -48,8 +53,52 @@ public class LegalServiceImpl implements LegalService {
         return getDocument(LegalDocumentType.TERMS_OF_USE, lang);
     }
 
+    private String resolveLanguage(String queryLang) {
+        // 1. Authenticated users (from security context) -> direct DB lookup
+        Long userId = az.fitnest.identity.util.UserContext.getCurrentUserId();
+        if (userId != null) {
+            try {
+                var userOpt = userRepository.findById(userId);
+                if (userOpt.isPresent()) {
+                    var user = userOpt.get();
+                    if (user.getLanguage() != null && !user.getLanguage().isBlank()) {
+                        return user.getLanguage().trim().toUpperCase();
+                    }
+                }
+            } catch (Exception e) {
+                // fallback
+            }
+        }
+
+        // 2. Anonymous users -> Accept-Language header
+        var attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs instanceof ServletRequestAttributes servletAttrs) {
+            HttpServletRequest request = servletAttrs.getRequest();
+            if (request != null) {
+                String acceptLang = request.getHeader("Accept-Language");
+                if (acceptLang != null && !acceptLang.trim().isEmpty()) {
+                    String[] parts = acceptLang.split(",");
+                    if (parts.length > 0) {
+                        String firstLang = parts[0].split("-")[0].trim().toUpperCase();
+                        if ("AZ".equals(firstLang) || "EN".equals(firstLang) || "RU".equals(firstLang)) {
+                            return firstLang;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Fallback to query parameter or Default ("AZ")
+        if (queryLang != null && !queryLang.isBlank()) {
+            return queryLang.trim().toUpperCase();
+        }
+
+        return "AZ";
+    }
+
     private LegalDocumentResponse getDocument(LegalDocumentType type, String lang) {
-        String normalizedLang = normalizeLanguage(lang);
+        String resolvedLang = resolveLanguage(lang);
+        String normalizedLang = normalizeLanguage(resolvedLang);
 
         LegalDocument doc = legalDocumentRepository.findTopByTypeAndIsActiveTrueOrderByPublishedAtDesc(type)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));

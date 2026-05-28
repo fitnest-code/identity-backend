@@ -10,6 +10,7 @@ import az.fitnest.identity.model.entity.LegalDocument;
 import az.fitnest.identity.model.enums.LegalDocumentType;
 import az.fitnest.identity.repository.LegalDocumentRepository;
 import az.fitnest.identity.repository.UserConsentRepository;
+import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.service.impl.LegalServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,8 @@ public class LegalServiceImplTest {
     private AdminConsentResponseMapper adminConsentResponseMapper;
     @Mock
     private TranslationService translationService;
+    @Mock
+    private UserRepository userRepository;
 
     private LegalServiceImpl legalService;
 
@@ -50,7 +53,8 @@ public class LegalServiceImplTest {
                 legalDocumentResponseMapper,
                 userConsentStatusResponseMapper,
                 adminConsentResponseMapper,
-                translationService
+                translationService,
+                userRepository
         );
     }
 
