@@ -113,4 +113,8 @@ public class User extends BaseAuditableEntity {
     public boolean isSetupRequired() {
         return setupRequired;
     }
+
+    public boolean isHasLocalPassword() {
+        return hasLocalPassword || (passwordHash != null && !passwordHash.trim().isEmpty());
+    }
 }
