@@ -21,6 +21,8 @@ import az.fitnest.identity.service.UserProfileGrpcClient;
 import az.fitnest.identity.util.DeviceDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +42,10 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final UserProfileGrpcClient userProfileGrpcClient;
     private final LegalService legalService;
 
-    @Transactional
+    @Autowired
+    @Lazy
+    private SocialAuthServiceImpl self;
+
     @Override
     public LoginResponse socialLoginGoogle(GoogleSocialRequest request) {
         log.info("Starting Google social login process");
@@ -58,7 +63,6 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         );
     }
 
-    @Transactional
     @Override
     public LoginResponse socialLoginApple(AppleSocialRequest request) {
         AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.identityToken());
@@ -86,13 +90,8 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
             log.info("Found existing social auth record for user ID: {}", socialAuth.getUserId());
-            User user = userRepository.findById(socialAuth.getUserId())
-                    .orElseThrow(() -> {
-                        log.error("User ID {} from social auth record not found in users table", socialAuth.getUserId());
-                        return new InvalidCredentialsException("error.auth.invalid_credentials");
-                    });
+            User user = self.findAndReactivateUser(socialAuth.getUserId());
 
-            handleUserStatus(user);
             var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
             if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
                 log.info("Updating profile image for existing user: {}", user.getId());
@@ -108,33 +107,60 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             if (userByEmail != null) {
                 Long userId = userByEmail.userId();
                 log.info("Found existing user by email in user-backend: {}. UserId: {}. Linking {} account.", email, userId, provider);
-                User user = userRepository.findById(userId)
-                        .orElseThrow(() -> {
-                            log.error("User ID {} found in user-backend but not in identity-backend", userId);
-                            return new InvalidCredentialsException("error.auth.user_sync_error");
-                        });
-                handleUserStatus(user);
+                User user = self.findAndReactivateUser(userId);
 
                 var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
                 if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
                     log.info("Updating profile image for existing user (by email): {}", user.getId());
                     userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
                 }
-                linkSocialAccount(user.getId(), provider, providerId);
+                self.linkSocialAccount(user.getId(), provider, providerId);
                 return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
             }
         }
 
         log.info("No existing user found. Creating new user for social login.");
-        User newUser = createUserForSocialLogin(firstName, lastName, fullName, email, null);
+        User newUser = self.createIdentityUser();
+        NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
+        log.info("Creating user profile in user-backend for user ID: {}", newUser.getId());
+        userProfileGrpcClient.createUserProfile(newUser.getId(), nameParts.firstName(), nameParts.lastName(), email);
+
         if (pictureUrl != null && !pictureUrl.isBlank()) {
             userProfileGrpcClient.updateProfileImage(newUser.getId(), pictureUrl);
         }
-        linkSocialAccount(newUser.getId(), provider, providerId);
+        self.linkSocialAccount(newUser.getId(), provider, providerId);
 
         log.info("Issuing tokens for new user: {}", newUser.getId());
         legalService.autoAcceptLatestConsents(newUser.getId());
         return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
+    }
+
+    @Transactional
+    public User findAndReactivateUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.error("User ID {} not found in users table", userId);
+                    return new InvalidCredentialsException("error.auth.invalid_credentials");
+                });
+        handleUserStatus(user);
+        return user;
+    }
+
+    @Transactional
+    public User createIdentityUser() {
+        User user = User.builder()
+                .mobile(null)
+                .passwordHash(null)
+                .hasAccount(true)
+                .setupRequired(true)
+                .failedLoginAttempts(0)
+                .status(UserStatus.ACTIVE)
+                .hasLocalPassword(false)
+                .role(roleRepository.findByName("ROLE_USER")
+                        .orElseThrow(() -> new IllegalStateException("System error: Default role ROLE_USER not found")))
+                .build();
+
+        return userRepository.save(user);
     }
 
     private void handleUserStatus(User user) {
@@ -153,7 +179,8 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         }
     }
 
-    private void linkSocialAccount(Long userId, SocialProvider provider, String providerId) {
+    @Transactional
+    public void linkSocialAccount(Long userId, SocialProvider provider, String providerId) {
         try {
             SocialAuth socialAuth = SocialAuth.builder()
                     .userId(userId)
@@ -168,29 +195,6 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 throw new IllegalStateException("Failed to link social account and no existing link found", e);
             }
         }
-    }
-
-    private User createUserForSocialLogin(String firstName, String lastName, String fullName, String email, String mobile) {
-        NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
-
-        User user = User.builder()
-                .mobile(mobile)
-                .passwordHash(null)
-                .hasAccount(true)
-                .setupRequired(true)
-                .failedLoginAttempts(0)
-                .status(UserStatus.ACTIVE)
-                .hasLocalPassword(false)
-                .role(roleRepository.findByName("ROLE_USER")
-                        .orElseThrow(() -> new IllegalStateException("System error: Default role ROLE_USER not found")))
-                .build();
-
-        User savedUser = userRepository.save(user);
-
-        log.info("Creating user profile in user-backend for user ID: {}", savedUser.getId());
-        userProfileGrpcClient.createUserProfile(savedUser.getId(), nameParts.firstName(), nameParts.lastName(), email);
-
-        return savedUser;
     }
 
     private NameParts resolveNameParts(String firstName, String lastName, String fullName) {
