@@ -42,6 +42,7 @@ public class TranslationServiceImpl implements TranslationService {
         factory.setConnectTimeout(1000);
         factory.setReadTimeout(1500);
         this.restTemplate = new RestTemplate(factory);
+        this.restTemplate.getMessageConverters().add(0, new org.springframework.http.converter.StringHttpMessageConverter(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     @Override
