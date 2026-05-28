@@ -24,11 +24,14 @@ class UserResponseMapperTest {
     @Mock
     private LegalService legalService;
 
+    @Mock
+    private az.fitnest.identity.service.TranslationService translationService;
+
     private UserResponseMapper userResponseMapper;
 
     @BeforeEach
     void setUp() {
-        userResponseMapper = new UserResponseMapper(userProfileGrpcClient, legalService);
+        userResponseMapper = new UserResponseMapper(userProfileGrpcClient, legalService, translationService);
     }
 
     @Test

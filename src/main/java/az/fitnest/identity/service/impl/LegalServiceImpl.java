@@ -73,7 +73,7 @@ public class LegalServiceImpl implements LegalService {
     @Transactional
     @Override
     public void createDocument(CreateLegalDocumentRequest request) {
-        String normalizedLang = normalizeLanguage(request.language());
+        String normalizedLang = "AZ"; // Always force language to AZ for legal documents
 
         if (legalDocumentRepository.existsByTypeAndLanguageAndVersion(request.type(), normalizedLang, request.version())) {
             throw new ValidationException("error.legal.version_exists", "LEGAL_VERSION_EXISTS");
@@ -102,9 +102,7 @@ public class LegalServiceImpl implements LegalService {
 
         legalDocumentRepository.save(doc);
 
-        if ("AZ".equalsIgnoreCase(normalizedLang)) {
-            translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
-        }
+        translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
     }
 
     @Transactional
@@ -240,12 +238,9 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findById(id)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
-        String targetLanguage = doc.getLanguage();
+        String targetLanguage = "AZ"; // Always force language to AZ for legal documents
         String targetVersion = doc.getVersion();
 
-        if (request.language() != null && !request.language().isBlank()) {
-            targetLanguage = normalizeLanguage(request.language());
-        }
         if (request.version() != null && !request.version().isBlank()) {
             targetVersion = request.version().trim();
         }
@@ -262,18 +257,14 @@ public class LegalServiceImpl implements LegalService {
         if (request.version() != null && !request.version().isBlank()) {
             doc.setVersion(targetVersion);
         }
-        if (request.language() != null && !request.language().isBlank()) {
-            doc.setLanguage(targetLanguage);
-        }
+        doc.setLanguage(targetLanguage);
         if (request.content() != null && !request.content().isBlank()) {
             doc.setContent(request.content());
         }
 
         legalDocumentRepository.save(doc);
 
-        if ("AZ".equalsIgnoreCase(doc.getLanguage())) {
-            translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
-        }
+        translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
 
         return toAdminResponse(doc);
     }

@@ -39,8 +39,8 @@ public class TranslationServiceImpl implements TranslationService {
         this.translationRepository = translationRepository;
         this.cacheManager = cacheManager;
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(1000);
-        factory.setReadTimeout(1500);
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(10000);
         this.restTemplate = new RestTemplate(factory);
         this.restTemplate.getMessageConverters().add(0, new org.springframework.http.converter.StringHttpMessageConverter(java.nio.charset.StandardCharsets.UTF_8));
     }
@@ -190,8 +190,64 @@ public class TranslationServiceImpl implements TranslationService {
         }
     }
 
+    private boolean isHtml(String text) {
+        if (text == null) return false;
+        return java.util.regex.Pattern.compile("</?[a-zA-Z0-9][^>]*>").matcher(text).find();
+    }
+
+    private String translateHtml(String html, String targetLanguage) {
+        if (html == null || html.trim().isEmpty()) {
+            return html;
+        }
+
+        java.util.List<String> tags = new java.util.ArrayList<>();
+        java.util.regex.Pattern tagPattern = java.util.regex.Pattern.compile("</?[a-zA-Z0-9][^>]*>");
+        java.util.regex.Matcher matcher = tagPattern.matcher(html);
+        
+        StringBuilder sb = new StringBuilder();
+        int lastEnd = 0;
+        int tagIndex = 0;
+        while (matcher.find()) {
+            sb.append(html, lastEnd, matcher.start());
+            String tag = matcher.group();
+            tags.add(tag);
+            sb.append(" XTAGX").append(tagIndex).append("X ");
+            tagIndex++;
+            lastEnd = matcher.end();
+        }
+        sb.append(html, lastEnd, html.length());
+        
+        String textToTranslate = sb.toString();
+        String translatedText = translateWithGoogle(textToTranslate, targetLanguage);
+        if (translatedText == null || translatedText.trim().isEmpty()) {
+            return null;
+        }
+
+        java.util.regex.Pattern placeholderPattern = java.util.regex.Pattern.compile("(?i)XTAGX\\s*(\\d+)\\s*X");
+        java.util.regex.Matcher restoreMatcher = placeholderPattern.matcher(translatedText);
+        StringBuilder restoredHtml = new StringBuilder();
+        int restoreLastEnd = 0;
+        while (restoreMatcher.find()) {
+            restoredHtml.append(translatedText, restoreLastEnd, restoreMatcher.start());
+            int idx = Integer.parseInt(restoreMatcher.group(1).trim());
+            if (idx >= 0 && idx < tags.size()) {
+                restoredHtml.append(tags.get(idx));
+            } else {
+                restoredHtml.append(restoreMatcher.group());
+            }
+            restoreLastEnd = restoreMatcher.end();
+        }
+        restoredHtml.append(translatedText, restoreLastEnd, translatedText.length());
+
+        return restoredHtml.toString();
+    }
+
     private String translateText(String text, String targetLanguage) {
         try {
+            if (isHtml(text)) {
+                log.info("HTML detected. Translating with tag preservation: '{}'", text.substring(0, Math.min(text.length(), 100)));
+                return translateHtml(text, targetLanguage);
+            }
             String googleTranslated = translateWithGoogle(text, targetLanguage);
             if (googleTranslated != null && !googleTranslated.trim().isEmpty()) {
                 log.info("Translation successful using Google Translate [AZ -> {}]: '{}' -> '{}'", 
@@ -212,12 +268,20 @@ public class TranslationServiceImpl implements TranslationService {
                 .queryParam("sl", "az")
                 .queryParam("tl", targetLanguage.toLowerCase())
                 .queryParam("dt", "t")
-                .queryParam("q", text)
                 .build()
                 .toUri();
 
-            log.info("Google Translate Request [AZ -> {}]: '{}'", targetLanguage.toUpperCase(), text);
-            String response = restTemplate.getForObject(uri, String.class);
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
+
+            org.springframework.util.MultiValueMap<String, String> map = new org.springframework.util.LinkedMultiValueMap<>();
+            map.add("q", text);
+
+            org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, String>> request = 
+                new org.springframework.http.HttpEntity<>(map, headers);
+
+            log.info("Google Translate POST Request [AZ -> {}], text length: {}", targetLanguage.toUpperCase(), text.length());
+            String response = restTemplate.postForObject(uri, request, String.class);
             if (response != null) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode rootNode = mapper.readTree(response);
@@ -235,7 +299,8 @@ public class TranslationServiceImpl implements TranslationService {
                 }
             }
         } catch (Exception e) {
-            log.error("Google Translation API failed for text '{}' to '{}': {}", text, targetLanguage, e.getMessage());
+            log.error("Google Translation API failed for text of length {} to '{}': {}", 
+                text != null ? text.length() : 0, targetLanguage, e.getMessage(), e);
         }
         return null;
     }

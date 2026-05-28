@@ -78,7 +78,7 @@ public class LegalServiceImplTest {
     }
 
     @Test
-    void createDocument_shouldNotTriggerAutoTranslation_whenLanguageIsNotAz() {
+    void createDocument_shouldTriggerAutoTranslation_evenWhenLanguageIsNotAz() {
         CreateLegalDocumentRequest request = new CreateLegalDocumentRequest(
                 LegalDocumentType.PRIVACY_POLICY,
                 "1.0",
@@ -97,7 +97,7 @@ public class LegalServiceImplTest {
         legalService.createDocument(request);
 
         verify(legalDocumentRepository).save(any(LegalDocument.class));
-        verify(translationService, never()).autoTranslateAndSave(any(), any(), any(), any());
+        verify(translationService).autoTranslateAndSave("LEGAL_DOCUMENT", "124", "content", "English Content");
     }
 
     @Test
