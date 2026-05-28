@@ -328,17 +328,25 @@ public class UserServiceImpl implements UserService {
         int batchSize = 1000;
         userRepository.deleteInactiveUsersBeforeBatch(threshold, batchSize);
     }
-
     @Transactional
     @Override
     public void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword) {
         User user = getUserById(userId);
-        if (!user.isHasLocalPassword()) {
+
+        boolean isEligible = user.getMobile() != null && !user.getMobile().trim().isEmpty();
+        if (!isEligible) {
             throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
         }
-        if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash()).matches()) {
-            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials");
+
+        if (user.isHasLocalPassword()) {
+            if (oldPassword == null || oldPassword.trim().isEmpty()) {
+                throw new az.fitnest.identity.exception.ValidationException("error.validation.missing_field", "MISSING_FIELD");
+            }
+            if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash()).matches()) {
+                throw new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials");
+            }
         }
+
         if (!newPassword.equals(confirmNewPassword)) {
             throw new az.fitnest.identity.exception.ValidationException("error.validation", "VALIDATION_ERROR");
         }
@@ -349,6 +357,7 @@ public class UserServiceImpl implements UserService {
             throw new az.fitnest.identity.exception.ValidationException("error.validation", "PASSWORD_REUSED");
         }
         user.setPasswordHash(passwordService.hashPassword(newPassword));
+        user.setHasLocalPassword(true);
         userRepository.save(user);
         localEventPublisher.publishEvent(new PasswordChangedEvent(userId));
     }

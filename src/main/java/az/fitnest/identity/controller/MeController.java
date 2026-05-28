@@ -68,6 +68,19 @@ public class MeController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @Operation(summary = "Check password eligibility", description = "Checks if the authenticated user is eligible to set or change a local password.")
+    @GetMapping("/api/v1/me/password-eligibility")
+    public ResponseEntity<ApiResponse<az.fitnest.identity.dto.response.PasswordEligibilityResponse>> getPasswordEligibility() {
+        Long userId = UserContext.getRequiredUserId();
+        User user = userService.getUserById(userId);
+        boolean isEligible = user.getMobile() != null && !user.getMobile().trim().isEmpty();
+        az.fitnest.identity.dto.response.PasswordEligibilityResponse response = new az.fitnest.identity.dto.response.PasswordEligibilityResponse(
+                user.isHasLocalPassword(),
+                isEligible
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @Operation(
             summary = "E-poçt dəyişmə sorğusu",
             description = "Yeni e-poçt ünvanına OTP kodu göndərir. Cavabda otp_session_id qaytarılır ki, sonra /confirm endpoint-ində istifadə olunsun.",
