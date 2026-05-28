@@ -283,9 +283,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateLanguage(Long userId, String language) {
         User user = getUserOrThrow(userId);
+        if (language != null && language.equalsIgnoreCase(user.getLanguage())) {
+            return user;
+        }
+        userRepository.updateLanguage(userId, language);
         user.setLanguage(language);
-        User saved = userRepository.save(user);
-        return saved;
+        return user;
     }
 
     @CacheEvict(value = "users", key = "#userId")

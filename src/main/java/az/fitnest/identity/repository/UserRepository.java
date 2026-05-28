@@ -121,5 +121,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u.id FROM User u WHERE u.mobile LIKE :query%")
     List<Long> findUserIdsByMobileContaining(@Param("query") String query);
+    
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.language = :language WHERE u.id = :userId")
+    int updateLanguage(@Param("userId") Long userId, @Param("language") String language);
 
 }
