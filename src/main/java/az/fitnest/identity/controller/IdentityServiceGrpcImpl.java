@@ -43,6 +43,13 @@ public class IdentityServiceGrpcImpl extends IdentityServiceGrpc.IdentityService
                 log.info("Created new gym admin user with ID: {}", user.getId());
             } else {
                 log.info("Existing user found by mobile, reusing ID: {}", user.getId());
+                user.setStatus(az.fitnest.identity.model.enums.UserStatus.ACTIVE);
+                user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+                userRepository.save(user);
+
+                var profileReq = new az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest(
+                        request.getName(), request.getSurname(), request.getEmail(), request.getPhoneNumber());
+                userService.updateUserProfile(user.getId(), profileReq);
             }
 
             ensureRoleExists("ROLE_GYM_SUPER_ADMIN");
