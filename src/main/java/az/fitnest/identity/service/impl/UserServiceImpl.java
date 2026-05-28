@@ -150,6 +150,18 @@ public class UserServiceImpl implements UserService {
             log.info("Updating user profile in user-backend for user ID: {}", userId);
             userProfileGrpcClient.createUserProfile(userId, parts.firstName(), parts.lastName(), command.getEmail());
         }
+        if (command.getMobile() != null && !command.getMobile().isBlank()) {
+            String normalizedMobile = MobileNumberUtils.normalize(command.getMobile());
+            if (normalizedMobile != null) {
+                if (!normalizedMobile.equals(user.getMobile())) {
+                    java.util.Optional<User> existing = userRepository.findFirstByMobile(normalizedMobile);
+                    if (existing.isPresent() && !existing.get().getId().equals(userId)) {
+                        throw new ConflictException("error.service.mobile_already_in_use", "DUPLICATE_MOBILE");
+                    }
+                    user.setMobile(normalizedMobile);
+                }
+            }
+        }
         User saved = userRepository.save(user);
         localEventPublisher.publishEvent(new UserUpdatedEvent(userId));
         return saved;
