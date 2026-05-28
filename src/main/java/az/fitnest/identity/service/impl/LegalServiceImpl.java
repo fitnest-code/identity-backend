@@ -70,7 +70,12 @@ public class LegalServiceImpl implements LegalService {
             }
         }
 
-        // 2. Anonymous users -> Accept-Language header
+        // 2. Query parameter (if provided)
+        if (queryLang != null && !queryLang.isBlank()) {
+            return queryLang.trim().toUpperCase();
+        }
+
+        // 3. Anonymous users -> Accept-Language header
         var attrs = RequestContextHolder.getRequestAttributes();
         if (attrs instanceof ServletRequestAttributes servletAttrs) {
             HttpServletRequest request = servletAttrs.getRequest();
@@ -88,11 +93,7 @@ public class LegalServiceImpl implements LegalService {
             }
         }
 
-        // 3. Fallback to query parameter or Default ("AZ")
-        if (queryLang != null && !queryLang.isBlank()) {
-            return queryLang.trim().toUpperCase();
-        }
-
+        // 4. Default fallback
         return "AZ";
     }
 
@@ -260,19 +261,21 @@ public class LegalServiceImpl implements LegalService {
     public List<AdminLegalDocumentResponse> getAllDocuments(LegalDocumentType type, String language, Boolean active) {
         List<LegalDocument> docs;
 
-        if (type != null && language != null) {
-            docs = legalDocumentRepository.findAllByTypeAndLanguageOrderByPublishedAtDesc(type, normalizeLanguage(language));
-        } else if (type != null && active != null) {
-            docs = legalDocumentRepository.findAllByTypeAndIsActiveOrderByPublishedAtDesc(type, active);
-        } else if (type != null) {
-            docs = legalDocumentRepository.findAllByTypeOrderByPublishedAtDesc(type);
-        } else if (active != null) {
-            docs = legalDocumentRepository.findAllByIsActiveOrderByPublishedAtDesc(active);
+        if (type != null) {
+            if (active != null) {
+                docs = legalDocumentRepository.findAllByTypeAndIsActiveOrderByPublishedAtDesc(type, active);
+            } else {
+                docs = legalDocumentRepository.findAllByTypeOrderByPublishedAtDesc(type);
+            }
         } else {
-            docs = legalDocumentRepository.findAllByOrderByPublishedAtDesc();
+            if (active != null) {
+                docs = legalDocumentRepository.findAllByIsActiveOrderByPublishedAtDesc(active);
+            } else {
+                docs = legalDocumentRepository.findAllByOrderByPublishedAtDesc();
+            }
         }
 
-        return docs.stream().map(this::toAdminResponse).collect(Collectors.toList());
+        return docs.stream().map(doc -> toAdminResponse(doc, language)).collect(Collectors.toList());
     }
 
     public AdminLegalDocumentResponse getDocumentById(Long id) {
@@ -287,35 +290,40 @@ public class LegalServiceImpl implements LegalService {
         LegalDocument doc = legalDocumentRepository.findById(id)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("Sənəd tapılmadı"));
 
-        String targetLanguage = "AZ"; // Always force language to AZ for legal documents
+        String targetLanguage = normalizeLanguage(request.language() != null ? request.language() : resolveLanguage(null));
         String targetVersion = doc.getVersion();
 
         if (request.version() != null && !request.version().isBlank()) {
             targetVersion = request.version().trim();
         }
 
-        boolean hasVersionChange = !targetVersion.equals(doc.getVersion()) || !targetLanguage.equals(doc.getLanguage());
+        boolean hasVersionChange = !targetVersion.equals(doc.getVersion());
         if (hasVersionChange) {
             parseVersionParts(targetVersion);
-            if (legalDocumentRepository.existsByTypeAndLanguageAndVersionAndIdNot(doc.getType(), targetLanguage, targetVersion, doc.getId())) {
+            if (legalDocumentRepository.existsByTypeAndLanguageAndVersionAndIdNot(doc.getType(), "AZ", targetVersion, doc.getId())) {
                 throw new ValidationException("error.legal.version_exists", "LEGAL_VERSION_EXISTS");
             }
-            ensureVersionIsLatestExcludingId(doc.getType(), targetLanguage, targetVersion, doc.getId());
+            ensureVersionIsLatestExcludingId(doc.getType(), "AZ", targetVersion, doc.getId());
         }
 
         if (request.version() != null && !request.version().isBlank()) {
             doc.setVersion(targetVersion);
         }
-        doc.setLanguage(targetLanguage);
+
         if (request.content() != null && !request.content().isBlank()) {
-            doc.setContent(request.content());
+            if ("AZ".equalsIgnoreCase(targetLanguage)) {
+                doc.setContent(request.content());
+                legalDocumentRepository.save(doc);
+                translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
+            } else {
+                translationService.saveOrUpdateTranslation("LEGAL_DOCUMENT", doc.getId().toString(), targetLanguage, "content", request.content());
+                legalDocumentRepository.save(doc);
+            }
+        } else {
+            legalDocumentRepository.save(doc);
         }
 
-        legalDocumentRepository.save(doc);
-
-        translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
-
-        return toAdminResponse(doc);
+        return toAdminResponse(doc, targetLanguage);
     }
 
     @Transactional
@@ -458,12 +466,27 @@ public class LegalServiceImpl implements LegalService {
     }
 
     private AdminLegalDocumentResponse toAdminResponse(LegalDocument doc) {
+        return toAdminResponse(doc, null);
+    }
+
+    private AdminLegalDocumentResponse toAdminResponse(LegalDocument doc, String lang) {
+        String resolvedLang = resolveLanguage(lang);
+        String normalizedLang = normalizeLanguage(resolvedLang);
+
+        String content = doc.getContent();
+        if (!doc.getLanguage().equalsIgnoreCase(normalizedLang)) {
+            String translated = translationService.getTranslatedValue("LEGAL_DOCUMENT", doc.getId().toString(), "content", normalizedLang);
+            if (translated != null && !translated.isBlank()) {
+                content = translated;
+            }
+        }
+
         return new AdminLegalDocumentResponse(
                 doc.getId(),
                 doc.getType().name(),
                 doc.getVersion(),
                 doc.getLanguage(),
-                doc.getContent(),
+                content,
                 doc.isActive(),
                 doc.getPublishedAt(),
                 doc.getCreatedDate(),

@@ -305,6 +305,7 @@ public class TranslationServiceImpl implements TranslationService {
         return null;
     }
 
+    @Override
     @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void saveOrUpdateTranslation(String entityType, String entityId, String languageCode, String fieldName, String fieldValue) {
         String normalizedEntityType = entityType.toUpperCase();
