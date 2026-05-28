@@ -52,6 +52,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         User user = userRepository.findFirstByMobile(mobile)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found"));
 
+        boolean isEligible = user.getMobile() != null && !user.getMobile().trim().isEmpty();
+        if (!isEligible) {
+            throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
+        }
+
         OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.PASSWORD_RESET, mobile, null, null);
         return otpService.sendOtp(otpRequest);
     }
@@ -102,6 +107,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         User user = userRepository.findFirstByMobile(mobile)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found"));
+
+        boolean isEligible = user.getMobile() != null && !user.getMobile().trim().isEmpty();
+        if (!isEligible) {
+            throw new az.fitnest.identity.exception.BadRequestException("error.auth.social_only_account");
+        }
 
         if (user.getRole() == null || 
             !user.getRole().getName().equals("ROLE_ADMIN")) {

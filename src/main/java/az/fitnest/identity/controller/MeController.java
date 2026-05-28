@@ -63,7 +63,8 @@ public class MeController {
                 user.getId(),
                 user.getMobile(),
                 email,
-                user.isHasLocalPassword()
+                user.isHasLocalPassword(),
+                user.getMobile() != null && !user.getMobile().trim().isEmpty()
         );
         return ResponseEntity.ok(ApiResponse.success(response));
     }
