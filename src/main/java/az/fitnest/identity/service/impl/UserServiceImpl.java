@@ -343,7 +343,7 @@ public class UserServiceImpl implements UserService {
                 throw new az.fitnest.identity.exception.ValidationException("error.validation.missing_field", "MISSING_FIELD");
             }
             if (!passwordService.verifyPassword(oldPassword, user.getPasswordHash()).matches()) {
-                throw new az.fitnest.identity.exception.InvalidCredentialsException("error.auth.invalid_credentials");
+                throw new az.fitnest.identity.exception.BadRequestException("error.auth.invalid_credentials", "error.auth.invalid_credentials");
             }
         }
 
