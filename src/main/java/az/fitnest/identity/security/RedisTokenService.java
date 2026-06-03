@@ -50,16 +50,28 @@ public class RedisTokenService {
         redisTemplate.delete(accessKey(jti));
     }
 
+    public void setActiveSession(Long userId, String deviceType, String jti, Duration ttl) {
+        redisTemplate.opsForValue().set(sessionKey(userId, deviceType), jti, ttl);
+    }
+
     public void setActiveSession(Long userId, String jti, Duration ttl) {
-        redisTemplate.opsForValue().set(sessionKey(userId), jti, ttl);
+        setActiveSession(userId, "web", jti, ttl);
+    }
+
+    public String getActiveSession(Long userId, String deviceType) {
+        return redisTemplate.opsForValue().get(sessionKey(userId, deviceType));
     }
 
     public String getActiveSession(Long userId) {
-        return redisTemplate.opsForValue().get(sessionKey(userId));
+        return getActiveSession(userId, "web");
+    }
+
+    public void removeActiveSession(Long userId, String deviceType) {
+        redisTemplate.delete(sessionKey(userId, deviceType));
     }
 
     public void removeActiveSession(Long userId) {
-        redisTemplate.delete(sessionKey(userId));
+        removeActiveSession(userId, "web");
     }
 
     public void addSessionToIndex(Long userId, String jti, Duration ttl) {
@@ -85,6 +97,15 @@ public class RedisTokenService {
 
     private String sessionKey(Long userId) {
         return sessionPrefix + userId;
+    }
+
+    private String sessionKey(Long userId, String deviceType) {
+        String category = isMobile(deviceType) ? "mobile" : "web";
+        return sessionPrefix + userId + ":" + category;
+    }
+
+    private boolean isMobile(String deviceType) {
+        return "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
     }
 
     private String getSessionIndexKey(Long userId) {

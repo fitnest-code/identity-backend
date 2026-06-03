@@ -57,7 +57,7 @@ public class TokenIssuanceServiceImpl implements TokenIssuanceService {
         String jti = jwtService.parseJti(accessToken);
 
         redisTokenService.activateAccessToken(jti, accessTtl);
-        redisTokenService.setActiveSession(user.getId(), jti, Duration.between(Instant.now(), refreshExpiresAt));
+        redisTokenService.setActiveSession(user.getId(), deviceType, jti, Duration.between(Instant.now(), refreshExpiresAt));
 
         saveAuthToken(user.getId(), accessToken, refreshToken, jti, deviceType, accessExpiresAt, refreshExpiresAt);
 

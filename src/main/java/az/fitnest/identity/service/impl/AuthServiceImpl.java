@@ -19,6 +19,7 @@ import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.model.enums.SessionStatus;
 import az.fitnest.identity.model.entity.User;
+import az.fitnest.identity.model.entity.AuthToken;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
 import io.jsonwebtoken.JwtException;
@@ -79,7 +80,8 @@ public class AuthServiceImpl implements AuthService {
             return LoginResult.reactivationRequired(reactivationResponse);
         }
 
-        String activeJti = redisTokenService.getActiveSession(result.user().getId());
+        String deviceType = deviceDetectionService.detectDeviceType();
+        String activeJti = redisTokenService.getActiveSession(result.user().getId(), deviceType);
         if (activeJti != null) {
             redisTokenService.revokeAccessToken(activeJti);
         }
@@ -90,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
             userRepository.save(user);
         }
 
-        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceDetectionService.detectDeviceType());
+        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceType);
         return LoginResult.success(tokens);
     }
 
@@ -229,13 +231,17 @@ public class AuthServiceImpl implements AuthService {
             String jti = jwtService.parseJti(accessToken);
 
             redisTokenService.revokeAccessToken(jti);
-            String activeJti = redisTokenService.getActiveSession(userId);
+            
+            AuthToken token = authTokenRepository.findByJti(jti);
+            String deviceType = (token != null) ? token.getDeviceType() : "UNKNOWN";
+
+            String activeJti = redisTokenService.getActiveSession(userId, deviceType);
             if (jti.equals(activeJti)) {
-                redisTokenService.removeActiveSession(userId);
+                redisTokenService.removeActiveSession(userId, deviceType);
             }
 
-            // Revoke all refresh tokens for the user
-            authTokenRepository.deleteByUserId(userId);
+            // Revoke ONLY the current session/JTI instead of all user tokens
+            authTokenRepository.deleteByJti(jti);
             userRepository.markNoSessionsIfNone(userId, SessionStatus.NO_SESSIONS);
         } catch (JwtException e) {
             // Only catch JWT related issues, let others bubble up or handle specifically
