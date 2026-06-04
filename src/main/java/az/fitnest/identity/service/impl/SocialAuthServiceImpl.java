@@ -12,6 +12,8 @@ import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.SocialAuthRepository;
 import az.fitnest.identity.repository.UserRepository;
+import az.fitnest.identity.repository.AuthTokenRepository;
+import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.AppleTokenVerifier;
 import az.fitnest.identity.service.GoogleTokenVerifier;
 import az.fitnest.identity.service.LegalService;
@@ -41,6 +43,8 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final RoleRepository roleRepository;
     private final UserProfileGrpcClient userProfileGrpcClient;
     private final LegalService legalService;
+    private final RedisTokenService redisTokenService;
+    private final AuthTokenRepository authTokenRepository;
 
     @Autowired
     @Lazy
@@ -82,6 +86,16 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         );
     }
 
+    private String cleanPreviousSessionAndGetDeviceType(Long userId) {
+        String deviceType = DeviceDetector.detectDeviceType();
+        String activeJti = redisTokenService.getActiveSession(userId, deviceType);
+        if (activeJti != null) {
+            redisTokenService.revokeAccessToken(activeJti);
+            authTokenRepository.deleteByJti(activeJti);
+        }
+        return deviceType;
+    }
+
     private LoginResponse processSocialLogin(SocialProvider provider, String providerId, String email,
                                              String firstName, String lastName, String fullName, String pictureUrl) {
         log.info("Processing social login for provider: {}, providerId: {}, email: {}", provider, providerId, email);
@@ -98,7 +112,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
             }
             log.info("Issuing tokens for existing user: {}", user.getId());
-            return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
+            return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId()));
         }
 
         if (email != null && !email.isEmpty()) {
@@ -115,7 +129,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                     userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
                 }
                 self.linkSocialAccount(user.getId(), provider, providerId);
-                return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType());
+                return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId()));
             }
         }
 
@@ -132,7 +146,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
         log.info("Issuing tokens for new user: {}", newUser.getId());
         legalService.autoAcceptLatestConsents(newUser.getId());
-        return tokenIssuanceService.issueTokens(newUser, DeviceDetector.detectDeviceType());
+        return tokenIssuanceService.issueTokens(newUser, cleanPreviousSessionAndGetDeviceType(newUser.getId()));
     }
 
     @Transactional

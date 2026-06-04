@@ -28,12 +28,13 @@ public class DeviceDetector {
 
         String ua = userAgent.toLowerCase();
 
-        if (ua.contains("android") || ua.contains("dalvik")) {
+        if (ua.contains("android") || ua.contains("dalvik") || ua.contains("okhttp") || ua.contains("kotlin")) {
             return "Android";
         }
 
         if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("ipod")
-                || ua.contains("ios") || ua.contains("cfnetwork") || ua.contains("darwin")) {
+                || ua.contains("ios") || ua.contains("cfnetwork") || ua.contains("darwin")
+                || ua.contains("swift") || ua.contains("alamofire")) {
             return "iOS";
         }
 

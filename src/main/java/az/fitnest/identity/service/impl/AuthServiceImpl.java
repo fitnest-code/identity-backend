@@ -84,6 +84,7 @@ public class AuthServiceImpl implements AuthService {
         String activeJti = redisTokenService.getActiveSession(result.user().getId(), deviceType);
         if (activeJti != null) {
             redisTokenService.revokeAccessToken(activeJti);
+            authTokenRepository.deleteByJti(activeJti);
         }
 
         User user = result.user();

@@ -16,6 +16,8 @@ import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.SmsService;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.repository.OtpStateRepository;
+import az.fitnest.identity.repository.AuthTokenRepository;
+import az.fitnest.identity.security.RedisTokenService;
 
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
@@ -66,6 +68,8 @@ public class OtpServiceImpl implements OtpService {
     private final OtpSendResponseMapper otpSendResponseMapper;
     private final OtpVerifyResponseMapper otpVerifyResponseMapper;
     private final PhoneNormalizer phoneNormalizer;
+    private final AuthTokenRepository authTokenRepository;
+    private final RedisTokenService redisTokenService;
     @Autowired
     private OtpStateRepository otpStateRepository;
     @Value("${otp.ttl-seconds}")
@@ -356,7 +360,14 @@ public class OtpServiceImpl implements OtpService {
             user.setLockedUntil(null);
             userRepository.save(user);
 
-            az.fitnest.identity.dto.response.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, "UNKNOWN");
+            String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
+            String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
+            if (activeJti != null) {
+                redisTokenService.revokeAccessToken(activeJti);
+                authTokenRepository.deleteByJti(activeJti);
+            }
+
+            az.fitnest.identity.dto.response.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
 
             return otpVerifyResponseMapper.toResponse(
                     true,
