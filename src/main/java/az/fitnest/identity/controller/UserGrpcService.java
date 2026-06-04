@@ -264,6 +264,25 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         }
     }
 
+    @Override
+    public void getUserIdsByRoles(az.fitnest.user.grpc.GetUserIdsByRolesRequest request, io.grpc.stub.StreamObserver<az.fitnest.user.grpc.GetUserIdsByRolesResponse> responseObserver) {
+        try {
+            java.util.List<String> roleNames = request.getRoleNamesList();
+            log.info("gRPC: Fetching user IDs for roles: {}", roleNames);
+            java.util.List<Long> userIds = userRepository.findUserIdsByRoleNames(roleNames);
+            az.fitnest.user.grpc.GetUserIdsByRolesResponse response = az.fitnest.user.grpc.GetUserIdsByRolesResponse.newBuilder()
+                    .addAllUserIds(userIds)
+                    .build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Error in getUserIdsByRoles: {}", e.getMessage(), e);
+            responseObserver.onError(io.grpc.Status.INTERNAL
+                    .withDescription("Failed to get user IDs by roles: " + e.getMessage())
+                    .asException());
+        }
+    }
+
     private az.fitnest.user.grpc.UserResponse buildUserResponse(User user) {
         String createdDate = user.getCreatedDate() != null ? user.getCreatedDate().toString() : "";
         return az.fitnest.user.grpc.UserResponse.newBuilder()
@@ -280,6 +299,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
                 .setSessionStatus(user.getSessionStatus() != null ? user.getSessionStatus().name() : "")
                 .setCreatedAt(createdDate)
                 .setHasLocalPassword(user.isHasLocalPassword())
+                .setRole(user.getRole() != null ? user.getRole().getName() : "")
                 .build();
     }
 }

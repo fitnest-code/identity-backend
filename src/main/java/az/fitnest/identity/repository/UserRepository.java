@@ -121,6 +121,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u.id FROM User u WHERE u.mobile LIKE CONCAT('%', :query, '%')")
     List<Long> findUserIdsByMobileContaining(@Param("query") String query);
+
+    @Query("SELECT u.id FROM User u WHERE u.role.name IN :roleNames")
+    List<Long> findUserIdsByRoleNames(@Param("roleNames") List<String> roleNames);
     
     @Modifying
     @Transactional
