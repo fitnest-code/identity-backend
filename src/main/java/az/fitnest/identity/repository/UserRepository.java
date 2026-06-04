@@ -119,7 +119,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findByIdIn(List<Long> userIds, Pageable pageable);
 
-    @Query("SELECT u.id FROM User u WHERE u.mobile LIKE :query%")
+    @Query("SELECT u.id FROM User u WHERE u.mobile LIKE CONCAT('%', :query, '%')")
     List<Long> findUserIdsByMobileContaining(@Param("query") String query);
     
     @Modifying

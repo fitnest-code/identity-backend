@@ -234,7 +234,22 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         try {
             String query = request.getQuery();
             log.info("Searching user IDs by mobile query: {}", query);
-            java.util.List<Long> userIds = userRepository.findUserIdsByMobileContaining(query);
+            
+            // Clean query to only digits for robust matching
+            String cleanQuery = query != null ? query.replaceAll("\\D", "") : "";
+            if (cleanQuery.startsWith("0") && cleanQuery.length() > 1) {
+                cleanQuery = cleanQuery.substring(1);
+            } else if (cleanQuery.startsWith("994") && cleanQuery.length() > 3) {
+                cleanQuery = cleanQuery.substring(3);
+            }
+            
+            java.util.List<Long> userIds;
+            if (!cleanQuery.isEmpty()) {
+                userIds = userRepository.findUserIdsByMobileContaining(cleanQuery);
+            } else {
+                userIds = java.util.Collections.emptyList();
+            }
+            
             SearchUserIdsByMobileResponse response = SearchUserIdsByMobileResponse.newBuilder()
                     .addAllUserIds(userIds)
                     .build();
