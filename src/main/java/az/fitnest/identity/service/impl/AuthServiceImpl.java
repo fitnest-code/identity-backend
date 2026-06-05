@@ -57,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
     private int reactivationWindowDays;
 
     @Override
+    @Transactional
     public LoginResult login(LoginRequest request) {
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
         AuthenticationResult result = authenticate(mobile, request.password());

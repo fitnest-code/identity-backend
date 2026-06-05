@@ -51,6 +51,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private SocialAuthServiceImpl self;
 
     @Override
+    @Transactional
     public LoginResponse socialLoginGoogle(GoogleSocialRequest request) {
         log.info("Starting Google social login process");
         GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.idToken());
@@ -68,6 +69,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     }
 
     @Override
+    @Transactional
     public LoginResponse socialLoginApple(AppleSocialRequest request) {
         AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.identityToken());
 
