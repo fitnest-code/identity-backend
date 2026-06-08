@@ -34,6 +34,8 @@ public interface UserService {
 
     User createNewUserWithFullName(String fullName, String passwordHash, String mobile);
 
+    User createNewUserV3(String firstName, String lastName, String mobile);
+
     User updateUserProfile(Long userId, UpdateUserProfileCommandRequest command);
 
     User updateSetupRequired(Long userId, boolean setupRequired);

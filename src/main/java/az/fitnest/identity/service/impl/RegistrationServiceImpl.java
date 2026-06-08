@@ -96,4 +96,50 @@ public class RegistrationServiceImpl implements RegistrationService {
         return tokenIssuanceService.issueTokens(user, request.deviceType(), false);
     }
 
+    @Override
+    public OtpSendResponse startRegistrationV3(az.fitnest.identity.dto.request.RegisterRequestV3 request) {
+        String normalizedMobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
+
+        if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
+            throw new ConflictException("error.registration.duplicate_mobile", "DUPLICATE_MOBILE");
+        }
+
+        OtpSendRequest otpRequest = new OtpSendRequest(OtpPurpose.REGISTRATION, normalizedMobile, null, null);
+
+        return otpService.sendOtp(
+                otpRequest,
+                null,
+                null,
+                null,
+                normalizedMobile
+        );
+    }
+
+    @Transactional
+    @Override
+    public LoginResponse completeRegistrationV3(az.fitnest.identity.dto.request.RegisterCompleteRequestV3 request) {
+        String registrationToken = request.registrationToken();
+        String identifier = registrationTokenService.requireIdentifier(registrationToken);
+        String mobile = identifier;
+        registrationTokenService.consume(registrationToken);
+
+        User user = userService.createNewUserV3(
+                request.firstName(),
+                request.lastName(),
+                mobile
+        );
+
+        String deviceType = request.deviceType();
+        boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
+
+        if (isMobile && request.deviceId() != null && !request.deviceId().isBlank()) {
+            user.setDeviceId(request.deviceId());
+            user = userRepository.save(user);
+        }
+
+        legalService.autoAcceptLatestConsents(user.getId());
+
+        return tokenIssuanceService.issueTokens(user, deviceType, false);
+    }
+
 }

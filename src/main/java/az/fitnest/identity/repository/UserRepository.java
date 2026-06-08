@@ -124,6 +124,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u.id FROM User u WHERE u.role.name IN :roleNames")
     List<Long> findUserIdsByRoleNames(@Param("roleNames") List<String> roleNames);
+
+    @Query("""
+        SELECT u.id FROM User u
+        WHERE u.role.name IN :roleNames
+           OR (u.role.name IN :partnerRoles AND u.deviceId IS NOT NULL AND u.deviceId != '')
+    """)
+    List<Long> findUserIdsByRoleNamesOrPartnersWithMobile(@Param("roleNames") List<String> roleNames, @Param("partnerRoles") List<String> partnerRoles);
     
     @Modifying
     @Transactional

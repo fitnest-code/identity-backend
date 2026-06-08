@@ -269,7 +269,12 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         try {
             java.util.List<String> roleNames = request.getRoleNamesList();
             log.info("gRPC: Fetching user IDs for roles: {}", roleNames);
-            java.util.List<Long> userIds = userRepository.findUserIdsByRoleNames(roleNames);
+            java.util.List<Long> userIds;
+            if (roleNames.contains("ROLE_USER")) {
+                userIds = userRepository.findUserIdsByRoleNamesOrPartnersWithMobile(roleNames, java.util.List.of("ROLE_GYM_SUPER_ADMIN", "ROLE_GYM_ADMIN", "ROLE_PARTNER"));
+            } else {
+                userIds = userRepository.findUserIdsByRoleNames(roleNames);
+            }
             az.fitnest.user.grpc.GetUserIdsByRolesResponse response = az.fitnest.user.grpc.GetUserIdsByRolesResponse.newBuilder()
                     .addAllUserIds(userIds)
                     .build();

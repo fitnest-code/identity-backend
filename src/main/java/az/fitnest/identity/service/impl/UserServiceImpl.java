@@ -128,6 +128,32 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public User createNewUserV3(String firstName, String lastName, String mobile) {
+        String normalizedMobile = MobileNumberUtils.normalize(mobile);
+        if (normalizedMobile == null || normalizedMobile.isBlank()) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_MOBILE");
+        }
+        User user = User.builder()
+                .passwordHash(null)
+                .mobile(normalizedMobile)
+                .hasAccount(true)
+                .setupRequired(true)
+                .failedLoginAttempts(0)
+                .status(UserStatus.ACTIVE)
+                .hasLocalPassword(false)
+                .role(getDefaultUserRole())
+                .build();
+        try {
+            User saved = userRepository.save(user);
+            log.info("Creating user profile (V3 passwordless) in user-backend for user ID: {}", saved.getId());
+            userProfileGrpcClient.createUserProfile(saved.getId(), normalizeNamePart(firstName), normalizeNamePart(lastName), null);
+            return saved;
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
+        }
+    }
+
     private Role getDefaultUserRole() {
         return roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> {
@@ -313,6 +339,7 @@ public class UserServiceImpl implements UserService {
         redisTokenService.removeAllSessions(userId);
 
         authTokenRepository.deleteByUserId(userId);
+        publishUserEvent("USER_UPDATED", userId);
     }
 
     @Transactional
@@ -677,6 +704,7 @@ public class UserServiceImpl implements UserService {
         redisTokenService.removeAllSessions(userId);
         authTokenRepository.deleteByUserId(userId);
         
+        publishUserEvent("USER_UPDATED", userId);
         log.info("User {} has been BLOCKED by admin", userId);
     }
 
@@ -688,6 +716,7 @@ public class UserServiceImpl implements UserService {
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
         
+        publishUserEvent("USER_UPDATED", userId);
         log.info("User {} has been UNBLOCKED by admin", userId);
     }
 }

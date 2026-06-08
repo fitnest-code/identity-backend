@@ -11,4 +11,8 @@ public interface RegistrationService {
     LoginResponse completeRegistration(RegisterCompleteRequest request);
 
     LoginResponse completeRegistrationV2(az.fitnest.identity.dto.request.RegisterCompleteRequestV2 request);
+
+    OtpSendResponse startRegistrationV3(az.fitnest.identity.dto.request.RegisterRequestV3 request);
+
+    LoginResponse completeRegistrationV3(az.fitnest.identity.dto.request.RegisterCompleteRequestV3 request);
 }

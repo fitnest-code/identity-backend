@@ -47,6 +47,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v2/**").permitAll()
+                        .requestMatchers("/api/v3/**").permitAll()
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
                         .requestMatchers("/api/v1/auth/registration/register").permitAll()
                         .requestMatchers("/api/v1/auth/registration/register/complete").permitAll()

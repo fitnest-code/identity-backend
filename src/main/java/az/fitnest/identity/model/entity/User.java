@@ -77,6 +77,10 @@ public class User extends BaseAuditableEntity {
     @Column(name = "device_id")
     private String deviceId;
 
+    @Builder.Default
+    @Column(name = "device_change_count", nullable = false)
+    private int deviceChangeCount = 0;
+
     public String getMobile() {
         return mobile;
     }
@@ -119,5 +123,13 @@ public class User extends BaseAuditableEntity {
 
     public boolean isHasLocalPassword() {
         return hasLocalPassword || (passwordHash != null && !passwordHash.trim().isEmpty());
+    }
+
+    public int getDeviceChangeCount() {
+        return deviceChangeCount;
+    }
+
+    public void setDeviceChangeCount(int deviceChangeCount) {
+        this.deviceChangeCount = deviceChangeCount;
     }
 }

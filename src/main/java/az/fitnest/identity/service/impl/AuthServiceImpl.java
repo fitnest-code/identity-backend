@@ -126,17 +126,14 @@ public class AuthServiceImpl implements AuthService {
         boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
         if (isMobile) {
             String reqDeviceId = request.deviceId();
-            if (reqDeviceId != null && !reqDeviceId.isBlank()) {
-                if (user.getDeviceId() == null) {
-                    user.setDeviceId(reqDeviceId);
-                    user = userRepository.save(user);
-                } else if (!user.getDeviceId().equals(reqDeviceId)) {
-                    throw new InvalidCredentialsException("error.auth.device_mismatch");
-                }
-            } else {
-                if (user.getDeviceId() != null) {
-                    throw new InvalidCredentialsException("error.auth.device_mismatch");
-                }
+            if (reqDeviceId == null || reqDeviceId.isBlank()) {
+                throw new InvalidCredentialsException("error.auth.device_id_required");
+            }
+            if (user.getDeviceId() == null) {
+                user.setDeviceId(reqDeviceId);
+                user = userRepository.save(user);
+            } else if (!user.getDeviceId().equals(reqDeviceId)) {
+                throw new InvalidCredentialsException("error.auth.device_mismatch");
             }
         }
 
@@ -330,6 +327,106 @@ public class AuthServiceImpl implements AuthService {
     private enum AuthenticationStatus {SUCCESS, REACTIVATION_REQUIRED}
 
     private record AuthenticationResult(User user, AuthenticationStatus status) {
+    }
+
+    @Override
+    @Transactional
+    public OtpSendResponse startLoginV3(az.fitnest.identity.dto.request.LoginRequestV3 request) {
+        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
+
+        User user = userRepository.findFirstByMobile(mobile)
+                .orElseThrow(() -> new InvalidCredentialsException("error.auth.invalid_credentials"));
+
+        validateUserStatus(user);
+
+        az.fitnest.identity.dto.request.OtpSendRequest otpRequest = new az.fitnest.identity.dto.request.OtpSendRequest(
+                az.fitnest.identity.model.enums.OtpPurpose.LOGIN,
+                mobile,
+                null,
+                null
+        );
+
+        return otpService.sendOtpByUserId(user.getId(), otpRequest);
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse verifyLoginV3(az.fitnest.identity.dto.request.LoginVerifyRequestV3 request) {
+        az.fitnest.identity.model.entity.OtpVerificationResult verificationResult =
+                otpService.verifyOtp(request.otpSessionId(), request.otpCode());
+
+        if (verificationResult.purpose() != az.fitnest.identity.model.enums.OtpPurpose.LOGIN) {
+            throw new InvalidCredentialsException("error.service.invalid_operation_context");
+        }
+
+        String mobile = verificationResult.mobile();
+        User user = userRepository.findFirstByMobile(mobile)
+                .orElseThrow(() -> new InvalidCredentialsException("error.auth.invalid_credentials"));
+
+        validateUserStatus(user);
+
+        // Handle reactivation for INACTIVE users within window
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setInactiveAt(null);
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
+            user = userRepository.save(user);
+        }
+
+        String deviceType = request.deviceType();
+        boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
+
+        if (isMobile) {
+            String reqDeviceId = request.deviceId();
+            if (reqDeviceId == null || reqDeviceId.isBlank()) {
+                throw new InvalidCredentialsException("error.auth.device_id_required");
+            }
+
+            if (user.getDeviceId() == null) {
+                // First time device binding
+                user.setDeviceId(reqDeviceId);
+                user = userRepository.save(user);
+            } else if (!user.getDeviceId().equals(reqDeviceId)) {
+                // Device change — check limit
+                if (user.getDeviceChangeCount() >= 3) {
+                    throw new InvalidCredentialsException("error.auth.device_limit_exceeded");
+                }
+
+                // Increment count, update device, revoke all existing sessions
+                user.setDeviceChangeCount(user.getDeviceChangeCount() + 1);
+                user.setDeviceId(reqDeviceId);
+                user = userRepository.save(user);
+
+                // Revoke all existing tokens in Redis
+                redisTokenService.removeAllSessions(user.getId());
+                redisTokenService.removeActiveSession(user.getId(), "iOS");
+                redisTokenService.removeActiveSession(user.getId(), "Android");
+                redisTokenService.removeActiveSession(user.getId(), "Web");
+
+                // Revoke all existing tokens in DB
+                authTokenRepository.deleteByUserId(user.getId());
+            }
+        }
+
+        // Clean previous session for this device type
+        String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
+        if (activeJti != null) {
+            redisTokenService.revokeAccessToken(activeJti);
+            authTokenRepository.deleteByJti(activeJti);
+        }
+
+        if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
+            user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
+            user = userRepository.save(user);
+        }
+
+        // Reset lockout state
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
+        userRepository.save(user);
+
+        return tokenIssuanceService.issueTokens(user, deviceType);
     }
 
 }
