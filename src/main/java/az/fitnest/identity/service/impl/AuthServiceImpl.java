@@ -130,10 +130,10 @@ public class AuthServiceImpl implements AuthService {
             if (reqDeviceId == null || reqDeviceId.isBlank()) {
                 throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
             }
-            if (user.getDeviceId() == null) {
-                user.setDeviceId(reqDeviceId);
+            if (user.getDeviceId() == null || user.getDeviceId().isBlank()) {
+                user.setDeviceId(reqDeviceId.trim());
                 user = userRepository.save(user);
-            } else if (!user.getDeviceId().equals(reqDeviceId)) {
+            } else if (!user.isDeviceAllowed(reqDeviceId)) {
                 throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
             }
         }
@@ -384,11 +384,11 @@ public class AuthServiceImpl implements AuthService {
                 throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
             }
 
-            if (user.getDeviceId() == null) {
+            if (user.getDeviceId() == null || user.getDeviceId().isBlank()) {
                 // First time device binding
-                user.setDeviceId(reqDeviceId);
+                user.setDeviceId(reqDeviceId.trim());
                 user = userRepository.save(user);
-            } else if (!user.getDeviceId().equals(reqDeviceId)) {
+            } else if (!user.isDeviceAllowed(reqDeviceId)) {
                 // Device change — check limit
                 if (user.getDeviceChangeCount() >= 3) {
                     throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
@@ -396,7 +396,7 @@ public class AuthServiceImpl implements AuthService {
 
                 // Increment count, update device, revoke all existing sessions
                 user.setDeviceChangeCount(user.getDeviceChangeCount() + 1);
-                user.setDeviceId(reqDeviceId);
+                user.addDevice(reqDeviceId);
                 user = userRepository.save(user);
 
                 // Revoke all existing tokens in Redis

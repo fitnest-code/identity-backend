@@ -4,6 +4,7 @@ import az.fitnest.identity.dto.request.AppleSocialRequest;
 import az.fitnest.identity.dto.request.GoogleSocialRequest;
 import az.fitnest.identity.dto.response.LoginResponse;
 import az.fitnest.identity.exception.InvalidCredentialsException;
+import az.fitnest.identity.exception.ForbiddenException;
 import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.model.entity.SocialAuth;
 import az.fitnest.identity.model.entity.User;
@@ -158,15 +159,15 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
             if (isMobile) {
                 if (deviceId != null && !deviceId.isBlank()) {
-                    if (user.getDeviceId() == null) {
-                        user.setDeviceId(deviceId);
+                    if (user.getDeviceId() == null || user.getDeviceId().isBlank()) {
+                        user.setDeviceId(deviceId.trim());
                         user = userRepository.save(user);
-                    } else if (!user.getDeviceId().equals(deviceId)) {
-                        throw new InvalidCredentialsException("error.auth.device_mismatch");
+                    } else if (!user.isDeviceAllowed(deviceId)) {
+                        throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
                     }
                 } else {
-                    if (user.getDeviceId() != null) {
-                        throw new InvalidCredentialsException("error.auth.device_mismatch");
+                    if (user.getDeviceId() != null && !user.getDeviceId().isBlank()) {
+                        throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
                     }
                 }
             }
@@ -190,15 +191,15 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
                 if (isMobile) {
                     if (deviceId != null && !deviceId.isBlank()) {
-                        if (user.getDeviceId() == null) {
-                            user.setDeviceId(deviceId);
+                        if (user.getDeviceId() == null || user.getDeviceId().isBlank()) {
+                            user.setDeviceId(deviceId.trim());
                             user = userRepository.save(user);
-                        } else if (!user.getDeviceId().equals(deviceId)) {
-                            throw new InvalidCredentialsException("error.auth.device_mismatch");
+                        } else if (!user.isDeviceAllowed(deviceId)) {
+                            throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
                         }
                     } else {
-                        if (user.getDeviceId() != null) {
-                            throw new InvalidCredentialsException("error.auth.device_mismatch");
+                        if (user.getDeviceId() != null && !user.getDeviceId().isBlank()) {
+                            throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
                         }
                     }
                 }
