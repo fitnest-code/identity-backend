@@ -6,7 +6,6 @@ import az.fitnest.identity.service.AuthService;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.TokenIssuanceService;
-import az.fitnest.identity.service.DeviceDetectionService;
 import az.fitnest.identity.util.TokenHasher;
 import az.fitnest.identity.dto.request.LoginRequest;
 import az.fitnest.identity.dto.response.LoginResponse;
