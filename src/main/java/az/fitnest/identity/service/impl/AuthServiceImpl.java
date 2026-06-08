@@ -14,6 +14,7 @@ import az.fitnest.identity.dto.response.RefreshResponse;
 import az.fitnest.identity.dto.response.OtpSendResponse;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.exception.InvalidCredentialsException;
+import az.fitnest.identity.exception.ForbiddenException;
 import az.fitnest.identity.exception.UnauthorizedException;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.model.enums.SessionStatus;
@@ -133,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
                 user.setDeviceId(reqDeviceId);
                 user = userRepository.save(user);
             } else if (!user.getDeviceId().equals(reqDeviceId)) {
-                throw new InvalidCredentialsException("error.auth.device_mismatch", "error.auth.device_mismatch");
+                throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
             }
         }
 
@@ -178,20 +179,20 @@ public class AuthServiceImpl implements AuthService {
     private void validateUserStatus(User user) {
         Instant now = Instant.now();
         if (user.getStatus() == UserStatus.DELETED) {
-            throw new InvalidCredentialsException("error.auth.account_deleted", "error.auth.account_deleted");
+            throw new ForbiddenException("error.auth.account_deleted", "error.auth.account_deleted");
         }
 
         if (user.getStatus() == UserStatus.BLOCKED) {
-            throw new InvalidCredentialsException("error.auth.account_blocked", "error.auth.account_blocked");
+            throw new ForbiddenException("error.auth.account_blocked", "error.auth.account_blocked");
         }
 
         if (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
-            throw new InvalidCredentialsException("error.auth.account_locked", "error.auth.account_locked");
+            throw new ForbiddenException("error.auth.account_locked", "error.auth.account_locked");
         }
 
         if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null) {
             if (user.getInactiveAt().plus(java.time.Duration.ofDays(reactivationWindowDays)).isBefore(now)) {
-                throw new InvalidCredentialsException("error.auth.account_deleted", "error.auth.account_deleted");
+                throw new ForbiddenException("error.auth.account_deleted", "error.auth.account_deleted");
             }
         }
     }
@@ -390,7 +391,7 @@ public class AuthServiceImpl implements AuthService {
             } else if (!user.getDeviceId().equals(reqDeviceId)) {
                 // Device change — check limit
                 if (user.getDeviceChangeCount() >= 3) {
-                    throw new InvalidCredentialsException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
+                    throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
                 }
 
                 // Increment count, update device, revoke all existing sessions
