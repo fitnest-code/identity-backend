@@ -78,7 +78,7 @@ public class User extends BaseAuditableEntity {
     private String deviceId;
 
     @Builder.Default
-    @Column(name = "device_change_count", nullable = false)
+    @Column(name = "device_change_count", nullable = false, columnDefinition = "int default 0")
     private int deviceChangeCount = 0;
 
     public String getMobile() {
