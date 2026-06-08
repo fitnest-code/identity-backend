@@ -1,27 +1,12 @@
 package az.fitnest.identity.service;
 
-import az.fitnest.identity.model.enums.UserStatus;
-
 import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
-import az.fitnest.identity.model.entity.AuthToken;
-import az.fitnest.identity.model.entity.Role;
+import az.fitnest.identity.dto.response.RoleResponse;
 import az.fitnest.identity.model.entity.User;
-import az.fitnest.identity.exception.ConflictException;
-import az.fitnest.identity.exception.ResourceNotFoundException;
-import az.fitnest.identity.repository.AuthTokenRepository;
-import az.fitnest.identity.repository.RoleRepository;
-import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.security.RedisTokenService;
-import az.fitnest.identity.service.impl.IdentityEventPublisher;
-
-import java.util.Map;
-
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 public interface UserService {
     User updateUserRole(Long userId, String roleName);
@@ -72,15 +57,19 @@ public interface UserService {
 
     Page<az.fitnest.identity.dto.response.UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID, Integer durationMonths);
 
-    Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type);
+    Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query, Long packageID, Integer durationMonths, String type, String roles);
 
     az.fitnest.identity.dto.response.OtpSendResponse resendEmailChangeOtp(Long userId, String otpSessionId);
 
     az.fitnest.identity.dto.response.OtpSendResponse resendMobileChangeOtp(Long userId, String otpSessionId);
 
     az.fitnest.identity.dto.response.OtpSendResponse sendOtp(az.fitnest.identity.dto.request.OtpSendRequest request);
-    
+
     void blockUser(Long userId);
-    
+
     void unblockUser(Long userId);
+
+    List<RoleResponse> getAvailableRoles();
+
+    void changeUserRole(Long userId, String roleName);
 }

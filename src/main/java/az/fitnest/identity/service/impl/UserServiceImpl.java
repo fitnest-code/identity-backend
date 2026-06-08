@@ -1,28 +1,27 @@
 package az.fitnest.identity.service.impl;
 
 import az.fitnest.identity.client.UserSubscriptionGrpcClient;
-import az.fitnest.identity.model.enums.UserStatus;
-
-import az.fitnest.identity.util.MobileNumberUtils;
+import az.fitnest.identity.dto.request.OtpSendRequest;
 import az.fitnest.identity.dto.request.UpdateUserProfileCommandRequest;
 import az.fitnest.identity.dto.response.UserResponse;
-import az.fitnest.identity.model.entity.AuthToken;
-import az.fitnest.identity.model.entity.Role;
-import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.exception.ConflictException;
 import az.fitnest.identity.exception.ResourceNotFoundException;
 import az.fitnest.identity.mapper.UserResponseMapper;
+import az.fitnest.identity.model.entity.Role;
+import az.fitnest.identity.model.entity.User;
+import az.fitnest.identity.model.enums.OtpPurpose;
+import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.RoleRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
+import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.dto.request.OtpSendRequest;
-import az.fitnest.identity.dto.response.OtpSendResponse;
-import az.fitnest.identity.model.enums.OtpPurpose;
-import az.fitnest.identity.service.OtpService;
+import az.fitnest.identity.util.MobileNumberUtils;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -35,12 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @Service
@@ -61,17 +56,19 @@ public class UserServiceImpl implements UserService {
     private final UserResponseMapper userResponseMapper;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
 
+    @CacheEvict(value = "users", key = "#userId")
     @Transactional
     @Override
     public User updateUserRole(Long userId, String roleName) {
         User user = getUserById(userId);
         String finalRoleName = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
         Role role = roleRepository.findByName(finalRoleName)
-                .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
-
+                .orElseThrow(() -> new az.fitnest.identity.exception.BadRequestException("error.resource.not_found"));
         user.setRole(role);
-
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        publishUserEvent("USER_UPDATED", userId);
+        log.info("User {} role changed to {}", userId, finalRoleName);
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -355,6 +352,7 @@ public class UserServiceImpl implements UserService {
         int batchSize = 1000;
         userRepository.deleteInactiveUsersBeforeBatch(threshold, batchSize);
     }
+
     @Transactional
     @Override
     public void changePassword(Long userId, String oldPassword, String newPassword, String confirmNewPassword) {
@@ -520,7 +518,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponse> searchUsers(int page, int size, Long id, String name, String surname, String email,
-            String mobile) {
+                                          String mobile) {
         size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
         return userRepository.searchUsers(id, name, surname, email, mobile, pageable)
@@ -530,7 +528,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Override
     public Page<UserResponse> searchUsersAdvanced(int page, int size, String query, Long packageID,
-            Integer durationMonths) {
+                                                  Integer durationMonths) {
         size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
 
@@ -543,15 +541,15 @@ public class UserServiceImpl implements UserService {
 
         Page<User> userPage = userRepository.searchUsersAdvanced(
                 params.id(), params.name(), params.surname(), params.email(), params.mobile(),
-                subscriptionUserIds, pageable);
+                subscriptionUserIds, null, pageable);
 
         return userPage.map(userResponseMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(int page, int size, String query,
-            Long packageID, Integer durationMonths, String type) {
+    public Page<az.fitnest.identity.dto.response.AdminUserResponse> getAdminUsers(
+            int page, int size, String query, Long packageID, Integer durationMonths, String type, String roles) {
         size = Math.min(size, 100);
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
 
@@ -562,9 +560,11 @@ public class UserServiceImpl implements UserService {
             return Page.empty(pageable);
         }
 
+        String roleName = (roles != null && !roles.isBlank()) ? roles.strip() : null;
+
         Page<User> userPage = userRepository.searchUsersAdvanced(
                 params.id(), params.name(), params.surname(), params.email(), params.mobile(),
-                subscriptionUserIds, pageable);
+                subscriptionUserIds, roleName, pageable);
 
         return userPage.map(user -> {
             String subscriptionStatus = null;
@@ -692,6 +692,7 @@ public class UserServiceImpl implements UserService {
 
     private record NameParts(String firstName, String lastName) {
     }
+
     @Override
     @Transactional
     @CacheEvict(value = "users", key = "#userId")
@@ -699,11 +700,11 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         user.setStatus(UserStatus.BLOCKED);
         userRepository.save(user);
-        
+
         // Terminate all sessions
         redisTokenService.removeAllSessions(userId);
         authTokenRepository.deleteByUserId(userId);
-        
+
         publishUserEvent("USER_UPDATED", userId);
         log.info("User {} has been BLOCKED by admin", userId);
     }
@@ -715,8 +716,24 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
-        
+
         publishUserEvent("USER_UPDATED", userId);
         log.info("User {} has been UNBLOCKED by admin", userId);
+    }
+
+    @Override
+    public List<az.fitnest.identity.dto.response.RoleResponse> getAvailableRoles() {
+        return List.of(
+                new az.fitnest.identity.dto.response.RoleResponse("ROLE_ADMIN", "Sistem admini"),
+                new az.fitnest.identity.dto.response.RoleResponse("ROLE_FITNEST_STAFF", "Fitnest Komandası"),
+                new az.fitnest.identity.dto.response.RoleResponse("ROLE_GYM_SUPER_ADMIN", "Zal Super Admini"),
+                new az.fitnest.identity.dto.response.RoleResponse("ROLE_GYM_ADMIN", "Zal Admini"),
+                new az.fitnest.identity.dto.response.RoleResponse("ROLE_USER", "Müştəri")
+        );
+    }
+
+    @Override
+    public void changeUserRole(Long userId, String roleName) {
+        updateUserRole(userId, roleName);
     }
 }

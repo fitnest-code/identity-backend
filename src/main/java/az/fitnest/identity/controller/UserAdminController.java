@@ -1,30 +1,27 @@
 package az.fitnest.identity.controller;
 
-import az.fitnest.identity.dto.response.AdminUserResponse;
-import az.fitnest.identity.dto.PaginatedResponse;
-import az.fitnest.identity.dto.response.UserProfileDetailsResponse;
-import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.service.impl.RateLimitAdminService;
-import az.fitnest.identity.service.UserProfileGrpcClient;
-import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.dto.request.OtpRateLimitResetRequest;
 import az.fitnest.identity.dto.request.OtpRateLimitUserResetRequest;
+import az.fitnest.identity.dto.response.UserProfileDetailsResponse;
+import az.fitnest.identity.service.UserProfileGrpcClient;
+import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.service.impl.RateLimitAdminService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/users")
@@ -132,5 +129,31 @@ public class UserAdminController {
     public ResponseEntity<Void> resetUserPassword(@PathVariable Long userId, @RequestBody az.fitnest.identity.dto.request.ResetUserPasswordRequest request) {
         userService.resetUserPasswordDirectly(userId, request.getNewPassword());
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən istifadəçiyə yeni rol təyin edir. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{userId}/change-role")
+    public ResponseEntity<Void> changeUserRole(
+            @PathVariable Long userId,
+            @RequestBody az.fitnest.identity.dto.request.ChangeUserRoleRequest request) {
+        userService.changeUserRole(userId, request.role());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Admin istifadəçi siyahısı", description = "Filtrlərlə istifadəçiləri siyahılar. roles parametri ilə rol üzrə filter edilə bilər. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping
+    public ResponseEntity<az.fitnest.identity.dto.PaginatedResponse<az.fitnest.identity.dto.response.AdminUserResponse>> getAdminUsers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Long packageID,
+            @RequestParam(required = false) Integer durationMonths,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String roles) {
+
+        var result = userService.getAdminUsers(page, size, query, packageID, durationMonths, type, roles);
+        return ResponseEntity.ok(az.fitnest.identity.dto.PaginatedResponse.of(result));
     }
 }

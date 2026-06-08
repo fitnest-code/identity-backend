@@ -92,17 +92,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByRole(Role role);
 
     @Query(value = """
-                SELECT * FROM users u1_0
-                WHERE (:id IS NULL OR u1_0.user_id = :id)
-                  AND (:mobile IS NULL OR u1_0.mobile LIKE :mobile || '%')
-                  AND (:userIds IS NULL OR u1_0.user_id IN :userIds)
-            """, nativeQuery = true)
+            SELECT u.* FROM users u
+            JOIN roles r ON u.role_id = r.id
+            WHERE (:id IS NULL OR u.user_id = :id)
+              AND (:mobile IS NULL OR u.mobile LIKE :mobile || '%')
+              AND (:userIds IS NULL OR u.user_id IN :userIds)
+              AND (:roleName IS NULL OR r.name = :roleName)
+        """, nativeQuery = true)
     Page<User> searchUsersAdvanced(@Param("id") Long id,
                                    @Param("name") String name,
                                    @Param("surname") String surname,
                                    @Param("email") String email,
                                    @Param("mobile") String mobile,
                                    @Param("userIds") List<Long> userIds,
+                                   @Param("roleName") String roleName,
                                    Pageable pageable);
 
     @Query(value = """
