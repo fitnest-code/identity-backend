@@ -43,7 +43,6 @@ public class AuthServiceImpl implements AuthService {
     private final RedisTokenService redisTokenService;
     private final TokenIssuanceService tokenIssuanceService;
     private final OtpService otpService;
-    private final DeviceDetectionService deviceDetectionService;
     private final TokenHasher tokenHasher;
     private final MessageSource messageSource;
 
@@ -81,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
             return LoginResult.reactivationRequired(reactivationResponse);
         }
 
-        String deviceType = deviceDetectionService.detectDeviceType();
+        String deviceType = "Web";
         String activeJti = redisTokenService.getActiveSession(result.user().getId(), deviceType);
         if (activeJti != null) {
             redisTokenService.revokeAccessToken(activeJti);
@@ -92,6 +91,65 @@ public class AuthServiceImpl implements AuthService {
         if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
             userRepository.save(user);
+        }
+
+        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceType);
+        return LoginResult.success(tokens);
+    }
+
+    @Override
+    @Transactional
+    public LoginResult loginV2(az.fitnest.identity.dto.request.LoginRequestV2 request) {
+        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
+        AuthenticationResult result = authenticate(mobile, request.password());
+
+        if (result.status() == AuthenticationStatus.REACTIVATION_REQUIRED) {
+            az.fitnest.identity.dto.request.OtpSendRequest otpRequest = new az.fitnest.identity.dto.request.OtpSendRequest(
+                    az.fitnest.identity.model.enums.OtpPurpose.REACTIVATION,
+                    result.user().getMobile(),
+                    null,
+                    null
+            );
+            otpService.sendOtpAsync(otpRequest);
+
+            OtpSendResponse reactivationResponse = new OtpSendResponse(
+                    null,
+                    null,
+                    null,
+                    getMessage("success.otp.reactivation_sent")
+            );
+            return LoginResult.reactivationRequired(reactivationResponse);
+        }
+
+        User user = result.user();
+        String deviceType = request.deviceType();
+
+        boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
+        if (isMobile) {
+            String reqDeviceId = request.deviceId();
+            if (reqDeviceId != null && !reqDeviceId.isBlank()) {
+                if (user.getDeviceId() == null) {
+                    user.setDeviceId(reqDeviceId);
+                    user = userRepository.save(user);
+                } else if (!user.getDeviceId().equals(reqDeviceId)) {
+                    throw new InvalidCredentialsException("error.auth.device_mismatch");
+                }
+            } else {
+                if (user.getDeviceId() != null) {
+                    throw new InvalidCredentialsException("error.auth.device_mismatch");
+                }
+            }
+        }
+
+        String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
+        if (activeJti != null) {
+            redisTokenService.revokeAccessToken(activeJti);
+            authTokenRepository.deleteByJti(activeJti);
+        }
+
+        if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
+            user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
+            user = userRepository.save(user);
         }
 
         LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceType);
@@ -194,8 +252,12 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("error.auth.invalid_credentials");
         }
 
+        String refreshTokenHash = tokenHasher.hash(refreshToken);
+        AuthToken token = authTokenRepository.findByRefreshTokenHash(refreshTokenHash);
+        String deviceType = (token != null && token.getDeviceType() != null) ? token.getDeviceType() : "Web";
+
         User user = internalRefresh(userId, refreshToken);
-        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceDetectionService.detectDeviceType());
+        LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceType);
 
         if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);

@@ -362,7 +362,7 @@ public class OtpServiceImpl implements OtpService {
             user.setLockedUntil(null);
             userRepository.save(user);
 
-            String deviceType = az.fitnest.identity.util.DeviceDetector.detectDeviceType();
+            String deviceType = "Web";
             String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
             if (activeJti != null) {
                 redisTokenService.revokeAccessToken(activeJti);

@@ -16,7 +16,6 @@ import az.fitnest.identity.service.RegistrationService;
 import az.fitnest.identity.service.RegistrationTokenService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserService;
-import az.fitnest.identity.util.DeviceDetector;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,7 +68,32 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         legalService.autoAcceptLatestConsents(user.getId());
 
-        return tokenIssuanceService.issueTokens(user, DeviceDetector.detectDeviceType(), false);
+        return tokenIssuanceService.issueTokens(user, "Web", false);
+    }
+
+    @Transactional
+    @Override
+    public LoginResponse completeRegistrationV2(az.fitnest.identity.dto.request.RegisterCompleteRequestV2 request) {
+        String registrationToken = request.registrationToken();
+        String identifier = registrationTokenService.requireIdentifier(registrationToken);
+        String mobile = identifier;
+        registrationTokenService.consume(registrationToken);
+        String passwordHash = passwordService.hashPassword(request.password());
+        User user = userService.createNewUser(
+                request.firstName(),
+                request.lastName(),
+                passwordHash,
+                mobile
+        );
+
+        if (request.deviceId() != null && !request.deviceId().isBlank()) {
+            user.setDeviceId(request.deviceId());
+            user = userRepository.save(user);
+        }
+
+        legalService.autoAcceptLatestConsents(user.getId());
+
+        return tokenIssuanceService.issueTokens(user, request.deviceType(), false);
     }
 
 }

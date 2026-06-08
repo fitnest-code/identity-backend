@@ -25,4 +25,8 @@ public interface SocialAuthService {
     LoginResponse socialLoginApple(AppleSocialRequest request);
 
     LoginResponse socialLoginGoogle(GoogleSocialRequest request);
+
+    LoginResponse socialLoginAppleV2(az.fitnest.identity.dto.request.AppleSocialRequestV2 request);
+
+    LoginResponse socialLoginGoogleV2(az.fitnest.identity.dto.request.GoogleSocialRequestV2 request);
 }

@@ -74,6 +74,9 @@ public class User extends BaseAuditableEntity {
     @Column(name = "inactive_at")
     private Instant inactiveAt;
 
+    @Column(name = "device_id")
+    private String deviceId;
+
     public String getMobile() {
         return mobile;
     }

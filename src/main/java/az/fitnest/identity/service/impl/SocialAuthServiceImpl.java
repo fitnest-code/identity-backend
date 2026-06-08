@@ -20,7 +20,6 @@ import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
-import az.fitnest.identity.util.DeviceDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +63,29 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 claims.givenName(),
                 claims.familyName(),
                 claims.name(),
-                claims.picture()
+                claims.picture(),
+                null,
+                null
+        );
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse socialLoginGoogleV2(az.fitnest.identity.dto.request.GoogleSocialRequestV2 request) {
+        log.info("Starting Google V2 social login process");
+        GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.idToken());
+        log.info("Google token verified successfully for email: {}", claims.email());
+
+        return processSocialLogin(
+                SocialProvider.GOOGLE,
+                claims.userId(),
+                claims.email(),
+                claims.givenName(),
+                claims.familyName(),
+                claims.name(),
+                claims.picture(),
+                request.deviceId(),
+                request.deviceType()
         );
     }
 
@@ -84,12 +105,35 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 firstName,
                 lastName,
                 fullName,
+                null,
+                null,
                 null
         );
     }
 
-    private String cleanPreviousSessionAndGetDeviceType(Long userId) {
-        String deviceType = DeviceDetector.detectDeviceType();
+    @Override
+    @Transactional
+    public LoginResponse socialLoginAppleV2(az.fitnest.identity.dto.request.AppleSocialRequestV2 request) {
+        AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.identityToken());
+
+        String firstName = claims.firstName() != null ? claims.firstName() : request.firstName();
+        String lastName = claims.lastName() != null ? claims.lastName() : request.lastName();
+        String fullName = request.fullName() != null ? request.fullName() : "User";
+
+        return processSocialLogin(
+                SocialProvider.APPLE,
+                claims.userId(),
+                claims.email(),
+                firstName,
+                lastName,
+                fullName,
+                null,
+                request.deviceId(),
+                request.deviceType()
+        );
+    }
+
+    private String cleanPreviousSessionAndGetDeviceType(Long userId, String deviceType) {
         String activeJti = redisTokenService.getActiveSession(userId, deviceType);
         if (activeJti != null) {
             redisTokenService.revokeAccessToken(activeJti);
@@ -99,8 +143,12 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     }
 
     private LoginResponse processSocialLogin(SocialProvider provider, String providerId, String email,
-                                             String firstName, String lastName, String fullName, String pictureUrl) {
+                                             String firstName, String lastName, String fullName, String pictureUrl,
+                                             String deviceId, String deviceType) {
         log.info("Processing social login for provider: {}, providerId: {}, email: {}", provider, providerId, email);
+
+        boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
+
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(provider, providerId);
 
         if (existingSocialAuth.isPresent()) {
@@ -108,13 +156,28 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             log.info("Found existing social auth record for user ID: {}", socialAuth.getUserId());
             User user = self.findAndReactivateUser(socialAuth.getUserId());
 
+            if (isMobile) {
+                if (deviceId != null && !deviceId.isBlank()) {
+                    if (user.getDeviceId() == null) {
+                        user.setDeviceId(deviceId);
+                        user = userRepository.save(user);
+                    } else if (!user.getDeviceId().equals(deviceId)) {
+                        throw new InvalidCredentialsException("error.auth.device_mismatch");
+                    }
+                } else {
+                    if (user.getDeviceId() != null) {
+                        throw new InvalidCredentialsException("error.auth.device_mismatch");
+                    }
+                }
+            }
+
             var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
             if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
                 log.info("Updating profile image for existing user: {}", user.getId());
                 userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
             }
             log.info("Issuing tokens for existing user: {}", user.getId());
-            return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId()));
+            return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
         }
 
         if (email != null && !email.isEmpty()) {
@@ -125,18 +188,33 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 log.info("Found existing user by email in user-backend: {}. UserId: {}. Linking {} account.", email, userId, provider);
                 User user = self.findAndReactivateUser(userId);
 
+                if (isMobile) {
+                    if (deviceId != null && !deviceId.isBlank()) {
+                        if (user.getDeviceId() == null) {
+                            user.setDeviceId(deviceId);
+                            user = userRepository.save(user);
+                        } else if (!user.getDeviceId().equals(deviceId)) {
+                            throw new InvalidCredentialsException("error.auth.device_mismatch");
+                        }
+                    } else {
+                        if (user.getDeviceId() != null) {
+                            throw new InvalidCredentialsException("error.auth.device_mismatch");
+                        }
+                    }
+                }
+
                 var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
                 if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
                     log.info("Updating profile image for existing user (by email): {}", user.getId());
                     userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
                 }
                 self.linkSocialAccount(user.getId(), provider, providerId);
-                return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId()));
+                return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
             }
         }
 
         log.info("No existing user found. Creating new user for social login.");
-        User newUser = self.createIdentityUser();
+        User newUser = self.createIdentityUser(deviceId);
         NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
         log.info("Creating user profile in user-backend for user ID: {}", newUser.getId());
         userProfileGrpcClient.createUserProfile(newUser.getId(), nameParts.firstName(), nameParts.lastName(), email);
@@ -148,7 +226,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
         log.info("Issuing tokens for new user: {}", newUser.getId());
         legalService.autoAcceptLatestConsents(newUser.getId());
-        return tokenIssuanceService.issueTokens(newUser, cleanPreviousSessionAndGetDeviceType(newUser.getId()));
+        return tokenIssuanceService.issueTokens(newUser, cleanPreviousSessionAndGetDeviceType(newUser.getId(), deviceType));
     }
 
     @Transactional
@@ -163,7 +241,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     }
 
     @Transactional
-    public User createIdentityUser() {
+    public User createIdentityUser(String deviceId) {
         User user = User.builder()
                 .mobile(null)
                 .passwordHash(null)
@@ -172,6 +250,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .failedLoginAttempts(0)
                 .status(UserStatus.ACTIVE)
                 .hasLocalPassword(false)
+                .deviceId(deviceId)
                 .role(roleRepository.findByName("ROLE_USER")
                         .orElseThrow(() -> new IllegalStateException("System error: Default role ROLE_USER not found")))
                 .build();

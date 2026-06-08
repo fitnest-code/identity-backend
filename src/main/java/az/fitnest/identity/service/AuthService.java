@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface AuthService {
     az.fitnest.identity.dto.response.LoginResult login(LoginRequest request);
+    az.fitnest.identity.dto.response.LoginResult loginV2(az.fitnest.identity.dto.request.LoginRequestV2 request);
 
     RefreshResponse refresh(String refreshToken);
 
