@@ -127,13 +127,13 @@ public class AuthServiceImpl implements AuthService {
         if (isMobile) {
             String reqDeviceId = request.deviceId();
             if (reqDeviceId == null || reqDeviceId.isBlank()) {
-                throw new InvalidCredentialsException("error.auth.device_id_required");
+                throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
             }
             if (user.getDeviceId() == null) {
                 user.setDeviceId(reqDeviceId);
                 user = userRepository.save(user);
             } else if (!user.getDeviceId().equals(reqDeviceId)) {
-                throw new InvalidCredentialsException("error.auth.device_mismatch");
+                throw new InvalidCredentialsException("error.auth.device_mismatch", "error.auth.device_mismatch");
             }
         }
 
@@ -178,20 +178,20 @@ public class AuthServiceImpl implements AuthService {
     private void validateUserStatus(User user) {
         Instant now = Instant.now();
         if (user.getStatus() == UserStatus.DELETED) {
-            throw new InvalidCredentialsException("error.auth.account_deleted");
+            throw new InvalidCredentialsException("error.auth.account_deleted", "error.auth.account_deleted");
         }
 
         if (user.getStatus() == UserStatus.BLOCKED) {
-            throw new InvalidCredentialsException("error.auth.account_blocked");
+            throw new InvalidCredentialsException("error.auth.account_blocked", "error.auth.account_blocked");
         }
 
         if (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
-            throw new InvalidCredentialsException("error.auth.account_locked");
+            throw new InvalidCredentialsException("error.auth.account_locked", "error.auth.account_locked");
         }
 
         if (user.getStatus() == UserStatus.INACTIVE && user.getInactiveAt() != null) {
             if (user.getInactiveAt().plus(java.time.Duration.ofDays(reactivationWindowDays)).isBefore(now)) {
-                throw new InvalidCredentialsException("error.auth.account_deleted");
+                throw new InvalidCredentialsException("error.auth.account_deleted", "error.auth.account_deleted");
             }
         }
     }
@@ -380,7 +380,7 @@ public class AuthServiceImpl implements AuthService {
         if (isMobile) {
             String reqDeviceId = request.deviceId();
             if (reqDeviceId == null || reqDeviceId.isBlank()) {
-                throw new InvalidCredentialsException("error.auth.device_id_required");
+                throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
             }
 
             if (user.getDeviceId() == null) {
@@ -390,7 +390,7 @@ public class AuthServiceImpl implements AuthService {
             } else if (!user.getDeviceId().equals(reqDeviceId)) {
                 // Device change — check limit
                 if (user.getDeviceChangeCount() >= 3) {
-                    throw new InvalidCredentialsException("error.auth.device_limit_exceeded");
+                    throw new InvalidCredentialsException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
                 }
 
                 // Increment count, update device, revoke all existing sessions
