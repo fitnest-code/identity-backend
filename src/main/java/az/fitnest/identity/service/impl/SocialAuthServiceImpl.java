@@ -21,6 +21,7 @@ import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
+import az.fitnest.identity.service.DeviceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final LegalService legalService;
     private final RedisTokenService redisTokenService;
     private final AuthTokenRepository authTokenRepository;
+    private final DeviceService deviceService;
 
     @Autowired
     @Lazy
@@ -148,8 +150,6 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                                              String deviceId, String deviceType) {
         log.info("Processing social login for provider: {}, providerId: {}, email: {}", provider, providerId, email);
 
-        boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
-
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(provider, providerId);
 
         if (existingSocialAuth.isPresent()) {
@@ -157,20 +157,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             log.info("Found existing social auth record for user ID: {}", socialAuth.getUserId());
             User user = self.findAndReactivateUser(socialAuth.getUserId());
 
-            if (isMobile) {
-                if (deviceId != null && !deviceId.isBlank()) {
-                    if (user.getDeviceId() == null || user.getDeviceId().isBlank()) {
-                        user.setDeviceId(deviceId.trim());
-                        user = userRepository.save(user);
-                    } else if (!user.isDeviceAllowed(deviceId)) {
-                        throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
-                    }
-                } else {
-                    if (user.getDeviceId() != null && !user.getDeviceId().isBlank()) {
-                        throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
-                    }
-                }
-            }
+            user = deviceService.validateAndBindDeviceForLogin(user, deviceId, deviceType, false);
 
             var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
             if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
@@ -189,20 +176,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 log.info("Found existing user by email in user-backend: {}. UserId: {}. Linking {} account.", email, userId, provider);
                 User user = self.findAndReactivateUser(userId);
 
-                if (isMobile) {
-                    if (deviceId != null && !deviceId.isBlank()) {
-                        if (user.getDeviceId() == null || user.getDeviceId().isBlank()) {
-                            user.setDeviceId(deviceId.trim());
-                            user = userRepository.save(user);
-                        } else if (!user.isDeviceAllowed(deviceId)) {
-                            throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
-                        }
-                    } else {
-                        if (user.getDeviceId() != null && !user.getDeviceId().isBlank()) {
-                            throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
-                        }
-                    }
-                }
+                user = deviceService.validateAndBindDeviceForLogin(user, deviceId, deviceType, false);
 
                 var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
                 if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
@@ -251,12 +225,16 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .failedLoginAttempts(0)
                 .status(UserStatus.ACTIVE)
                 .hasLocalPassword(false)
-                .deviceId(deviceId)
+                .deviceId(deviceId != null ? deviceId.trim() : null)
                 .role(roleRepository.findByName("ROLE_USER")
                         .orElseThrow(() -> new IllegalStateException("System error: Default role ROLE_USER not found")))
                 .build();
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        if (deviceId != null && !deviceId.isBlank()) {
+            deviceService.registerDevice(savedUser, deviceId);
+        }
+        return savedUser;
     }
 
     private void handleUserStatus(User user) {

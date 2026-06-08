@@ -132,30 +132,4 @@ public class User extends BaseAuditableEntity {
     public void setDeviceChangeCount(int deviceChangeCount) {
         this.deviceChangeCount = deviceChangeCount;
     }
-
-    public boolean isDeviceAllowed(String reqDeviceId) {
-        if (this.deviceId == null || this.deviceId.isBlank()) {
-            return false;
-        }
-        if (reqDeviceId == null || reqDeviceId.isBlank()) {
-            return false;
-        }
-        return java.util.Arrays.asList(this.deviceId.split(",")).contains(reqDeviceId.trim());
-    }
-
-    public void addDevice(String reqDeviceId) {
-        if (reqDeviceId == null || reqDeviceId.isBlank()) {
-            return;
-        }
-        String cleanId = reqDeviceId.trim();
-        if (this.deviceId == null || this.deviceId.isBlank()) {
-            this.deviceId = cleanId;
-        } else {
-            java.util.List<String> list = new java.util.ArrayList<>(java.util.Arrays.asList(this.deviceId.split(",")));
-            if (!list.contains(cleanId)) {
-                list.add(cleanId);
-                this.deviceId = String.join(",", list);
-            }
-        }
-    }
 }

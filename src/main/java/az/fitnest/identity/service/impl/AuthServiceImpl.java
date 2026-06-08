@@ -6,6 +6,7 @@ import az.fitnest.identity.service.AuthService;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.TokenIssuanceService;
+import az.fitnest.identity.service.DeviceService;
 import az.fitnest.identity.util.TokenHasher;
 import az.fitnest.identity.dto.request.LoginRequest;
 import az.fitnest.identity.dto.response.LoginResponse;
@@ -45,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final OtpService otpService;
     private final TokenHasher tokenHasher;
     private final MessageSource messageSource;
+    private final DeviceService deviceService;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
     private int maxFailedLoginAttempts;
@@ -124,19 +126,7 @@ public class AuthServiceImpl implements AuthService {
         User user = result.user();
         String deviceType = request.deviceType();
 
-        boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
-        if (isMobile) {
-            String reqDeviceId = request.deviceId();
-            if (reqDeviceId == null || reqDeviceId.isBlank()) {
-                throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
-            }
-            if (user.getDeviceId() == null || user.getDeviceId().isBlank()) {
-                user.setDeviceId(reqDeviceId.trim());
-                user = userRepository.save(user);
-            } else if (!user.isDeviceAllowed(reqDeviceId)) {
-                throw new ForbiddenException("error.auth.device_mismatch", "error.auth.device_mismatch");
-            }
-        }
+        user = deviceService.validateAndBindDeviceForLogin(user, request.deviceId(), request.deviceType(), true);
 
         String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
         if (activeJti != null) {
@@ -376,39 +366,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String deviceType = request.deviceType();
-        boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
-
-        if (isMobile) {
-            String reqDeviceId = request.deviceId();
-            if (reqDeviceId == null || reqDeviceId.isBlank()) {
-                throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
-            }
-
-            if (user.getDeviceId() == null || user.getDeviceId().isBlank()) {
-                // First time device binding
-                user.setDeviceId(reqDeviceId.trim());
-                user = userRepository.save(user);
-            } else if (!user.isDeviceAllowed(reqDeviceId)) {
-                // Device change — check limit
-                if (user.getDeviceChangeCount() >= 3) {
-                    throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
-                }
-
-                // Increment count, update device, revoke all existing sessions
-                user.setDeviceChangeCount(user.getDeviceChangeCount() + 1);
-                user.addDevice(reqDeviceId);
-                user = userRepository.save(user);
-
-                // Revoke all existing tokens in Redis
-                redisTokenService.removeAllSessions(user.getId());
-                redisTokenService.removeActiveSession(user.getId(), "iOS");
-                redisTokenService.removeActiveSession(user.getId(), "Android");
-                redisTokenService.removeActiveSession(user.getId(), "Web");
-
-                // Revoke all existing tokens in DB
-                authTokenRepository.deleteByUserId(user.getId());
-            }
-        }
+        user = deviceService.validateAndBindDeviceForVerification(user, request.deviceId(), deviceType);
 
         // Clean previous session for this device type
         String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
