@@ -43,7 +43,7 @@ public class RoleAdminController {
 
     @Operation(summary = "Bütün rolları əldə edin", description = "Sistemdəki bütün rolları qaytarır.")
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
+    @GetMapping("/raw")
     public ResponseEntity<List<Role>> getAllRoles() {
         return ResponseEntity.ok(roleRepository.findAll());
     }
