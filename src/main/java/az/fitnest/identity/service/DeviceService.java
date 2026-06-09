@@ -145,4 +145,11 @@ public class DeviceService {
         authTokenRepository.deleteByUserId(userId);
         log.info("Revoked all sessions for user {}", userId);
     }
+
+    public boolean isDeviceKnown(Long userId, String deviceId) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return false;
+        }
+        return userDeviceRepository.existsByUserIdAndDeviceId(userId, deviceId.trim());
+    }
 }

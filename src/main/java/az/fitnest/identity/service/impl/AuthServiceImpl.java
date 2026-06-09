@@ -388,4 +388,36 @@ public class AuthServiceImpl implements AuthService {
         return tokenIssuanceService.issueTokens(user, deviceType);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public az.fitnest.identity.dto.response.LoginEligibilityResponse checkLoginEligibility(az.fitnest.identity.dto.request.LoginCheckRequestV3 request) {
+        String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
+
+        User user = userRepository.findFirstByMobile(mobile)
+                .orElseThrow(() -> new InvalidCredentialsException("error.auth.invalid_credentials"));
+
+        validateUserStatus(user);
+
+        // Check device eligibility without mutating state
+        String deviceType = request.deviceType();
+        String deviceId = request.deviceId();
+        boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
+
+        if (isMobile && deviceId != null && !deviceId.isBlank()) {
+            String reqDeviceId = deviceId.trim();
+
+            // If user already has a device bound, check if this device is known or if limit is exceeded
+            if (user.getDeviceId() != null && !user.getDeviceId().isBlank()) {
+                boolean deviceAllowed = deviceService.isDeviceKnown(user.getId(), reqDeviceId);
+                if (!deviceAllowed && user.getDeviceChangeCount() >= 3) {
+                    throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
+                }
+            }
+        } else if (isMobile && (deviceId == null || deviceId.isBlank())) {
+            throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
+        }
+
+        return new az.fitnest.identity.dto.response.LoginEligibilityResponse(true);
+    }
+
 }

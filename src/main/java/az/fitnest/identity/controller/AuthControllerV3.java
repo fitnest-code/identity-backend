@@ -1,10 +1,12 @@
 package az.fitnest.identity.controller;
 
+import az.fitnest.identity.dto.request.LoginCheckRequestV3;
 import az.fitnest.identity.dto.request.LoginRequestV3;
 import az.fitnest.identity.dto.request.LoginVerifyRequestV3;
 import az.fitnest.identity.dto.request.RegisterCompleteRequestV3;
 import az.fitnest.identity.dto.request.RegisterRequestV3;
 import az.fitnest.identity.dto.response.ApiResponse;
+import az.fitnest.identity.dto.response.LoginEligibilityResponse;
 import az.fitnest.identity.dto.response.LoginResponse;
 import az.fitnest.identity.dto.response.OtpSendResponse;
 import az.fitnest.identity.service.AuthService;
@@ -104,5 +106,27 @@ public class AuthControllerV3 {
         log.info("Received V3 login verify request");
         LoginResponse response = authService.verifyLoginV3(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/login/check")
+    @Operation(summary = "Giriş uyğunluğunu yoxlayın V3", description = "İstifadəçinin girişə uyğun olub-olmadığını yoxlayır. Hesab statusunu (bloklanma, silinmə, kilidlənmə) və cihaz limitini yoxlayır. OTP göndərilmir, token yaradılmır.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "İstifadəçi girişə uyğundur",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = LoginEligibilityResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "İstifadəçi tapılmadı",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = "{\"error\":{\"code\":\"INVALID_CREDENTIALS\",\"message\":\"Yanlış giriş məlumatları\",\"status\":401}}"))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Hesab bloklanıb, silinib, kilidlənib və ya cihaz limiti keçilib",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = "{\"error\":{\"code\":\"error.auth.account_blocked\",\"message\":\"Hesabınız bloklanıb\",\"status\":403}}")))
+    })
+    public ResponseEntity<ApiResponse<LoginEligibilityResponse>> checkLoginEligibility(
+            @Valid @RequestBody LoginCheckRequestV3 request,
+            @Parameter(name = "lang", description = "Dil kodu (az, en, ru)", in = ParameterIn.QUERY)
+            @RequestParam(required = false) String lang) {
+        log.info("Received V3 login eligibility check request for mobile: {}", request.mobile());
+        LoginEligibilityResponse response = authService.checkLoginEligibility(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

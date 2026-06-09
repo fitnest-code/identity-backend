@@ -34,4 +34,6 @@ public interface AuthService {
     az.fitnest.identity.dto.response.OtpSendResponse startLoginV3(az.fitnest.identity.dto.request.LoginRequestV3 request);
 
     az.fitnest.identity.dto.response.LoginResponse verifyLoginV3(az.fitnest.identity.dto.request.LoginVerifyRequestV3 request);
+
+    az.fitnest.identity.dto.response.LoginEligibilityResponse checkLoginEligibility(az.fitnest.identity.dto.request.LoginCheckRequestV3 request);
 }
