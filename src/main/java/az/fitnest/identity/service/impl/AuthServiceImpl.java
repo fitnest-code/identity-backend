@@ -1,28 +1,28 @@
 package az.fitnest.identity.service.impl;
 
-import az.fitnest.identity.model.enums.UserStatus;
-import az.fitnest.identity.dto.response.PasswordVerificationResultResponse;
-import az.fitnest.identity.service.AuthService;
-import az.fitnest.identity.service.OtpService;
-import az.fitnest.identity.service.PasswordService;
-import az.fitnest.identity.service.TokenIssuanceService;
-import az.fitnest.identity.service.DeviceService;
-import az.fitnest.identity.util.TokenHasher;
 import az.fitnest.identity.dto.request.LoginRequest;
 import az.fitnest.identity.dto.response.LoginResponse;
 import az.fitnest.identity.dto.response.LoginResult;
-import az.fitnest.identity.dto.response.RefreshResponse;
 import az.fitnest.identity.dto.response.OtpSendResponse;
-import az.fitnest.identity.repository.AuthTokenRepository;
-import az.fitnest.identity.exception.InvalidCredentialsException;
+import az.fitnest.identity.dto.response.PasswordVerificationResultResponse;
+import az.fitnest.identity.dto.response.RefreshResponse;
 import az.fitnest.identity.exception.ForbiddenException;
+import az.fitnest.identity.exception.InvalidCredentialsException;
 import az.fitnest.identity.exception.UnauthorizedException;
-import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.model.enums.SessionStatus;
-import az.fitnest.identity.model.entity.User;
 import az.fitnest.identity.model.entity.AuthToken;
+import az.fitnest.identity.model.entity.User;
+import az.fitnest.identity.model.enums.SessionStatus;
+import az.fitnest.identity.model.enums.UserStatus;
+import az.fitnest.identity.repository.AuthTokenRepository;
+import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.JwtService;
 import az.fitnest.identity.security.RedisTokenService;
+import az.fitnest.identity.service.AuthService;
+import az.fitnest.identity.service.DeviceService;
+import az.fitnest.identity.service.OtpService;
+import az.fitnest.identity.service.PasswordService;
+import az.fitnest.identity.service.TokenIssuanceService;
+import az.fitnest.identity.util.TokenHasher;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -282,7 +282,7 @@ public class AuthServiceImpl implements AuthService {
             String jti = jwtService.parseJti(accessToken);
 
             redisTokenService.revokeAccessToken(jti);
-            
+
             AuthToken token = authTokenRepository.findByJti(jti);
             String deviceType = (token != null) ? token.getDeviceType() : "UNKNOWN";
 
@@ -390,7 +390,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional(readOnly = true)
-    public az.fitnest.identity.dto.response.LoginEligibilityResponse checkLoginEligibility(az.fitnest.identity.dto.request.LoginCheckRequestV3 request) {
+    public void checkLoginEligibility(az.fitnest.identity.dto.request.LoginCheckRequestV3 request) {
         String mobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
 
         User user = userRepository.findFirstByMobile(mobile)
@@ -398,15 +398,12 @@ public class AuthServiceImpl implements AuthService {
 
         validateUserStatus(user);
 
-        // Check device eligibility without mutating state
         String deviceType = request.deviceType();
         String deviceId = request.deviceId();
         boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
 
         if (isMobile && deviceId != null && !deviceId.isBlank()) {
             String reqDeviceId = deviceId.trim();
-
-            // If user already has a device bound, check if this device is known or if limit is exceeded
             if (user.getDeviceId() != null && !user.getDeviceId().isBlank()) {
                 boolean deviceAllowed = deviceService.isDeviceKnown(user.getId(), reqDeviceId);
                 if (!deviceAllowed && user.getDeviceChangeCount() >= 3) {
@@ -416,8 +413,5 @@ public class AuthServiceImpl implements AuthService {
         } else if (isMobile && (deviceId == null || deviceId.isBlank())) {
             throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
         }
-
-        return new az.fitnest.identity.dto.response.LoginEligibilityResponse(true);
     }
-
 }
