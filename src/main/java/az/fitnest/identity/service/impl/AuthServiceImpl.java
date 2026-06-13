@@ -405,29 +405,21 @@ public class AuthServiceImpl implements AuthService {
         String deviceId = request.deviceId();
         boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
 
+        if (isMobile && (deviceId == null || deviceId.isBlank())) {
+            throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
+        }
+
         boolean isNewDevice = false;
 
         if (isMobile && deviceId != null && !deviceId.isBlank()) {
             String reqDeviceId = deviceId.trim();
-            if (user.getDeviceId() != null && !user.getDeviceId().isBlank()) {
-                boolean deviceKnown = deviceService.isDeviceKnown(user.getId(), reqDeviceId);
-                isNewDevice = !deviceKnown;
+            boolean deviceKnown = deviceService.isDeviceKnown(user.getId(), reqDeviceId);
 
-                if (isNewDevice && user.getDeviceChangeCount() >= 3) {
-                    throw new ForbiddenException(
-                            "error.auth.device_limit_exceeded",
-                            "error.auth.device_limit_exceeded"
-                    );
-                }
+            if (!deviceKnown && user.getDeviceChangeCount() >= 3) {
+                throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
             }
-            else {
-                isNewDevice = true;
-            }
-        } else if (isMobile && (deviceId == null || deviceId.isBlank())) {
-            throw new InvalidCredentialsException(
-                    "error.auth.device_id_required",
-                    "error.auth.device_id_required"
-            );
+
+            isNewDevice = deviceService.isNewDevice(user.getId(), reqDeviceId);
         }
 
         return new LoginEligibilityResponse(true, isNewDevice);

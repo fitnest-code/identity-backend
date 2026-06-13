@@ -10,7 +10,7 @@ public record LoginEligibilityResponse(
         boolean isEligibleToLogin,
 
         @JsonProperty("is_new_device")
-        @Schema(description = "Whether the device is new for this user", example = "false")
+        @Schema(description = "Whether the device is new (not previously registered to this user)", example = "false")
         boolean isNewDevice
 ) {
 }

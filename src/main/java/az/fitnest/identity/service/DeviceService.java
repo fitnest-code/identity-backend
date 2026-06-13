@@ -152,4 +152,11 @@ public class DeviceService {
         }
         return userDeviceRepository.existsByUserIdAndDeviceId(userId, deviceId.trim());
     }
+
+    public boolean isNewDevice(Long userId, String deviceId) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return false;
+        }
+        return !userDeviceRepository.existsByUserIdAndDeviceId(userId, deviceId.trim());
+    }
 }
