@@ -7,6 +7,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record LoginEligibilityResponse(
         @JsonProperty("is_eligible_to_login")
         @Schema(description = "Whether the user is eligible to login", example = "true")
-        boolean isEligibleToLogin
+        boolean isEligibleToLogin,
+
+        @JsonProperty("is_new_device")
+        @Schema(description = "Whether the device is new for this user", example = "false")
+        boolean isNewDevice
 ) {
 }

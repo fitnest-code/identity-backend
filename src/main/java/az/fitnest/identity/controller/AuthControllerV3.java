@@ -121,11 +121,11 @@ public class AuthControllerV3 {
                     content = @Content(mediaType = "application/json",
                             examples = @ExampleObject(value = "{\"error\":{\"code\":\"error.auth.account_blocked\",\"message\":\"Hesabınız bloklanıb\",\"status\":403}}")))
     })
-    public ResponseEntity<Void> checkLoginEligibility(
+    public ResponseEntity<LoginEligibilityResponse> checkLoginEligibility(
             @Valid @RequestBody LoginCheckRequestV3 request,
             @RequestParam(required = false) String lang) {
         log.info("Received V3 login eligibility check request for mobile: {}", request.mobile());
-        authService.checkLoginEligibility(request);
-        return ResponseEntity.ok().build();
+        LoginEligibilityResponse response = authService.checkLoginEligibility(request);
+        return ResponseEntity.ok(response);
     }
 }

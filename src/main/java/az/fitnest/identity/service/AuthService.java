@@ -1,6 +1,7 @@
 package az.fitnest.identity.service;
 
 import az.fitnest.identity.dto.request.LoginRequest;
+import az.fitnest.identity.dto.response.LoginEligibilityResponse;
 import az.fitnest.identity.dto.response.RefreshResponse;
 
 public interface AuthService {
@@ -17,5 +18,5 @@ public interface AuthService {
 
     az.fitnest.identity.dto.response.LoginResponse verifyLoginV3(az.fitnest.identity.dto.request.LoginVerifyRequestV3 request);
 
-    void checkLoginEligibility(az.fitnest.identity.dto.request.LoginCheckRequestV3 request);
+    LoginEligibilityResponse checkLoginEligibility(az.fitnest.identity.dto.request.LoginCheckRequestV3 request);
 }
