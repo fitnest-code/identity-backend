@@ -409,19 +409,18 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("error.auth.device_id_required", "error.auth.device_id_required");
         }
 
-        boolean isNewDevice = false;
-
         if (isMobile && deviceId != null && !deviceId.isBlank()) {
             String reqDeviceId = deviceId.trim();
             boolean deviceKnown = deviceService.isDeviceKnown(user.getId(), reqDeviceId);
 
             if (!deviceKnown && user.getDeviceChangeCount() >= 3) {
-                throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
+                return new LoginEligibilityResponse(false, true);
             }
 
-            isNewDevice = deviceService.isNewDevice(user.getId(), reqDeviceId);
+            boolean isNewDevice = deviceService.isNewDevice(user.getId(), reqDeviceId);
+            return new LoginEligibilityResponse(true, isNewDevice);
         }
 
-        return new LoginEligibilityResponse(true, isNewDevice);
+        return new LoginEligibilityResponse(true, false);
     }
 }
