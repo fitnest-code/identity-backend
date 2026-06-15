@@ -413,7 +413,7 @@ public class AuthServiceImpl implements AuthService {
             String reqDeviceId = deviceId.trim();
             boolean deviceKnown = deviceService.isDeviceKnown(user.getId(), reqDeviceId);
 
-            if (!deviceKnown && user.getDeviceChangeCount() >= 3) {
+            if (!deviceKnown && user.getDeviceChangeCount() >= 1) {
                 return new LoginEligibilityResponse(false, true);
             }
 
