@@ -736,4 +736,24 @@ public class UserServiceImpl implements UserService {
     public void changeUserRole(Long userId, String roleName) {
         updateUserRole(userId, roleName);
     }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "users", key = "#userId")
+    public void hardDeleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
+
+        Long id = user.getId();
+
+        redisTokenService.removeAllSessions(id);
+
+        authTokenRepository.deleteByUserId(id);
+
+        userRepository.deleteById(id);
+
+        publishUserEvent("USER_HARD_DELETED", id);
+
+        log.warn("User {} has been PERMANENTLY DELETED by admin", id);
+    }
 }

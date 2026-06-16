@@ -72,4 +72,6 @@ public interface UserService {
     List<RoleResponse> getAvailableRoles();
 
     void changeUserRole(Long userId, String roleName);
+
+    void hardDeleteUser(Long userId);
 }
