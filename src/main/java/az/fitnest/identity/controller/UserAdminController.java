@@ -161,7 +161,7 @@ public class UserAdminController {
     @ApiResponse(responseCode = "204", description = "İstifadəçi uğurla silindi")
     @ApiResponse(responseCode = "404", description = "İstifadəçi tapılmadı")
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{userId}")
+    @DeleteMapping("/{userId}/hard-delete")
     public ResponseEntity<Void> hardDeleteUser(@PathVariable Long userId) {
         userService.hardDeleteUser(userId);
         return ResponseEntity.noContent().build();
