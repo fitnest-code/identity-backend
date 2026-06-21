@@ -140,4 +140,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("UPDATE User u SET u.language = :language WHERE u.id = :userId")
     int updateLanguage(@Param("userId") Long userId, @Param("language") String language);
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.deviceId = null, u.deviceChangeCount = 0")
+    int resetAllDeviceLimits();
 }

@@ -99,7 +99,7 @@ public class DeviceService {
         }
 
         // Device change - check limit
-        if (user.getDeviceChangeCount() >= 3) {
+        if (user.getDeviceChangeCount() >= 1) {
             throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
         }
 
@@ -158,5 +158,24 @@ public class DeviceService {
             return false;
         }
         return !userDeviceRepository.existsByUserIdAndDeviceId(userId, deviceId.trim());
+    }
+
+    @Transactional
+    public void resetDeviceLimit(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found", "error.auth.user_not_found"));
+        user.setDeviceId(null);
+        user.setDeviceChangeCount(0);
+        userRepository.save(user);
+        userDeviceRepository.deleteByUserId(userId);
+        revokeAllUserSessions(userId);
+        log.info("Reset device limit and cleared devices for user {}", userId);
+    }
+
+    @Transactional
+    public void resetAllDeviceLimits() {
+        userRepository.resetAllDeviceLimits();
+        userDeviceRepository.deleteAll();
+        log.info("Reset device limit for all users");
     }
 }

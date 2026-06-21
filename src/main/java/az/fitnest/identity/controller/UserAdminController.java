@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import az.fitnest.identity.service.DeviceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +34,7 @@ public class UserAdminController {
     private final UserService userService;
     private final RateLimitAdminService rateLimitAdminService;
     private final UserProfileGrpcClient userProfileGrpcClient;
+    private final DeviceService deviceService;
 
     @Operation(summary = "İstifadəçi rolunu dəyişdirin", description = "Müəyyən edilmiş istifadəçiyə yeni rol təyin edir. ADMIN rolu tələb olunur.")
     @PreAuthorize("hasRole('ADMIN')")
@@ -165,5 +167,21 @@ public class UserAdminController {
     public ResponseEntity<Void> hardDeleteUser(@PathVariable Long userId) {
         userService.hardDeleteUser(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "İstifadəçinin cihaz limitini sıfırla", description = "İstifadəçinin cihaz ID-sini və dəyişmə limitini sıfırlayır. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{userId}/device-limit/reset")
+    public ResponseEntity<Void> resetDeviceLimit(@PathVariable Long userId) {
+        deviceService.resetDeviceLimit(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Bütün istifadəçilərin cihaz limitini sıfırla", description = "Bütün istifadəçilərin cihaz ID-lərini və dəyişmə limitlərini sıfırlayır. ADMIN rolu tələb olunur.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/device-limit/reset-all")
+    public ResponseEntity<Void> resetAllDeviceLimits() {
+        deviceService.resetAllDeviceLimits();
+        return ResponseEntity.ok().build();
     }
 }
