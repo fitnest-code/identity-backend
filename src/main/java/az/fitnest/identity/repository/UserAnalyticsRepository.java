@@ -16,32 +16,15 @@ public interface UserAnalyticsRepository extends JpaRepository<User, Long> {
 
     // ── KPI: cari ay aktiv user sayı və əvvəlki aya nisbət artım faizi ──────
     @Query(value = """
-            WITH current_month AS (
+            WITH current_active AS (
                 SELECT COUNT(*) AS cnt
-                FROM users u
-                JOIN roles r ON r.id = u.role_id
-                WHERE u.status = 'ACTIVE'
-                  AND r.name   = 'ROLE_USER'
-                  AND u.created_at >= date_trunc('month', CURRENT_DATE)
-            ),
-            previous_month AS (
-                SELECT COUNT(*) AS cnt
-                FROM users u
-                JOIN roles r ON r.id = u.role_id
-                WHERE u.status = 'ACTIVE'
-                  AND r.name   = 'ROLE_USER'
-                  AND u.created_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month')
-                  AND u.created_at <  date_trunc('month', CURRENT_DATE)
+                FROM auth_tokens
+                WHERE revoked = false
+                  AND access_expires_at > NOW()
             )
             SELECT
-                (SELECT cnt FROM current_month) AS current_total,
-                CASE
-                    WHEN (SELECT cnt FROM previous_month) = 0 THEN 0.0
-                    ELSE ROUND(
-                        ((SELECT cnt FROM current_month) - (SELECT cnt FROM previous_month))::numeric
-                        / (SELECT cnt FROM previous_month) * 100.0,
-                    2)
-                END AS percentage_change
+                (SELECT cnt FROM current_active) AS current_total,
+                0.0 AS percentage_change
             """, nativeQuery = true)
     KpiProjection getActiveUsersKpi();
 
