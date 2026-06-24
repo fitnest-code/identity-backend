@@ -4,8 +4,10 @@ import az.fitnest.identity.repository.UserAnalyticsRepository;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author: nijataghayev
@@ -17,6 +19,7 @@ public class IdentityAnalyticsGrpcService
         extends IdentityAnalyticsServiceGrpc.IdentityAnalyticsServiceImplBase {
 
     private final UserAnalyticsRepository userAnalyticsRepository;
+    private final StringRedisTemplate redisTemplate;
 
     // ── GetActiveUsersKpi ─────────────────────────────────────────────────────
     @Override
@@ -24,12 +27,13 @@ public class IdentityAnalyticsGrpcService
             GetActiveUsersKpiRequest request,
             StreamObserver<ActiveUsersKpiResponse> responseObserver
     ) {
-        UserAnalyticsRepository.KpiProjection kpi = userAnalyticsRepository.getActiveUsersKpi();
+        Set<String> keys = redisTemplate.keys("auth:user:session:*");
+        long currentTotal = keys != null ? keys.size() : 0L;
 
         responseObserver.onNext(
                 ActiveUsersKpiResponse.newBuilder()
-                        .setCurrentTotal(kpi.getCurrentTotal())
-                        .setPercentageChange(kpi.getPercentageChange())
+                        .setCurrentTotal(currentTotal)
+                        .setPercentageChange(0.0)
                         .build()
         );
         responseObserver.onCompleted();
