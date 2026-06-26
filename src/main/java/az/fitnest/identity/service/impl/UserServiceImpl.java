@@ -13,6 +13,7 @@ import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.RoleRepository;
+import az.fitnest.identity.repository.UserDeviceRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
 import az.fitnest.identity.service.OtpService;
@@ -55,6 +56,7 @@ public class UserServiceImpl implements UserService {
     private final UserSubscriptionGrpcClient userSubscriptionGrpcClient;
     private final UserResponseMapper userResponseMapper;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
+    private final UserDeviceRepository userDeviceRepository;
 
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
@@ -749,6 +751,8 @@ public class UserServiceImpl implements UserService {
         redisTokenService.removeAllSessions(id);
 
         authTokenRepository.deleteByUserId(id);
+
+        userDeviceRepository.deleteByUserId(id);
 
         userRepository.deleteById(id);
 
