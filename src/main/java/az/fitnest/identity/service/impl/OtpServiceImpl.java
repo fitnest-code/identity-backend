@@ -191,7 +191,8 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private boolean doesPurposeMatchExistence(OtpPurpose purpose, boolean exists) {
-        if (purpose == OtpPurpose.REGISTRATION || purpose == OtpPurpose.EMAIL_CHANGE || purpose == OtpPurpose.MOBILE_CHANGE) {
+        if (purpose == OtpPurpose.REGISTRATION || purpose == OtpPurpose.EMAIL_CHANGE || purpose == OtpPurpose.MOBILE_CHANGE ||
+            purpose == OtpPurpose.ADD_NUMBER_GOOGLE || purpose == OtpPurpose.ADD_NUMBER_APPLE) {
             return !exists;
         } else if (purpose == OtpPurpose.LOGIN || purpose == OtpPurpose.PASSWORD_RESET || purpose == OtpPurpose.REACTIVATION) {
             return exists;
@@ -380,7 +381,8 @@ public class OtpServiceImpl implements OtpService {
                     loginResponse.refreshToken(),
                     loginResponse.user()
             );
-        } else if (verificationResult.purpose() == OtpPurpose.EMAIL_CHANGE || verificationResult.purpose() == OtpPurpose.MOBILE_CHANGE) {
+        } else if (verificationResult.purpose() == OtpPurpose.EMAIL_CHANGE || verificationResult.purpose() == OtpPurpose.MOBILE_CHANGE ||
+                   verificationResult.purpose() == OtpPurpose.ADD_NUMBER_GOOGLE || verificationResult.purpose() == OtpPurpose.ADD_NUMBER_APPLE) {
             return otpVerifyResponseMapper.toResponse(
                     true,
                     null,

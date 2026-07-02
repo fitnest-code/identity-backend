@@ -183,6 +183,46 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/api/v2/auth/social/google/login/add-number/otp/request")
+    @Operation(summary = "Google girişi nömrə əlavə etmək üçün OTP sorğusu")
+    public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<OtpSendResponse>> requestAddNumberOtpGoogle(
+            @Valid @RequestBody az.fitnest.identity.dto.request.AddNumberOtpRequest request,
+            @RequestParam(required = false) String lang) {
+        log.info("Received Add Number OTP request for Google social user email: {}", request.email());
+        OtpSendResponse response = socialAuthService.requestAddNumberOtpGoogle(request);
+        return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(response));
+    }
+
+    @PostMapping("/api/v2/auth/social/apple/login/add-number/otp/request")
+    @Operation(summary = "Apple girişi nömrə əlavə etmək üçün OTP sorğusu")
+    public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<OtpSendResponse>> requestAddNumberOtpApple(
+            @Valid @RequestBody az.fitnest.identity.dto.request.AddNumberOtpRequest request,
+            @RequestParam(required = false) String lang) {
+        log.info("Received Add Number OTP request for Apple social user email: {}", request.email());
+        OtpSendResponse response = socialAuthService.requestAddNumberOtpApple(request);
+        return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(response));
+    }
+
+    @PostMapping("/api/v2/auth/social/google/login/add-number/otp/verify")
+    @Operation(summary = "Google girişi nömrə əlavə etmək üçün OTP təsdiqi")
+    public ResponseEntity<LoginResponse> verifyAddNumberOtpGoogle(
+            @Valid @RequestBody az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request,
+            @RequestParam(required = false) String lang) {
+        log.info("Received Add Number OTP verification request for Google social user");
+        LoginResponse response = socialAuthService.verifyAddNumberOtpGoogle(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/v2/auth/social/apple/login/add-number/otp/verify")
+    @Operation(summary = "Apple girişi nömrə əlavə etmək üçün OTP təsdiqi")
+    public ResponseEntity<LoginResponse> verifyAddNumberOtpApple(
+            @Valid @RequestBody az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request,
+            @RequestParam(required = false) String lang) {
+        log.info("Received Add Number OTP verification request for Apple social user");
+        LoginResponse response = socialAuthService.verifyAddNumberOtpApple(request);
+        return ResponseEntity.ok(response);
+    }
+
     // ==========================================
     // V3 Auth Endpoints
     // ==========================================

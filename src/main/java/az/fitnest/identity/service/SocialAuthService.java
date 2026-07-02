@@ -29,4 +29,12 @@ public interface SocialAuthService {
     LoginResponse socialLoginAppleV2(az.fitnest.identity.dto.request.AppleSocialRequestV2 request);
 
     LoginResponse socialLoginGoogleV2(az.fitnest.identity.dto.request.GoogleSocialRequestV2 request);
+
+    az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpGoogle(az.fitnest.identity.dto.request.AddNumberOtpRequest request);
+
+    az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpApple(az.fitnest.identity.dto.request.AddNumberOtpRequest request);
+
+    LoginResponse verifyAddNumberOtpGoogle(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request);
+
+    LoginResponse verifyAddNumberOtpApple(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request);
 }

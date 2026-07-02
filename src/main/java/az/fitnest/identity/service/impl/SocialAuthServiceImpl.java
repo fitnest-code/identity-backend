@@ -47,6 +47,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final RedisTokenService redisTokenService;
     private final AuthTokenRepository authTokenRepository;
     private final DeviceService deviceService;
+    private final az.fitnest.identity.service.OtpService otpService;
 
     @Autowired
     @Lazy
@@ -305,6 +306,90 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         String first = parts[0];
         String last = String.join(" ", java.util.Arrays.asList(parts).subList(1, parts.length));
         return new NameParts(first, last);
+    }
+
+    @Override
+    @Transactional
+    public az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpGoogle(az.fitnest.identity.dto.request.AddNumberOtpRequest request) {
+        return requestAddNumberOtp(request, SocialProvider.GOOGLE);
+    }
+
+    @Override
+    @Transactional
+    public az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpApple(az.fitnest.identity.dto.request.AddNumberOtpRequest request) {
+        return requestAddNumberOtp(request, SocialProvider.APPLE);
+    }
+
+    private az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtp(az.fitnest.identity.dto.request.AddNumberOtpRequest request, SocialProvider provider) {
+        String email = request.email() != null ? request.email().toLowerCase().trim() : null;
+        if (email == null || email.isEmpty()) {
+            throw new az.fitnest.identity.exception.BadRequestException("error.service.missing_email");
+        }
+        var userProfile = userProfileGrpcClient.getUserByEmail(email);
+        if (userProfile == null) {
+            throw new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found");
+        }
+        User user = userRepository.findById(userProfile.userId())
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found"));
+        
+        if (user.getMobile() != null && !user.getMobile().trim().isEmpty()) {
+            throw new az.fitnest.identity.exception.BadRequestException("error.service.invalid_operation_context");
+        }
+
+        String normalizedMobile = az.fitnest.identity.util.MobileNumberUtils.normalize(request.mobile());
+        if (normalizedMobile == null || normalizedMobile.isBlank()) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_MOBILE");
+        }
+
+        if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
+            throw new az.fitnest.identity.exception.ConflictException("error.service.mobile_already_in_use");
+        }
+
+        az.fitnest.identity.dto.request.OtpSendRequest otpSendRequest = az.fitnest.identity.dto.request.OtpSendRequest.builder()
+                .purpose(provider == SocialProvider.GOOGLE ? az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_GOOGLE : az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_APPLE)
+                .mobile(normalizedMobile)
+                .email(email)
+                .build();
+        return otpService.sendOtpByUserId(user.getId(), otpSendRequest);
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse verifyAddNumberOtpGoogle(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request) {
+        return verifyAddNumberOtp(request, az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_GOOGLE);
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse verifyAddNumberOtpApple(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request) {
+        return verifyAddNumberOtp(request, az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_APPLE);
+    }
+
+    private LoginResponse verifyAddNumberOtp(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request, az.fitnest.identity.model.enums.OtpPurpose purpose) {
+        var verificationResult = otpService.verifyOtp(request.otpSessionId(), request.otpCode());
+        if (verificationResult.purpose() != purpose) {
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
+        }
+
+        Long userId = verificationResult.userId();
+        if (userId == null) {
+            throw new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found"));
+
+        if (user.getMobile() != null && !user.getMobile().trim().isEmpty()) {
+            throw new az.fitnest.identity.exception.BadRequestException("error.service.invalid_operation_context");
+        }
+
+        String normalizedMobile = verificationResult.mobile();
+        user.setMobile(normalizedMobile);
+        user = userRepository.save(user);
+
+        user = deviceService.validateAndBindDeviceForLogin(user, request.deviceId(), request.deviceType(), false);
+
+        return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), request.deviceType()));
     }
 
     private record NameParts(String firstName, String lastName) {

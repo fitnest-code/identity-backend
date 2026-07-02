@@ -58,7 +58,8 @@ public class UserResponseMapper {
                 consentRequired,
                 user.getRole() != null ? user.getRole().getName() : null,
                 user.isHasLocalPassword(),
-                user.getMobile() != null && !user.getMobile().trim().isEmpty()
+                user.getMobile() != null && !user.getMobile().trim().isEmpty(),
+                user.getMobile() == null || user.getMobile().trim().isEmpty()
         );
     }
 

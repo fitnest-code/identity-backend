@@ -71,6 +71,10 @@ public record UserResponse(
 
         @JsonProperty("is_eligible_to_have_local_password")
         @Schema(description = "Indicates if the user is eligible to set a local password (has a mobile number)", example = "true")
-        boolean isEligibleToHaveLocalPassword
+        boolean isEligibleToHaveLocalPassword,
+
+        @JsonProperty("required_number_verification")
+        @Schema(description = "Indicates if the user needs to verify/add a mobile number", example = "false")
+        Boolean requiredNumberVerification
 ) {
 }
