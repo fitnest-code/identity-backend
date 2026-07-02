@@ -188,8 +188,9 @@ public class AuthController {
     public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<OtpSendResponse>> requestAddNumberOtpGoogle(
             @Valid @RequestBody az.fitnest.identity.dto.request.AddNumberOtpRequest request,
             @RequestParam(required = false) String lang) {
-        log.info("Received Add Number OTP request for Google social user email: {}", request.email());
-        OtpSendResponse response = socialAuthService.requestAddNumberOtpGoogle(request);
+        Long userId = az.fitnest.identity.util.UserContext.getRequiredUserId();
+        log.info("Received Add Number OTP request for Google social user ID: {}", userId);
+        OtpSendResponse response = socialAuthService.requestAddNumberOtpGoogle(userId, request);
         return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(response));
     }
 
@@ -198,8 +199,9 @@ public class AuthController {
     public ResponseEntity<az.fitnest.identity.dto.response.ApiResponse<OtpSendResponse>> requestAddNumberOtpApple(
             @Valid @RequestBody az.fitnest.identity.dto.request.AddNumberOtpRequest request,
             @RequestParam(required = false) String lang) {
-        log.info("Received Add Number OTP request for Apple social user email: {}", request.email());
-        OtpSendResponse response = socialAuthService.requestAddNumberOtpApple(request);
+        Long userId = az.fitnest.identity.util.UserContext.getRequiredUserId();
+        log.info("Received Add Number OTP request for Apple social user ID: {}", userId);
+        OtpSendResponse response = socialAuthService.requestAddNumberOtpApple(userId, request);
         return ResponseEntity.ok(az.fitnest.identity.dto.response.ApiResponse.success(response));
     }
 
@@ -208,8 +210,9 @@ public class AuthController {
     public ResponseEntity<LoginResponse> verifyAddNumberOtpGoogle(
             @Valid @RequestBody az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request,
             @RequestParam(required = false) String lang) {
-        log.info("Received Add Number OTP verification request for Google social user");
-        LoginResponse response = socialAuthService.verifyAddNumberOtpGoogle(request);
+        Long userId = az.fitnest.identity.util.UserContext.getRequiredUserId();
+        log.info("Received Add Number OTP verification request for Google social user ID: {}", userId);
+        LoginResponse response = socialAuthService.verifyAddNumberOtpGoogle(userId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -218,8 +221,9 @@ public class AuthController {
     public ResponseEntity<LoginResponse> verifyAddNumberOtpApple(
             @Valid @RequestBody az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request,
             @RequestParam(required = false) String lang) {
-        log.info("Received Add Number OTP verification request for Apple social user");
-        LoginResponse response = socialAuthService.verifyAddNumberOtpApple(request);
+        Long userId = az.fitnest.identity.util.UserContext.getRequiredUserId();
+        log.info("Received Add Number OTP verification request for Apple social user ID: {}", userId);
+        LoginResponse response = socialAuthService.verifyAddNumberOtpApple(userId, request);
         return ResponseEntity.ok(response);
     }
 

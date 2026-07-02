@@ -47,6 +47,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v2/auth/social/google/login/add-number/**").authenticated()
+                        .requestMatchers("/api/v2/auth/social/apple/login/add-number/**").authenticated()
                         .requestMatchers("/api/v2/**").permitAll()
                         .requestMatchers("/api/v3/**").permitAll()
                         .requestMatchers("/api/v1/auth/refresh").permitAll()

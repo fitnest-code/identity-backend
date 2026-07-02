@@ -310,26 +310,21 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
     @Override
     @Transactional
-    public az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpGoogle(az.fitnest.identity.dto.request.AddNumberOtpRequest request) {
-        return requestAddNumberOtp(request, SocialProvider.GOOGLE);
+    public az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpGoogle(Long userId, az.fitnest.identity.dto.request.AddNumberOtpRequest request) {
+        return requestAddNumberOtp(userId, request, SocialProvider.GOOGLE);
     }
 
     @Override
     @Transactional
-    public az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpApple(az.fitnest.identity.dto.request.AddNumberOtpRequest request) {
-        return requestAddNumberOtp(request, SocialProvider.APPLE);
+    public az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpApple(Long userId, az.fitnest.identity.dto.request.AddNumberOtpRequest request) {
+        return requestAddNumberOtp(userId, request, SocialProvider.APPLE);
     }
 
-    private az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtp(az.fitnest.identity.dto.request.AddNumberOtpRequest request, SocialProvider provider) {
-        String email = request.email() != null ? request.email().toLowerCase().trim() : null;
-        if (email == null || email.isEmpty()) {
-            throw new az.fitnest.identity.exception.BadRequestException("error.service.missing_email");
+    private az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtp(Long userId, az.fitnest.identity.dto.request.AddNumberOtpRequest request, SocialProvider provider) {
+        if (userId == null) {
+            throw new az.fitnest.identity.exception.UnauthorizedException("error.auth.unauthorized");
         }
-        var userProfile = userProfileGrpcClient.getUserByEmail(email);
-        if (userProfile == null) {
-            throw new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found");
-        }
-        User user = userRepository.findById(userProfile.userId())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found"));
         
         if (user.getMobile() != null && !user.getMobile().trim().isEmpty()) {
@@ -345,6 +340,15 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             throw new az.fitnest.identity.exception.ConflictException("error.service.mobile_already_in_use");
         }
 
+        // We fetch profile image or email if needed by flow
+        String email = null;
+        try {
+            var profile = userProfileGrpcClient.getUserProfileDetails(userId);
+            if (profile != null) {
+                email = profile.getEmail();
+            }
+        } catch (Exception ignored) {}
+
         az.fitnest.identity.dto.request.OtpSendRequest otpSendRequest = az.fitnest.identity.dto.request.OtpSendRequest.builder()
                 .purpose(provider == SocialProvider.GOOGLE ? az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_GOOGLE : az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_APPLE)
                 .mobile(normalizedMobile)
@@ -355,25 +359,27 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
     @Override
     @Transactional
-    public LoginResponse verifyAddNumberOtpGoogle(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request) {
-        return verifyAddNumberOtp(request, az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_GOOGLE);
+    public LoginResponse verifyAddNumberOtpGoogle(Long userId, az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request) {
+        return verifyAddNumberOtp(userId, request, az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_GOOGLE);
     }
 
     @Override
     @Transactional
-    public LoginResponse verifyAddNumberOtpApple(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request) {
-        return verifyAddNumberOtp(request, az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_APPLE);
+    public LoginResponse verifyAddNumberOtpApple(Long userId, az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request) {
+        return verifyAddNumberOtp(userId, request, az.fitnest.identity.model.enums.OtpPurpose.ADD_NUMBER_APPLE);
     }
 
-    private LoginResponse verifyAddNumberOtp(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request, az.fitnest.identity.model.enums.OtpPurpose purpose) {
+    private LoginResponse verifyAddNumberOtp(Long userId, az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request, az.fitnest.identity.model.enums.OtpPurpose purpose) {
+        if (userId == null) {
+            throw new az.fitnest.identity.exception.UnauthorizedException("error.auth.unauthorized");
+        }
         var verificationResult = otpService.verifyOtp(request.otpSessionId(), request.otpCode());
         if (verificationResult.purpose() != purpose) {
             throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
 
-        Long userId = verificationResult.userId();
-        if (userId == null) {
-            throw new az.fitnest.identity.exception.ResourceNotFoundException("error.auth.user_not_found");
+        if (!userId.equals(verificationResult.userId())) {
+            throw new az.fitnest.identity.exception.InvalidCredentialsException("error.service.invalid_operation_context");
         }
 
         User user = userRepository.findById(userId)

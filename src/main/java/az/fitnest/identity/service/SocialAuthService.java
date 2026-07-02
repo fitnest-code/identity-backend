@@ -30,11 +30,11 @@ public interface SocialAuthService {
 
     LoginResponse socialLoginGoogleV2(az.fitnest.identity.dto.request.GoogleSocialRequestV2 request);
 
-    az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpGoogle(az.fitnest.identity.dto.request.AddNumberOtpRequest request);
+    az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpGoogle(Long userId, az.fitnest.identity.dto.request.AddNumberOtpRequest request);
 
-    az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpApple(az.fitnest.identity.dto.request.AddNumberOtpRequest request);
+    az.fitnest.identity.dto.response.OtpSendResponse requestAddNumberOtpApple(Long userId, az.fitnest.identity.dto.request.AddNumberOtpRequest request);
 
-    LoginResponse verifyAddNumberOtpGoogle(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request);
+    LoginResponse verifyAddNumberOtpGoogle(Long userId, az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request);
 
-    LoginResponse verifyAddNumberOtpApple(az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request);
+    LoginResponse verifyAddNumberOtpApple(Long userId, az.fitnest.identity.dto.request.AddNumberOtpVerifyRequest request);
 }
