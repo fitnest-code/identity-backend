@@ -160,6 +160,22 @@ public class OtpServiceImpl implements OtpService {
                 ? userProfileGrpcClient.getUserByEmail(email) != null
                 : userRepository.findFirstByMobile(mobileNumber).isPresent();
 
+        if (exists && (purpose == OtpPurpose.ADD_NUMBER_GOOGLE || purpose == OtpPurpose.ADD_NUMBER_APPLE)) {
+            Optional<az.fitnest.identity.model.entity.User> existingUserOpt = userRepository.findFirstByMobile(mobileNumber);
+            if (existingUserOpt.isPresent()) {
+                String existingEmail = null;
+                try {
+                    var profile = userProfileGrpcClient.getUserProfileDetails(existingUserOpt.get().getId());
+                    if (profile != null) {
+                        existingEmail = profile.getEmail();
+                    }
+                } catch (Exception ignored) {}
+                if (existingEmail == null || existingEmail.trim().isEmpty()) {
+                    exists = false;
+                }
+            }
+        }
+
         boolean shouldSendOtp = doesPurposeMatchExistence(purpose, exists);
 
         if (!shouldSendOtp) {
