@@ -22,6 +22,9 @@ import az.fitnest.identity.service.SocialAuthService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
 import az.fitnest.identity.service.DeviceService;
+import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.repository.UserConsentRepository;
+import az.fitnest.identity.model.entity.UserConsent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +32,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -48,6 +52,8 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final AuthTokenRepository authTokenRepository;
     private final DeviceService deviceService;
     private final az.fitnest.identity.service.OtpService otpService;
+    private final UserService userService;
+    private final UserConsentRepository userConsentRepository;
 
     @Autowired
     @Lazy
@@ -336,8 +342,20 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             throw new az.fitnest.identity.exception.ValidationException("error.validation", "INVALID_MOBILE");
         }
 
-        if (userRepository.findFirstByMobile(normalizedMobile).isPresent()) {
-            throw new az.fitnest.identity.exception.ConflictException("error.service.mobile_already_in_use");
+        Optional<User> existingUserOpt = userRepository.findFirstByMobile(normalizedMobile);
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+            String existingEmail = null;
+            try {
+                var profile = userProfileGrpcClient.getUserProfileDetails(existingUser.getId());
+                if (profile != null) {
+                    existingEmail = profile.getEmail();
+                }
+            } catch (Exception ignored) {}
+
+            if (existingEmail != null && !existingEmail.trim().isEmpty()) {
+                throw new az.fitnest.identity.exception.ConflictException("error.service.mobile_already_in_use");
+            }
         }
 
         // We fetch profile image or email if needed by flow
@@ -390,12 +408,72 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         }
 
         String normalizedMobile = verificationResult.mobile();
-        user.setMobile(normalizedMobile);
-        user = userRepository.save(user);
+        Optional<User> existingUserOpt = userRepository.findFirstByMobile(normalizedMobile);
+        User finalUser;
+        if (existingUserOpt.isPresent()) {
+            User existingUser = self.findAndReactivateUser(existingUserOpt.get().getId());
+            String existingEmail = null;
+            try {
+                var profile = userProfileGrpcClient.getUserProfileDetails(existingUser.getId());
+                if (profile != null) {
+                    existingEmail = profile.getEmail();
+                }
+            } catch (Exception ignored) {}
 
-        user = deviceService.validateAndBindDeviceForLogin(user, request.deviceId(), request.deviceType(), false);
+            if (existingEmail != null && !existingEmail.trim().isEmpty()) {
+                throw new az.fitnest.identity.exception.ConflictException("error.service.mobile_already_in_use");
+            }
 
-        return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), request.deviceType()));
+            // Merge details
+            String socialEmail = null;
+            String socialFirstName = null;
+            String socialLastName = null;
+            String socialProfileImageUrl = null;
+            try {
+                var profile = userProfileGrpcClient.getUserProfileDetails(userId);
+                if (profile != null) {
+                    socialEmail = profile.getEmail();
+                    socialFirstName = profile.getFirstName();
+                    socialLastName = profile.getLastName();
+                    socialProfileImageUrl = profile.getProfileImageUrl();
+                }
+            } catch (Exception ignored) {}
+
+            // Update SocialAuth records
+            List<SocialAuth> socialAuths = socialAuthRepository.findByUserId(userId);
+            for (SocialAuth sa : socialAuths) {
+                sa.setUserId(existingUser.getId());
+                socialAuthRepository.save(sa);
+            }
+
+            // Update user profile in user-backend
+            userProfileGrpcClient.createUserProfile(existingUser.getId(), socialFirstName, socialLastName, socialEmail);
+            if (socialProfileImageUrl != null && !socialProfileImageUrl.isBlank()) {
+                userProfileGrpcClient.updateProfileImage(existingUser.getId(), socialProfileImageUrl);
+            }
+
+            // Auto accept latest consents for existingUser
+            legalService.autoAcceptLatestConsents(existingUser.getId());
+
+            // Delete consents of socialUser
+            List<UserConsent> consents = userConsentRepository.findAllByUserId(userId);
+            if (!consents.isEmpty()) {
+                userConsentRepository.deleteAll(consents);
+            }
+
+            // Hard delete the temporary social user
+            userService.hardDeleteUser(userId);
+
+            finalUser = existingUser;
+        } else {
+            user.setMobile(normalizedMobile);
+            user = userRepository.save(user);
+            finalUser = user;
+        }
+
+        finalUser = deviceService.validateAndBindDeviceForLogin(finalUser, request.deviceId(), request.deviceType(), false);
+
+        return tokenIssuanceService.issueTokens(finalUser, cleanPreviousSessionAndGetDeviceType(finalUser.getId(), request.deviceType()));
     }
 
     private record NameParts(String firstName, String lastName) {
