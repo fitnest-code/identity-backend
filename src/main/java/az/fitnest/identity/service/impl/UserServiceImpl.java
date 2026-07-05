@@ -42,7 +42,7 @@ import java.util.List;
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
-    private static final java.util.regex.Pattern NAME_PART_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}\\s\\-]+$");
+    private static final java.util.regex.Pattern NAME_PART_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}\\s\\-\\.\\'\\(\\)\\d]+$");
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
