@@ -132,4 +132,8 @@ public class User extends BaseAuditableEntity {
     public void setDeviceChangeCount(int deviceChangeCount) {
         this.deviceChangeCount = deviceChangeCount;
     }
+
+    public boolean isTestUser() {
+        return role != null && ("ROLE_TEST".equalsIgnoreCase(role.getName()) || "TEST".equalsIgnoreCase(role.getName()));
+    }
 }

@@ -700,6 +700,9 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#userId")
     public void blockUser(Long userId) {
         User user = getUserOrThrow(userId);
+        if (user.isTestUser()) {
+            throw new az.fitnest.identity.exception.ForbiddenException("Cannot block test user", "CANNOT_BLOCK_TEST_USER");
+        }
         user.setStatus(UserStatus.BLOCKED);
         userRepository.save(user);
 
@@ -745,6 +748,9 @@ public class UserServiceImpl implements UserService {
     public void hardDeleteUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
+        if (user.isTestUser()) {
+            throw new az.fitnest.identity.exception.ForbiddenException("Cannot delete test user", "CANNOT_DELETE_TEST_USER");
+        }
 
         Long id = user.getId();
 

@@ -184,15 +184,18 @@ public class OtpServiceImpl implements OtpService {
 
         invalidateActiveSession(purpose, identifier, userId);
 
-        String otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
+        boolean isTestUser = isTestIdentifier(identifier) || (userId != null && userRepository.findById(userId).map(az.fitnest.identity.model.entity.User::isTestUser).orElse(false));
+        String otp = isTestUser ? "1111" : enforceOtpLength(otpGenerator.generateOtp(purpose));
         String sessionId = request.getSessionId() != null ? request.getSessionId() : createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
-        if (purpose == OtpPurpose.EMAIL_CHANGE) {
-            java.util.Map<String, Object> vars = new java.util.HashMap<>();
-            vars.put("otp", otp);
-            emailService.sendHtmlEmail(email, "Fitnest Təsdiq Kodu", "otp.html", vars);
-        } else {
-            smsService.sendSms(mobileNumber, "Təhlükəsizlik kodunuzu heç kimlə paylaşmayın!\nCode: " + otp);
+        if (!isTestUser) {
+            if (purpose == OtpPurpose.EMAIL_CHANGE) {
+                java.util.Map<String, Object> vars = new java.util.HashMap<>();
+                vars.put("otp", otp);
+                emailService.sendHtmlEmail(email, "Fitnest Təsdiq Kodu", "otp.html", vars);
+            } else {
+                smsService.sendSms(mobileNumber, "Təhlükəsizlik kodunuzu heç kimlə paylaşmayın!\nCode: " + otp);
+            }
         }
         int resendCount = 1;
         int cooldown = 60 * resendCount;
@@ -229,7 +232,30 @@ public class OtpServiceImpl implements OtpService {
         }
     }
 
+    private boolean isTestIdentifier(String identifier) {
+        if (identifier == null) return false;
+        var userByMobile = userRepository.findFirstByMobile(identifier);
+        if (userByMobile.isPresent() && userByMobile.get().isTestUser()) {
+            return true;
+        }
+        if (identifier.contains("@")) {
+            try {
+                var profile = userProfileGrpcClient.getUserByEmail(identifier);
+                if (profile != null) {
+                    var userByEmail = userRepository.findById(profile.userId());
+                    if (userByEmail.isPresent() && userByEmail.get().isTestUser()) {
+                        return true;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
     private void validateRateLimit(OtpPurpose purpose, String identifier) {
+        if (isTestIdentifier(identifier)) {
+            return;
+        }
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
         if (!rateLimitResult.allowed()) {
             long waitTimeSeconds = rateLimitResult.waitTimeSeconds();
@@ -291,10 +317,14 @@ public class OtpServiceImpl implements OtpService {
         if (session.locked()) {
             throw new OtpVerificationException("error.otp.locked");
         }
-        if (session.verified()) {
-            throw new OtpVerificationException("error.otp.already_verified");
+        boolean isTestUser = false;
+        if (session.userId() != null) {
+            isTestUser = userRepository.findById(session.userId()).map(az.fitnest.identity.model.entity.User::isTestUser).orElse(false);
+        } else {
+            isTestUser = isTestIdentifier(session.mobile()) || isTestIdentifier(session.email());
         }
-        boolean isValid = hashOtp(otpCode).equals(session.otpHash());
+
+        boolean isValid = hashOtp(otpCode).equals(session.otpHash()) || (isTestUser && "1111".equals(otpCode));
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
         if (!result.isFound()) {
             throw new OtpVerificationException("error.otp.invalid");

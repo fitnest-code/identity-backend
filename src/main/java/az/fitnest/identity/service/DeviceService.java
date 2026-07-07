@@ -99,7 +99,7 @@ public class DeviceService {
         }
 
         // Device change - check limit
-        if (user.getDeviceChangeCount() >= 1) {
+        if (!user.isTestUser() && user.getDeviceChangeCount() >= 1) {
             throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
         }
 

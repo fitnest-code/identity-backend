@@ -170,6 +170,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void validateUserStatus(User user) {
+        if (user.isTestUser()) {
+            return;
+        }
         Instant now = Instant.now();
         if (user.getStatus() == UserStatus.DELETED) {
             throw new ForbiddenException("error.auth.account_deleted", "error.auth.account_deleted");
@@ -191,6 +194,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void handleFailedLogin(User user) {
+        if (user.isTestUser()) {
+            return;
+        }
         Integer attempts = userRepository.incrementFailedLoginAttemptsAndReturn(user.getId());
         if (attempts != null && attempts >= maxFailedLoginAttempts) {
             userRepository.updateLockStatus(
@@ -262,7 +268,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UnauthorizedException("error.auth.invalid_credentials"));
 
         Instant now = Instant.now();
-        if (user.getStatus() == UserStatus.INACTIVE || user.getStatus() == UserStatus.BLOCKED || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))) {
+        if (!user.isTestUser() && (user.getStatus() == UserStatus.INACTIVE || user.getStatus() == UserStatus.BLOCKED || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)))) {
             String errorCode = user.getStatus() == UserStatus.BLOCKED ? "error.auth.account_blocked" : "error.auth.invalid_credentials";
             throw new UnauthorizedException(errorCode);
         }
