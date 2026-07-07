@@ -54,6 +54,7 @@ public class OtpServiceImpl implements OtpService {
 
     private final UserRepository userRepository;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
+    private final TestUserHelper testUserHelper;
     private final OtpStore otpStore;
     private final OtpRateLimiterFacade otpRateLimiter;
     private final OtpGenerator otpGenerator;
@@ -184,7 +185,7 @@ public class OtpServiceImpl implements OtpService {
 
         invalidateActiveSession(purpose, identifier, userId);
 
-        boolean isTestUser = isTestIdentifier(identifier) || (userId != null && userRepository.findById(userId).map(az.fitnest.identity.model.entity.User::isTestUser).orElse(false));
+        boolean isTestUser = testUserHelper.isTestIdentifier(identifier) || testUserHelper.isTestUserId(userId);
         String otp = isTestUser ? "1111" : enforceOtpLength(otpGenerator.generateOtp(purpose));
         String sessionId = request.getSessionId() != null ? request.getSessionId() : createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
@@ -232,28 +233,8 @@ public class OtpServiceImpl implements OtpService {
         }
     }
 
-    private boolean isTestIdentifier(String identifier) {
-        if (identifier == null) return false;
-        var userByMobile = userRepository.findFirstByMobile(identifier);
-        if (userByMobile.isPresent() && userByMobile.get().isTestUser()) {
-            return true;
-        }
-        if (identifier.contains("@")) {
-            try {
-                var profile = userProfileGrpcClient.getUserByEmail(identifier);
-                if (profile != null) {
-                    var userByEmail = userRepository.findById(profile.userId());
-                    if (userByEmail.isPresent() && userByEmail.get().isTestUser()) {
-                        return true;
-                    }
-                }
-            } catch (Exception ignored) {}
-        }
-        return false;
-    }
-
     private void validateRateLimit(OtpPurpose purpose, String identifier) {
-        if (isTestIdentifier(identifier)) {
+        if (testUserHelper.isTestIdentifier(identifier)) {
             return;
         }
         OtpRateLimiter.RateLimitResult rateLimitResult = otpRateLimiter.checkRateLimit(purpose, identifier);
@@ -317,12 +298,9 @@ public class OtpServiceImpl implements OtpService {
         if (session.locked()) {
             throw new OtpVerificationException("error.otp.locked");
         }
-        boolean isTestUser = false;
-        if (session.userId() != null) {
-            isTestUser = userRepository.findById(session.userId()).map(az.fitnest.identity.model.entity.User::isTestUser).orElse(false);
-        } else {
-            isTestUser = isTestIdentifier(session.mobile()) || isTestIdentifier(session.email());
-        }
+        boolean isTestUser = testUserHelper.isTestUserId(session.userId())
+                || testUserHelper.isTestIdentifier(session.mobile())
+                || testUserHelper.isTestIdentifier(session.email());
 
         boolean isValid = hashOtp(otpCode).equals(session.otpHash()) || (isTestUser && "1111".equals(otpCode));
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);

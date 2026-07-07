@@ -50,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenHasher tokenHasher;
     private final MessageSource messageSource;
     private final DeviceService deviceService;
+    private final TestUserHelper testUserHelper;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
     private int maxFailedLoginAttempts;
@@ -170,7 +171,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void validateUserStatus(User user) {
-        if (user.isTestUser()) {
+        if (testUserHelper.isTestUser(user)) {
             return;
         }
         Instant now = Instant.now();
@@ -194,7 +195,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void handleFailedLogin(User user) {
-        if (user.isTestUser()) {
+        if (testUserHelper.isTestUser(user)) {
             return;
         }
         Integer attempts = userRepository.incrementFailedLoginAttemptsAndReturn(user.getId());
@@ -268,7 +269,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UnauthorizedException("error.auth.invalid_credentials"));
 
         Instant now = Instant.now();
-        if (!user.isTestUser() && (user.getStatus() == UserStatus.INACTIVE || user.getStatus() == UserStatus.BLOCKED || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)))) {
+        if (!testUserHelper.isTestUser(user) && (user.getStatus() == UserStatus.INACTIVE || user.getStatus() == UserStatus.BLOCKED || (user.getStatus() == UserStatus.LOCKED && user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)))) {
             String errorCode = user.getStatus() == UserStatus.BLOCKED ? "error.auth.account_blocked" : "error.auth.invalid_credentials";
             throw new UnauthorizedException(errorCode);
         }

@@ -8,6 +8,7 @@ import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.UserDeviceRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
+import az.fitnest.identity.service.impl.TestUserHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class DeviceService {
     private final UserDeviceRepository userDeviceRepository;
     private final RedisTokenService redisTokenService;
     private final AuthTokenRepository authTokenRepository;
+    private final TestUserHelper testUserHelper;
 
     @Transactional
     public User validateAndBindDeviceForLogin(User user, String deviceId, String deviceType, boolean deviceIdRequired) {
@@ -99,7 +101,7 @@ public class DeviceService {
         }
 
         // Device change - check limit
-        if (!user.isTestUser() && user.getDeviceChangeCount() >= 1) {
+        if (!testUserHelper.isTestUser(user) && user.getDeviceChangeCount() >= 1) {
             throw new ForbiddenException("error.auth.device_limit_exceeded", "error.auth.device_limit_exceeded");
         }
 

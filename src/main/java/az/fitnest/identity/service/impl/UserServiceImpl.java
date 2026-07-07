@@ -57,6 +57,7 @@ public class UserServiceImpl implements UserService {
     private final UserResponseMapper userResponseMapper;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
     private final UserDeviceRepository userDeviceRepository;
+    private final TestUserHelper testUserHelper;
 
     @CacheEvict(value = "users", key = "#userId")
     @Transactional
@@ -700,7 +701,7 @@ public class UserServiceImpl implements UserService {
     @CacheEvict(value = "users", key = "#userId")
     public void blockUser(Long userId) {
         User user = getUserOrThrow(userId);
-        if (user.isTestUser()) {
+        if (testUserHelper.isTestUser(user)) {
             throw new az.fitnest.identity.exception.ForbiddenException("Cannot block test user", "CANNOT_BLOCK_TEST_USER");
         }
         user.setStatus(UserStatus.BLOCKED);
@@ -748,7 +749,7 @@ public class UserServiceImpl implements UserService {
     public void hardDeleteUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("error.resource.not_found", "RESOURCE_NOT_FOUND"));
-        if (user.isTestUser()) {
+        if (testUserHelper.isTestUser(user)) {
             throw new az.fitnest.identity.exception.ForbiddenException("Cannot delete test user", "CANNOT_DELETE_TEST_USER");
         }
 
