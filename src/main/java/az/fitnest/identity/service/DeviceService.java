@@ -29,6 +29,9 @@ public class DeviceService {
 
     @Transactional
     public User validateAndBindDeviceForLogin(User user, String deviceId, String deviceType, boolean deviceIdRequired) {
+        if (testUserHelper.isTestUser(user)) {
+            return user;
+        }
         boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
         if (!isMobile) {
             return user;
@@ -71,6 +74,9 @@ public class DeviceService {
 
     @Transactional
     public User validateAndBindDeviceForVerification(User user, String deviceId, String deviceType) {
+        if (testUserHelper.isTestUser(user)) {
+            return user;
+        }
         boolean isMobile = "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
         if (!isMobile) {
             return user;
