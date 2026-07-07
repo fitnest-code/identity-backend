@@ -97,7 +97,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             WHERE (:id IS NULL OR u.user_id = :id)
               AND (:mobile IS NULL OR u.mobile LIKE :mobile || '%')
               AND (:userIds IS NULL OR u.user_id IN :userIds)
-              AND (:roleName IS NULL OR r.name = :roleName)
+              AND (:roleName IS NULL OR r.name IN (select trim(s) from unnest(string_to_array(:roleName, ',')) s))
         """, nativeQuery = true)
     Page<User> searchUsersAdvanced(@Param("id") Long id,
                                    @Param("name") String name,
