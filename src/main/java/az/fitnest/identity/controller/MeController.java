@@ -158,16 +158,31 @@ public class MeController {
     }
 
     @PostMapping("/api/v1/me/delete-account")
-    @Operation(summary = "Delete account", description = "Marks the authenticated user's account as deleted. User can reactivate within 30 days.")
+    @Operation(summary = "Delete account", description = "Marks the authenticated user's account as deleted. User can reactivate within 30 days or delete permanently if needHardDelete is true.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Account deleted successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
-    public ResponseEntity<ApiResponse<SuccessResponse>> deleteAccount(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<SuccessResponse>> deleteAccount(
+            @RequestBody(required = false) az.fitnest.identity.dto.request.DeleteAccountRequest bodyRequest,
+            @RequestParam(required = false) Boolean needHardDelete,
+            HttpServletRequest request) {
         Long userId = UserContext.getRequiredUserId();
         try {
-            userService.deleteAccount(userId);
+            boolean hardDelete = false;
+            if (bodyRequest != null && bodyRequest.needHardDelete() != null) {
+                hardDelete = bodyRequest.needHardDelete();
+            } else if (needHardDelete != null) {
+                hardDelete = needHardDelete;
+            }
+
+            if (hardDelete) {
+                userService.hardDeleteUser(userId);
+            } else {
+                userService.deleteAccount(userId);
+            }
+
             return ResponseEntity.ok(ApiResponse.success(
                     SuccessResponse.of(getMessage("success.account.deleted"), request.getRequestURI())
             ));
