@@ -170,12 +170,8 @@ public class MeController {
             HttpServletRequest request) {
         Long userId = UserContext.getRequiredUserId();
         try {
-            boolean hardDelete = false;
-            if (bodyRequest != null && bodyRequest.needHardDelete() != null) {
-                hardDelete = bodyRequest.needHardDelete();
-            } else if (needHardDelete != null) {
-                hardDelete = needHardDelete;
-            }
+            boolean hardDelete = (bodyRequest != null && Boolean.TRUE.equals(bodyRequest.needHardDelete()))
+                    || Boolean.TRUE.equals(needHardDelete);
 
             if (hardDelete) {
                 userService.hardDeleteUser(userId);

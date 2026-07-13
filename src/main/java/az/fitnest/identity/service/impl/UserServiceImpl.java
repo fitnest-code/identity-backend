@@ -355,23 +355,17 @@ public class UserServiceImpl implements UserService {
     @Scheduled(cron = "0 0 2 * * *")
     public void deleteInactiveAccountsAfter30Days() {
         Instant threshold = Instant.now().minusSeconds(30 * 24 * 60 * 60);
-        int pageSize = 100;
-        org.springframework.data.domain.Page<Long> page;
+        int limit = 1000;
+        org.springframework.data.domain.Page<Long> page = userRepository.findInactiveUserIds(threshold, org.springframework.data.domain.PageRequest.of(0, limit));
+        List<Long> ids = page.getContent();
 
-        do {
-            page = userRepository.findInactiveUserIds(threshold, org.springframework.data.domain.PageRequest.of(0, pageSize));
-            List<Long> ids = page.getContent();
-            if (ids.isEmpty()) {
-                break;
+        for (Long id : ids) {
+            try {
+                self.hardDeleteUser(id);
+            } catch (Exception e) {
+                log.error("Failed to hard delete inactive user {} during scheduled cleanup", id, e);
             }
-            for (Long id : ids) {
-                try {
-                    self.hardDeleteUser(id);
-                } catch (Exception e) {
-                    log.error("Failed to hard delete inactive user {} during scheduled cleanup", id, e);
-                }
-            }
-        } while (page.hasNext());
+        }
     }
 
     @Transactional
