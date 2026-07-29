@@ -24,4 +24,6 @@ public interface SocialAuthRepository extends JpaRepository<SocialAuth, Long> {
     );
 
     List<SocialAuth> findByUserId(Long userId);
+
+    void deleteByUserId(Long userId);
 }

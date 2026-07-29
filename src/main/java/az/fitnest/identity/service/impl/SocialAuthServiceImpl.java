@@ -162,17 +162,23 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         if (existingSocialAuth.isPresent()) {
             SocialAuth socialAuth = existingSocialAuth.get();
             log.info("Found existing social auth record for user ID: {}", socialAuth.getUserId());
-            User user = self.findAndReactivateUser(socialAuth.getUserId());
+            Optional<User> userOpt = userRepository.findById(socialAuth.getUserId());
+            if (userOpt.isPresent()) {
+                User user = self.findAndReactivateUser(socialAuth.getUserId());
 
-            user = deviceService.validateAndBindDeviceForLogin(user, deviceId, deviceType, false);
+                user = deviceService.validateAndBindDeviceForLogin(user, deviceId, deviceType, false);
 
-            var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
-            if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
-                log.info("Updating profile image for existing user: {}", user.getId());
-                userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
+                var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
+                if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
+                    log.info("Updating profile image for existing user: {}", user.getId());
+                    userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
+                }
+                log.info("Issuing tokens for existing user: {}", user.getId());
+                return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
+            } else {
+                log.warn("Orphaned SocialAuth record found for user ID: {}, deleting stale social auth", socialAuth.getUserId());
+                socialAuthRepository.delete(socialAuth);
             }
-            log.info("Issuing tokens for existing user: {}", user.getId());
-            return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
         }
 
         if (email != null && !email.isEmpty()) {
@@ -180,18 +186,23 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             var userByEmail = userProfileGrpcClient.getUserByEmail(email);
             if (userByEmail != null) {
                 Long userId = userByEmail.userId();
-                log.info("Found existing user by email in user-backend: {}. UserId: {}. Linking {} account.", email, userId, provider);
-                User user = self.findAndReactivateUser(userId);
+                Optional<User> userOpt = userRepository.findById(userId);
+                if (userOpt.isPresent()) {
+                    log.info("Found existing user by email in user-backend: {}. UserId: {}. Linking {} account.", email, userId, provider);
+                    User user = self.findAndReactivateUser(userId);
 
-                user = deviceService.validateAndBindDeviceForLogin(user, deviceId, deviceType, false);
+                    user = deviceService.validateAndBindDeviceForLogin(user, deviceId, deviceType, false);
 
-                var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
-                if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
-                    log.info("Updating profile image for existing user (by email): {}", user.getId());
-                    userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
+                    var profile = userProfileGrpcClient.getUserProfileDetails(user.getId());
+                    if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
+                        log.info("Updating profile image for existing user (by email): {}", user.getId());
+                        userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
+                    }
+                    self.linkSocialAccount(user.getId(), provider, providerId);
+                    return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
+                } else {
+                    log.warn("User backend returned user by email {} with userId {}, but user does not exist in identity-backend.", email, userId);
                 }
-                self.linkSocialAccount(user.getId(), provider, providerId);
-                return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
             }
         }
 

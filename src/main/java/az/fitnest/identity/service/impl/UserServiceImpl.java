@@ -13,6 +13,8 @@ import az.fitnest.identity.model.enums.OtpPurpose;
 import az.fitnest.identity.model.enums.UserStatus;
 import az.fitnest.identity.repository.AuthTokenRepository;
 import az.fitnest.identity.repository.RoleRepository;
+import az.fitnest.identity.repository.SocialAuthRepository;
+import az.fitnest.identity.repository.UserConsentRepository;
 import az.fitnest.identity.repository.UserDeviceRepository;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.security.RedisTokenService;
@@ -57,6 +59,8 @@ public class UserServiceImpl implements UserService {
     private final UserResponseMapper userResponseMapper;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
     private final UserDeviceRepository userDeviceRepository;
+    private final SocialAuthRepository socialAuthRepository;
+    private final UserConsentRepository userConsentRepository;
     private final TestUserHelper testUserHelper;
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -772,6 +776,13 @@ public class UserServiceImpl implements UserService {
         authTokenRepository.deleteByUserId(id);
 
         userDeviceRepository.deleteByUserId(id);
+
+        socialAuthRepository.deleteByUserId(id);
+
+        List<az.fitnest.identity.model.entity.UserConsent> consents = userConsentRepository.findAllByUserId(id);
+        if (!consents.isEmpty()) {
+            userConsentRepository.deleteAll(consents);
+        }
 
         userRepository.deleteById(id);
 
