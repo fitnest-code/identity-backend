@@ -230,7 +230,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 .hasAccount(true)
                 .setupRequired(true)
                 .failedLoginAttempts(0)
-                .status(UserStatus.ACTIVE)
+                .status(UserStatus.PENDING_REGISTRATION)
                 .hasLocalPassword(false)
                 .deviceId(deviceId != null ? deviceId.trim() : null)
                 .role(roleRepository.findByName("ROLE_USER")
@@ -246,7 +246,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
     private void handleUserStatus(User user) {
         switch (user.getStatus()) {
-            case ACTIVE -> {
+            case ACTIVE, PENDING_REGISTRATION -> {
             }
             case INACTIVE -> {
                 log.info("Reactivating INACTIVE user: {}", user.getId());
@@ -467,6 +467,9 @@ public class SocialAuthServiceImpl implements SocialAuthService {
             finalUser = existingUser;
         } else {
             user.setMobile(normalizedMobile);
+            if (user.getStatus() == UserStatus.PENDING_REGISTRATION) {
+                user.setStatus(UserStatus.ACTIVE);
+            }
             user = userRepository.save(user);
             finalUser = user;
         }
