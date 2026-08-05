@@ -36,6 +36,7 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
 
     private final UserService userService;
     private final UserRepository userRepository;
+    private final az.fitnest.identity.service.ActiveUserLanguageService activeUserLanguageService;
 
     @Override
     public void getUserById(GetUserByIdRequest request, StreamObserver<az.fitnest.user.grpc.UserResponse> responseObserver) {
@@ -292,20 +293,14 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     public void getActiveUsersWithLanguage(az.fitnest.user.grpc.GetActiveUsersWithLanguageRequest request,
                                            StreamObserver<az.fitnest.user.grpc.GetActiveUsersWithLanguageResponse> responseObserver) {
         try {
-            java.util.List<String> roleNames = request.getRoleNamesList();
-            if (roleNames == null || roleNames.isEmpty()) {
-                roleNames = java.util.List.of("ROLE_USER");
-            }
-            // "Active users" for fan-out = all users with ROLE_USER (exclude only hard-deleted)
-            java.util.List<Object[]> rows = userRepository.findUserIdsAndLanguagesByRoles(roleNames);
+            java.util.List<az.fitnest.identity.service.ActiveUserLanguageService.UserLanguage> users =
+                    activeUserLanguageService.findByRoles(request.getRoleNamesList());
             az.fitnest.user.grpc.GetActiveUsersWithLanguageResponse.Builder responseBuilder =
                     az.fitnest.user.grpc.GetActiveUsersWithLanguageResponse.newBuilder();
-            for (Object[] row : rows) {
-                Long userId = (Long) row[0];
-                String language = row[1] != null ? row[1].toString() : "AZ";
+            for (az.fitnest.identity.service.ActiveUserLanguageService.UserLanguage user : users) {
                 responseBuilder.addUsers(az.fitnest.user.grpc.ActiveUserLanguage.newBuilder()
-                        .setUserId(userId)
-                        .setLanguage(language)
+                        .setUserId(user.userId())
+                        .setLanguage(user.language())
                         .build());
             }
             responseObserver.onNext(responseBuilder.build());
