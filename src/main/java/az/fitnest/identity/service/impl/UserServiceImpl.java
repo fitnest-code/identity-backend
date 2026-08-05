@@ -347,7 +347,7 @@ public class UserServiceImpl implements UserService {
         redisTokenService.removeAllSessions(userId);
 
         authTokenRepository.deleteByUserId(userId);
-        publishUserEvent("USER_UPDATED", userId);
+        publishUserEvent("ACCOUNT_DEACTIVATED", userId);
     }
 
     @Transactional
@@ -727,7 +727,7 @@ public class UserServiceImpl implements UserService {
         redisTokenService.removeAllSessions(userId);
         authTokenRepository.deleteByUserId(userId);
 
-        publishUserEvent("USER_UPDATED", userId);
+        publishUserEvent("ACCOUNT_DEACTIVATED", userId);
         log.info("User {} has been BLOCKED by admin", userId);
     }
 

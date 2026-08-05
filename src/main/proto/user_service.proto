@@ -23,6 +23,7 @@ service UserService {
   rpc SearchUserIdsByMobile(SearchUserIdsByMobileRequest) returns (SearchUserIdsByMobileResponse);
   rpc GetUsersByIds(GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
   rpc GetUserIdsByRoles(GetUserIdsByRolesRequest) returns (GetUserIdsByRolesResponse);
+  rpc GetActiveUsersWithLanguage(GetActiveUsersWithLanguageRequest) returns (GetActiveUsersWithLanguageResponse);
 }
 
 message GetUsersByIdsRequest {
@@ -61,6 +62,19 @@ message GetUserIdsByRolesRequest {
 
 message GetUserIdsByRolesResponse {
   repeated int64 user_ids = 1;
+}
+
+message GetActiveUsersWithLanguageRequest {
+  repeated string role_names = 1;
+}
+
+message ActiveUserLanguage {
+  int64 user_id = 1;
+  string language = 2;
+}
+
+message GetActiveUsersWithLanguageResponse {
+  repeated ActiveUserLanguage users = 1;
 }
 
 message UpdateUserProfileRequest {

@@ -134,6 +134,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
            OR (u.role.name IN :partnerRoles AND u.deviceId IS NOT NULL AND u.deviceId != '')
     """)
     List<Long> findUserIdsByRoleNamesOrPartnersWithMobile(@Param("roleNames") List<String> roleNames, @Param("partnerRoles") List<String> partnerRoles);
+
+    @Query("""
+        SELECT u.id, u.language FROM User u
+        WHERE u.role.name IN :roleNames
+          AND u.status <> 'DELETED'
+    """)
+    List<Object[]> findUserIdsAndLanguagesByRoles(@Param("roleNames") List<String> roleNames);
     
     @Modifying
     @Transactional

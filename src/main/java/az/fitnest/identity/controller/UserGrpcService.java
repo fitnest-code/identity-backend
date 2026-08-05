@@ -288,6 +288,37 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
         }
     }
 
+    @Override
+    public void getActiveUsersWithLanguage(az.fitnest.user.grpc.GetActiveUsersWithLanguageRequest request,
+                                           StreamObserver<az.fitnest.user.grpc.GetActiveUsersWithLanguageResponse> responseObserver) {
+        try {
+            java.util.List<String> roleNames = request.getRoleNamesList();
+            if (roleNames == null || roleNames.isEmpty()) {
+                roleNames = java.util.List.of("ROLE_USER");
+            }
+            // "Active users" for fan-out = all users with ROLE_USER (exclude only hard-deleted)
+            java.util.List<Object[]> rows = userRepository.findUserIdsAndLanguagesByRoles(roleNames);
+            az.fitnest.user.grpc.GetActiveUsersWithLanguageResponse.Builder responseBuilder =
+                    az.fitnest.user.grpc.GetActiveUsersWithLanguageResponse.newBuilder();
+            for (Object[] row : rows) {
+                Long userId = (Long) row[0];
+                String language = row[1] != null ? row[1].toString() : "AZ";
+                responseBuilder.addUsers(az.fitnest.user.grpc.ActiveUserLanguage.newBuilder()
+                        .setUserId(userId)
+                        .setLanguage(language)
+                        .build());
+            }
+            responseObserver.onNext(responseBuilder.build());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Error in getActiveUsersWithLanguage: {}", e.getMessage(), e);
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to get active users with language: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
     private az.fitnest.user.grpc.UserResponse buildUserResponse(User user) {
         String createdDate = user.getCreatedDate() != null ? user.getCreatedDate().toString() : "";
         return az.fitnest.user.grpc.UserResponse.newBuilder()
