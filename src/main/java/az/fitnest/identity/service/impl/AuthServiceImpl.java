@@ -28,9 +28,12 @@ import az.fitnest.identity.util.MobileNumberUtils;
 import az.fitnest.identity.util.TokenHasher;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +42,7 @@ import java.time.Instant;
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UserRepository userRepository;
     private final PasswordService passwordService;
@@ -51,6 +55,7 @@ public class AuthServiceImpl implements AuthService {
     private final MessageSource messageSource;
     private final DeviceService deviceService;
     private final TestUserHelper testUserHelper;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${auth.account-lock.max-failed-attempts:5}")
     private int maxFailedLoginAttempts;
@@ -304,12 +309,28 @@ public class AuthServiceImpl implements AuthService {
             // Revoke ONLY the current session/JTI instead of all user tokens
             authTokenRepository.deleteByJti(jti);
             userRepository.markNoSessionsIfNone(userId, SessionStatus.NO_SESSIONS);
+
+            // Drop push eligibility so logged-out users are excluded from broadcasts
+            publishUserEvent("USER_LOGGED_OUT", userId);
         } catch (JwtException e) {
             // Only catch JWT related issues, let others bubble up or handle specifically
             throw new UnauthorizedException("error.auth.invalid_token");
         } catch (Exception e) {
             // Ignore other errors during logout to ensure best effort
         }
+    }
+
+    private void publishUserEvent(String eventType, Long userId) {
+        UserEvent event = new UserEvent(eventType, userId, System.currentTimeMillis());
+        kafkaTemplate.send("user-events", userId.toString(), event)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to publish {} for userId={}", eventType, userId, ex);
+                    }
+                });
+    }
+
+    private record UserEvent(String eventType, Long userId, long timestamp) {
     }
 
     @Override
