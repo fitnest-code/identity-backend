@@ -241,6 +241,23 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public RefreshResponse refresh(String refreshToken) {
+        return refresh(new az.fitnest.identity.dto.request.RefreshRequest(refreshToken, null), null, null, null);
+    }
+
+    @Override
+    @Transactional
+    public RefreshResponse refresh(az.fitnest.identity.dto.request.RefreshRequest request, String userAgent) {
+        return refresh(request, userAgent, null, null);
+    }
+
+    @Override
+    @Transactional
+    public RefreshResponse refresh(az.fitnest.identity.dto.request.RefreshRequest request, String userAgent, String xDeviceType, String xPlatform) {
+        String refreshToken = request != null ? request.refreshToken() : null;
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new UnauthorizedException("error.auth.invalid_credentials");
+        }
+
         Long userId;
         Instant expiration;
         try {
@@ -256,7 +273,8 @@ public class AuthServiceImpl implements AuthService {
 
         String refreshTokenHash = tokenHasher.hash(refreshToken);
         AuthToken token = authTokenRepository.findByRefreshTokenHash(refreshTokenHash);
-        String deviceType = (token != null && token.getDeviceType() != null) ? token.getDeviceType() : "Web";
+
+        String deviceType = resolveDeviceType(request, token, userAgent, xDeviceType, xPlatform, userId);
 
         User user = internalRefresh(userId, refreshToken);
         LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceType);
@@ -267,6 +285,39 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return new RefreshResponse(tokens.accessToken(), tokens.refreshToken());
+    }
+
+    private String resolveDeviceType(az.fitnest.identity.dto.request.RefreshRequest request, AuthToken token, String userAgent, String xDeviceType, String xPlatform, Long userId) {
+        if (request != null && request.deviceType() != null && !request.deviceType().isBlank()) {
+            return request.deviceType();
+        }
+        if (xDeviceType != null && !xDeviceType.isBlank()) {
+            return xDeviceType;
+        }
+        if (xPlatform != null && !xPlatform.isBlank()) {
+            if ("IOS".equalsIgnoreCase(xPlatform)) return "iOS";
+            if ("ANDROID".equalsIgnoreCase(xPlatform)) return "Android";
+            return xPlatform;
+        }
+        if (token != null && token.getDeviceType() != null && !token.getDeviceType().isBlank()) {
+            return token.getDeviceType();
+        }
+        if (userAgent != null && !userAgent.isBlank()) {
+            String ua = userAgent.toLowerCase();
+            if (ua.contains("android") || ua.contains("dalvik") || ua.contains("okhttp") || ua.contains("kotlin")) {
+                return "Android";
+            }
+            if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("ipod")
+                    || ua.contains("ios") || ua.contains("cfnetwork") || ua.contains("darwin")
+                    || ua.contains("swift") || ua.contains("alamofire")) {
+                return "iOS";
+            }
+        }
+        String mobileJti = redisTokenService.getActiveSession(userId, "iOS");
+        if (mobileJti != null && !mobileJti.isBlank()) {
+            return "iOS";
+        }
+        return "Web";
     }
 
     private User internalRefresh(Long userId, String refreshToken) {

@@ -10,6 +10,10 @@ public interface AuthService {
 
     RefreshResponse refresh(String refreshToken);
 
+    RefreshResponse refresh(az.fitnest.identity.dto.request.RefreshRequest request, String userAgent);
+
+    RefreshResponse refresh(az.fitnest.identity.dto.request.RefreshRequest request, String userAgent, String xDeviceType, String xPlatform);
+
     void logout(String accessToken);
 
     void logoutFromHeader(String authHeader);

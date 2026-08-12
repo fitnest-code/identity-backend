@@ -105,7 +105,10 @@ public class RedisTokenService {
     }
 
     private boolean isMobile(String deviceType) {
-        return "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType);
+        if (deviceType == null) {
+            return false;
+        }
+        return "iOS".equalsIgnoreCase(deviceType) || "Android".equalsIgnoreCase(deviceType) || "mobile".equalsIgnoreCase(deviceType);
     }
 
     private String getSessionIndexKey(Long userId) {

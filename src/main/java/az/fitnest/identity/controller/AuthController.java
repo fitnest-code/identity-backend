@@ -80,14 +80,18 @@ public class AuthController {
         return ResponseEntity.ok(result.payload());
     }
 
-    @PostMapping("/api/v1/auth/refresh")
+    @PostMapping({"/api/v1/auth/refresh", "/api/v2/auth/refresh", "/api/v3/auth/refresh"})
     @Operation(summary = "Giriş tokenini yeniləyin", description = "Giriş tokenini yeniləyir.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token uğurla yeniləndi", content = @Content(schema = @Schema(implementation = RefreshResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Yanlış və ya vaxtı keçmiş yeniləmə tokeni")
     })
-    public ResponseEntity<RefreshResponse> refreshV1(@Valid @RequestBody RefreshRequest request) {
-        return ResponseEntity.ok(authService.refresh(request.refreshToken()));
+    public ResponseEntity<RefreshResponse> refreshV1(
+            @Valid @RequestBody RefreshRequest request,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            @RequestHeader(value = "X-Device-Type", required = false) String xDeviceType,
+            @RequestHeader(value = "X-Platform", required = false) String xPlatform) {
+        return ResponseEntity.ok(authService.refresh(request, userAgent, xDeviceType, xPlatform));
     }
 
     @PostMapping("/api/v1/auth/logout")
