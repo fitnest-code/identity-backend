@@ -266,15 +266,15 @@ management:
 
 logging:
   level:
-    root: ${LOGGING_LEVEL_ROOT:INFO}
-    az.fitnest: DEBUG
-    az.fitnest.identity: ${LOGGING_LEVEL_AZ_FITNEST_IDENTITY:INFO}
-    org.springframework.security: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY:INFO}
-    org.springdoc: ${LOGGING_LEVEL_SPRINGDOC:INFO}
-    org.hibernate.SQL: ${LOGGING_LEVEL_HIBERNATE_SQL:DEBUG}
-    org.hibernate.type.descriptor.sql.BasicBinder: ${LOGGING_LEVEL_HIBERNATE_PARAM:TRACE}
-    org.springframework.kafka: DEBUG
-    org.springframework.mail: DEBUG
+    root: WARN
+    az.fitnest: WARN
+    az.fitnest.identity: WARN
+    org.springframework.security: WARN
+    org.springdoc: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.kafka: WARN
+    org.springframework.mail: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

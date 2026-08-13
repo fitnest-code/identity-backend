@@ -442,9 +442,6 @@ public class AuthServiceImpl implements AuthService {
         if (user.getStatus() == UserStatus.INACTIVE) {
             user.setStatus(UserStatus.ACTIVE);
             user.setInactiveAt(null);
-            user.setFailedLoginAttempts(0);
-            user.setLockedUntil(null);
-            user = userRepository.save(user);
         }
 
         String deviceType = request.deviceType();
@@ -459,13 +456,12 @@ public class AuthServiceImpl implements AuthService {
 
         if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
-            user = userRepository.save(user);
         }
 
-        // Reset lockout state
+        // Reset lockout state & persist all changes in a single DB round-trip
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
-        userRepository.save(user);
+        user = userRepository.save(user);
 
         return tokenIssuanceService.issueTokens(user, deviceType);
     }
