@@ -790,4 +790,50 @@ public class UserServiceImpl implements UserService {
 
         log.warn("User {} has been PERMANENTLY DELETED by admin", id);
     }
+
+    @Transactional
+    @Override
+    public User upsertStaffForEnvSync(String mobile, String rawPassword, String roleName, String firstName, String lastName) {
+        if (rawPassword == null || rawPassword.length() < 8) {
+            throw new az.fitnest.identity.exception.ValidationException("error.validation", "WEAK_PASSWORD");
+        }
+
+        String finalRoleName = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+        Role role = roleRepository.findByName(finalRoleName)
+                .orElseGet(() -> {
+                    Role created = new Role();
+                    created.setName(finalRoleName);
+                    return roleRepository.save(created);
+                });
+
+        java.util.Optional<User> existing = userRepository.findFirstByMobile(mobile);
+        if (existing.isPresent()) {
+            User user = existing.get();
+            user.setPasswordHash(passwordService.hashPassword(rawPassword));
+            user.setHasLocalPassword(true);
+            user.setRole(role);
+            user.setStatus(UserStatus.ACTIVE);
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
+            User saved = userRepository.save(user);
+            if (firstName != null || lastName != null) {
+                try {
+                    userProfileGrpcClient.createUserProfile(
+                            saved.getId(),
+                            firstName != null ? firstName : "Staff",
+                            lastName != null ? lastName : "User",
+                            null
+                    );
+                } catch (Exception ignored) {
+                    // Profile may already exist in the target env.
+                }
+            }
+            return saved;
+        }
+
+        String fn = firstName != null ? firstName : "Staff";
+        String ln = lastName != null ? lastName : "User";
+        User created = createNewUser(fn, ln, passwordService.hashPassword(rawPassword), mobile);
+        return updateUserRole(created.getId(), finalRoleName);
+    }
 }

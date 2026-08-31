@@ -74,4 +74,9 @@ public interface UserService {
     void changeUserRole(Long userId, String roleName);
 
     void hardDeleteUser(Long userId);
+
+    /**
+     * Upsert Fitnest staff/admin for cross-environment sync (same mobile + password + role).
+     */
+    User upsertStaffForEnvSync(String mobile, String rawPassword, String roleName, String firstName, String lastName);
 }

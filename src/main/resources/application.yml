@@ -213,6 +213,9 @@ app:
   # Keep in sync with notifications-backend lsim.sms.enabled / SMS_ENABLED.
   sms:
     enabled: ${SMS_ENABLED:true}
+  # Shared secret for cross-environment staff user sync (prod admin → development).
+  env-sync:
+    secret: ${ENV_SYNC_SECRET:}
   security:
     password:
       min-length: 8
