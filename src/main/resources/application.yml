@@ -209,6 +209,10 @@ user:
     url: ${USER_BACKEND_URL:http://user-backend:8080}
 
 app:
+  # When false, non-test SMS OTPs are fixed to 0000 (mock). Test users keep 1111.
+  # Keep in sync with notifications-backend lsim.sms.enabled / SMS_ENABLED.
+  sms:
+    enabled: ${SMS_ENABLED:true}
   security:
     password:
       min-length: 8

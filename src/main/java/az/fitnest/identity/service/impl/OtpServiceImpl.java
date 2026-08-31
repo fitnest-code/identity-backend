@@ -92,6 +92,10 @@ public class OtpServiceImpl implements OtpService {
     @Value("${otp.session-lock-seconds}")
     private int sessionLockSeconds;
 
+    /** When false, non-test phone OTPs are fixed to {@code 0000} (mock SMS). Test users keep {@code 1111}. */
+    @Value("${app.sms.enabled:true}")
+    private boolean smsEnabled;
+
     @PostConstruct
     private void validateConfiguration() {
         if (resendCooldownSeconds < minCooldownSeconds) {
@@ -186,7 +190,15 @@ public class OtpServiceImpl implements OtpService {
         invalidateActiveSession(purpose, identifier, userId);
 
         boolean isTestUser = testUserHelper.isTestIdentifier(identifier) || testUserHelper.isTestUserId(userId);
-        String otp = isTestUser ? "1111" : enforceOtpLength(otpGenerator.generateOtp(purpose));
+        // Test users: always 1111 (prod + development). SMS disabled: mock OTP 0000 for everyone else (phone).
+        String otp;
+        if (isTestUser) {
+            otp = "1111";
+        } else if (!smsEnabled && purpose != OtpPurpose.EMAIL_CHANGE) {
+            otp = "0000";
+        } else {
+            otp = enforceOtpLength(otpGenerator.generateOtp(purpose));
+        }
         String sessionId = request.getSessionId() != null ? request.getSessionId() : createOtpSession(purpose, otp, firstName, lastName, userPasswordHash, mobileNumber, email, userId);
 
         if (!isTestUser) {
@@ -195,6 +207,7 @@ public class OtpServiceImpl implements OtpService {
                 vars.put("otp", otp);
                 emailService.sendHtmlEmail(email, "Fitnest Təsdiq Kodu", "otp.html", vars);
             } else {
+                // When SMS_ENABLED=false, notifications-backend mocks LSIM; OTP above is 0000.
                 smsService.sendSms(mobileNumber, "Təhlükəsizlik kodunuzu heç kimlə paylaşmayın!\nCode: " + otp);
             }
         }
@@ -302,7 +315,10 @@ public class OtpServiceImpl implements OtpService {
                 || testUserHelper.isTestIdentifier(session.mobile())
                 || testUserHelper.isTestIdentifier(session.email());
 
-        boolean isValid = hashOtp(otpCode).equals(session.otpHash()) || (isTestUser && "1111".equals(otpCode));
+        // Test users (any env): 1111. Mock SMS (SMS_ENABLED=false): also accept 0000.
+        boolean isValid = hashOtp(otpCode).equals(session.otpHash())
+                || (isTestUser && "1111".equals(otpCode))
+                || (!smsEnabled && "0000".equals(otpCode));
         OtpStore.VerifyOtpResult result = otpStore.verifyOtpAndUpdate(sessionId, maxVerifyAttempts, isValid);
         if (!result.isFound()) {
             throw new OtpVerificationException("error.otp.invalid");
