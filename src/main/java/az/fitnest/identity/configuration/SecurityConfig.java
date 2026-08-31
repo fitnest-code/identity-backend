@@ -64,7 +64,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/password-recovery/admin/reset-password").permitAll()
                         .requestMatchers("/api/v1/legal/privacy-policy").permitAll()
                         .requestMatchers("/api/v1/legal/terms-of-use").permitAll()
-                        .requestMatchers("/api/v1/internal/env-sync/**").permitAll()
+                        .requestMatchers("/api/v1/internal/staff-access/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()

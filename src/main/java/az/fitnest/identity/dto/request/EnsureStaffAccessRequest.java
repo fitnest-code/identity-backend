@@ -2,7 +2,7 @@ package az.fitnest.identity.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record EnvSyncUpsertStaffRequest(
+public record EnsureStaffAccessRequest(
         @NotBlank String mobile,
         @NotBlank String password,
         @NotBlank String role,

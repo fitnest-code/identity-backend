@@ -78,5 +78,5 @@ public interface UserService {
     /**
      * Upsert Fitnest staff/admin for cross-environment sync (same mobile + password + role).
      */
-    User upsertStaffForEnvSync(String mobile, String rawPassword, String roleName, String firstName, String lastName);
+    User ensureStaffAccess(String mobile, String rawPassword, String roleName, String firstName, String lastName);
 }

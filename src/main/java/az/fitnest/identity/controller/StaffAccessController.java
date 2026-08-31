@@ -1,6 +1,6 @@
 package az.fitnest.identity.controller;
 
-import az.fitnest.identity.dto.request.EnvSyncUpsertStaffRequest;
+import az.fitnest.identity.dto.request.EnsureStaffAccessRequest;
 import az.fitnest.identity.exception.ForbiddenException;
 import az.fitnest.identity.exception.ValidationException;
 import az.fitnest.identity.model.entity.User;
@@ -22,14 +22,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Cross-environment staff provisioning (e.g. prod admin → create matching user in development).
- * Secured by shared {@code ENV_SYNC_SECRET}, not end-user JWTs.
+ * Ensures Fitnest staff can log into another environment with the same credentials.
+ * Called cluster-internally (not via the public API gateway). Secured by shared secret.
  */
 @RestController
-@RequestMapping("/api/v1/internal/env-sync")
+@RequestMapping("/api/v1/internal/staff-access")
 @RequiredArgsConstructor
 @Hidden
-public class EnvSyncController {
+public class StaffAccessController {
 
     private static final Set<String> ALLOWED_ROLES = Set.of(
             "ROLE_ADMIN",
@@ -38,16 +38,18 @@ public class EnvSyncController {
 
     private final UserService userService;
 
-    @Value("${app.env-sync.secret:}")
-    private String envSyncSecret;
+    @Value("${app.staff-access.secret:}")
+    private String staffAccessSecret;
 
-    @PostMapping("/upsert-staff")
-    public ResponseEntity<Map<String, Object>> upsertStaff(
-            @RequestHeader(value = "X-Env-Sync-Secret", required = false) String secret,
-            @RequestBody @Valid EnvSyncUpsertStaffRequest request) {
+    @PostMapping("/ensure")
+    public ResponseEntity<Map<String, Object>> ensureStaff(
+            @RequestHeader(value = "X-Staff-Access-Secret", required = false) String secret,
+            @RequestHeader(value = "X-Env-Sync-Secret", required = false) String legacySecret,
+            @RequestBody @Valid EnsureStaffAccessRequest request) {
 
-        if (!StringUtils.hasText(envSyncSecret) || !envSyncSecret.equals(secret)) {
-            throw new ForbiddenException("Invalid env sync secret", "ENV_SYNC_FORBIDDEN");
+        String provided = StringUtils.hasText(secret) ? secret : legacySecret;
+        if (!StringUtils.hasText(staffAccessSecret) || !staffAccessSecret.equals(provided)) {
+            throw new ForbiddenException("Invalid staff access secret", "STAFF_ACCESS_FORBIDDEN");
         }
 
         String role = normalizeRole(request.role());
@@ -60,7 +62,7 @@ public class EnvSyncController {
             throw new ValidationException("error.validation", "INVALID_MOBILE");
         }
 
-        User user = userService.upsertStaffForEnvSync(
+        User user = userService.ensureStaffAccess(
                 mobile,
                 request.password(),
                 role,

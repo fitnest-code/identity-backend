@@ -793,7 +793,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public User upsertStaffForEnvSync(String mobile, String rawPassword, String roleName, String firstName, String lastName) {
+    public User ensureStaffAccess(String mobile, String rawPassword, String roleName, String firstName, String lastName) {
         if (rawPassword == null || rawPassword.length() < 8) {
             throw new az.fitnest.identity.exception.ValidationException("error.validation", "WEAK_PASSWORD");
         }
