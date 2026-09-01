@@ -19,6 +19,7 @@ import az.fitnest.identity.service.AppleTokenVerifier;
 import az.fitnest.identity.service.GoogleTokenVerifier;
 import az.fitnest.identity.service.LegalService;
 import az.fitnest.identity.service.SocialAuthService;
+import az.fitnest.identity.service.SocialPhoneLinkService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
 import az.fitnest.identity.service.DeviceService;
