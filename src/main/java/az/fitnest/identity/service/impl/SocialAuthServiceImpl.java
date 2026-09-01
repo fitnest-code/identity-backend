@@ -23,6 +23,7 @@ import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserProfileGrpcClient;
 import az.fitnest.identity.service.DeviceService;
 import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.service.WelcomeBonusService;
 import az.fitnest.identity.repository.UserConsentRepository;
 import az.fitnest.identity.model.entity.UserConsent;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final az.fitnest.identity.service.OtpService otpService;
     private final UserService userService;
     private final UserConsentRepository userConsentRepository;
+    private final WelcomeBonusService welcomeBonusService;
 
     @Autowired
     @Lazy
@@ -219,6 +221,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
         log.info("Issuing tokens for new user: {}", newUser.getId());
         legalService.autoAcceptLatestConsents(newUser.getId());
+        welcomeBonusService.tryPublishWelcomeBonusEligible(newUser);
         return tokenIssuanceService.issueTokens(newUser, cleanPreviousSessionAndGetDeviceType(newUser.getId(), deviceType));
     }
 
@@ -486,6 +489,8 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         }
 
         finalUser = deviceService.validateAndBindDeviceForLogin(finalUser, request.deviceId(), request.deviceType(), false);
+
+        welcomeBonusService.tryPublishWelcomeBonusEligible(finalUser);
 
         return tokenIssuanceService.issueTokens(finalUser, cleanPreviousSessionAndGetDeviceType(finalUser.getId(), request.deviceType()));
     }

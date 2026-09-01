@@ -147,6 +147,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("UPDATE User u SET u.language = :language WHERE u.id = :userId")
     int updateLanguage(@Param("userId") Long userId, @Param("language") String language);
 
+    @Query("""
+            SELECT u.id FROM User u
+            WHERE u.welcomeBonusReceived = false
+              AND u.status <> az.fitnest.identity.model.enums.UserStatus.DELETED
+            ORDER BY u.id ASC
+            """)
+    List<Long> findUserIdsPendingWelcomeBonus();
+
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.deviceId = null, u.deviceChangeCount = 0")

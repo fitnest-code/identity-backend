@@ -16,6 +16,7 @@ import az.fitnest.identity.service.RegistrationService;
 import az.fitnest.identity.service.RegistrationTokenService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.service.WelcomeBonusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final OtpService otpService;
     private final RegistrationTokenService registrationTokenService;
     private final LegalService legalService;
+    private final WelcomeBonusService welcomeBonusService;
 
     @Override
     public OtpSendResponse startRegistration(RegisterRequest request) {
@@ -68,6 +70,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         legalService.autoAcceptLatestConsents(user.getId());
 
+        publishWelcomeBonusEligible(user);
         return tokenIssuanceService.issueTokens(user, "Web", false);
     }
 
@@ -93,6 +96,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         legalService.autoAcceptLatestConsents(user.getId());
 
+        publishWelcomeBonusEligible(user);
         return tokenIssuanceService.issueTokens(user, request.deviceType(), false);
     }
 
@@ -139,7 +143,12 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         legalService.autoAcceptLatestConsents(user.getId());
 
+        publishWelcomeBonusEligible(user);
         return tokenIssuanceService.issueTokens(user, deviceType, false);
+    }
+
+    private void publishWelcomeBonusEligible(User user) {
+        welcomeBonusService.tryPublishWelcomeBonusEligible(user);
     }
 
 }

@@ -81,6 +81,18 @@ public class User extends BaseAuditableEntity {
     @Column(name = "device_change_count", nullable = false, columnDefinition = "int default 0")
     private int deviceChangeCount = 0;
 
+    @Builder.Default
+    @Column(name = "is_welcome_bonus_received", nullable = false)
+    private boolean welcomeBonusReceived = false;
+
+    public boolean isWelcomeBonusReceived() {
+        return welcomeBonusReceived;
+    }
+
+    public void setWelcomeBonusReceived(boolean welcomeBonusReceived) {
+        this.welcomeBonusReceived = welcomeBonusReceived;
+    }
+
     public String getMobile() {
         return mobile;
     }
