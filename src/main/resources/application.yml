@@ -74,6 +74,11 @@ spring:
         connection:
           provider_disables_autocommit: true
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST}
@@ -386,8 +391,3 @@ grpc:
 eureka:
   client:
     enabled: false
-
-flyway:
-  enabled: true
-  locations: classpath:db/migration
-  baseline-on-migrate: true
