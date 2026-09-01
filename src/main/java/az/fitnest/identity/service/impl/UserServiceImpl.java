@@ -436,6 +436,7 @@ public class UserServiceImpl implements UserService {
         User user = getUserOrThrow(userId);
         user.setStatus(UserStatus.INACTIVE);
         user.setInactiveAt(java.time.Instant.now());
+        user.setMobile(null);
         userRepository.save(user);
         publishUserEvent("ACCOUNT_DEACTIVATED", userId);
         localEventPublisher.publishEvent(new UserAccountDeletedEventLocal(userId));

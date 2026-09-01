@@ -14,6 +14,7 @@ import az.fitnest.identity.exception.OtpRateLimitedException;
 import az.fitnest.identity.exception.OtpVerificationException;
 import az.fitnest.identity.service.OtpService;
 import az.fitnest.identity.service.SmsService;
+import az.fitnest.identity.service.SocialPhoneLinkService;
 import az.fitnest.identity.repository.UserRepository;
 import az.fitnest.identity.repository.OtpStateRepository;
 import az.fitnest.identity.repository.AuthTokenRepository;
@@ -72,6 +73,7 @@ public class OtpServiceImpl implements OtpService {
     private final PhoneNormalizer phoneNormalizer;
     private final AuthTokenRepository authTokenRepository;
     private final RedisTokenService redisTokenService;
+    private final SocialPhoneLinkService socialPhoneLinkService;
     @Autowired
     private OtpStateRepository otpStateRepository;
     @Value("${otp.ttl-seconds}")
@@ -167,17 +169,9 @@ public class OtpServiceImpl implements OtpService {
 
         if (exists && (purpose == OtpPurpose.ADD_NUMBER_GOOGLE || purpose == OtpPurpose.ADD_NUMBER_APPLE)) {
             Optional<az.fitnest.identity.model.entity.User> existingUserOpt = userRepository.findFirstByMobile(mobileNumber);
-            if (existingUserOpt.isPresent()) {
-                String existingEmail = null;
-                try {
-                    var profile = userProfileGrpcClient.getUserProfileDetails(existingUserOpt.get().getId());
-                    if (profile != null) {
-                        existingEmail = profile.getEmail();
-                    }
-                } catch (Exception ignored) {}
-                if (existingEmail == null || existingEmail.trim().isEmpty()) {
-                    exists = false;
-                }
+            if (existingUserOpt.isPresent()
+                    && socialPhoneLinkService.canMergeSocialIntoExistingPhoneUser(existingUserOpt.get())) {
+                exists = false;
             }
         }
 

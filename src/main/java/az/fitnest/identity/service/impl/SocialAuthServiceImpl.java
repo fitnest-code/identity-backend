@@ -56,6 +56,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final UserService userService;
     private final UserConsentRepository userConsentRepository;
     private final WelcomeBonusService welcomeBonusService;
+    private final SocialPhoneLinkService socialPhoneLinkService;
 
     @Autowired
     @Lazy
@@ -358,18 +359,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
         Optional<User> existingUserOpt = userRepository.findFirstByMobile(normalizedMobile);
         if (existingUserOpt.isPresent()) {
-            User existingUser = existingUserOpt.get();
-            String existingEmail = null;
-            try {
-                var profile = userProfileGrpcClient.getUserProfileDetails(existingUser.getId());
-                if (profile != null) {
-                    existingEmail = profile.getEmail();
-                }
-            } catch (Exception ignored) {}
-
-            if (existingEmail != null && !existingEmail.trim().isEmpty()) {
-                throw new az.fitnest.identity.exception.ConflictException("error.service.mobile_already_in_use");
-            }
+            socialPhoneLinkService.assertCanMergeSocialIntoExistingPhoneUser(existingUserOpt.get());
         }
 
         // We fetch profile image or email if needed by flow
@@ -426,17 +416,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         User finalUser;
         if (existingUserOpt.isPresent()) {
             User existingUser = self.findAndReactivateUser(existingUserOpt.get().getId());
-            String existingEmail = null;
-            try {
-                var profile = userProfileGrpcClient.getUserProfileDetails(existingUser.getId());
-                if (profile != null) {
-                    existingEmail = profile.getEmail();
-                }
-            } catch (Exception ignored) {}
-
-            if (existingEmail != null && !existingEmail.trim().isEmpty()) {
-                throw new az.fitnest.identity.exception.ConflictException("error.service.mobile_already_in_use");
-            }
+            socialPhoneLinkService.assertCanMergeSocialIntoExistingPhoneUser(existingUser);
 
             // Merge details
             String socialEmail = null;
