@@ -1,1 +1,0 @@
-ALTER TABLE users ADD COLUMN IF NOT EXISTS device_change_count INT NOT NULL DEFAULT 0;

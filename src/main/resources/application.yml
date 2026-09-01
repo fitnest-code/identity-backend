@@ -58,7 +58,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     show-sql: ${SHOW_SQL:false}
     open-in-view: false
     properties:
@@ -75,9 +75,10 @@ spring:
           provider_disables_autocommit: true
 
   flyway:
-    enabled: true
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
     locations: classpath:db/migration
     baseline-on-migrate: true
+    baseline-version: 0
 
   data:
     redis:
