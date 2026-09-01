@@ -58,7 +58,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
     show-sql: ${SHOW_SQL:false}
     open-in-view: false
     properties:
@@ -390,3 +390,4 @@ eureka:
 flyway:
   enabled: true
   locations: classpath:db/migration
+  baseline-on-migrate: true

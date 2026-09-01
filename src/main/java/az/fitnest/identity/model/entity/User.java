@@ -82,7 +82,7 @@ public class User extends BaseAuditableEntity {
     private int deviceChangeCount = 0;
 
     @Builder.Default
-    @Column(name = "is_welcome_bonus_received", nullable = false)
+    @Column(name = "is_welcome_bonus_received", nullable = false, columnDefinition = "boolean default false")
     private boolean welcomeBonusReceived = false;
 
     public boolean isWelcomeBonusReceived() {
