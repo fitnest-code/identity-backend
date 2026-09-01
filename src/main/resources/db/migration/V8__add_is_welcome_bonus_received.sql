@@ -1,4 +1,3 @@
--- Safe add for existing rows: nullable first, backfill, then NOT NULL + default.
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS is_welcome_bonus_received BOOLEAN;
 

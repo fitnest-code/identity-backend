@@ -1,5 +1,4 @@
--- Create translations table for auto-translation support
-CREATE TABLE translations (
+CREATE TABLE IF NOT EXISTS translations (
     id BIGSERIAL PRIMARY KEY,
     entity_type VARCHAR(255) NOT NULL,
     entity_id VARCHAR(255) NOT NULL,
@@ -9,4 +8,4 @@ CREATE TABLE translations (
     CONSTRAINT uk_translations_entity_field_lang UNIQUE (entity_type, entity_id, field_name, language_code)
 );
 
-CREATE INDEX idx_translations_entity ON translations (entity_type, entity_id, language_code, field_name);
+CREATE INDEX IF NOT EXISTS idx_translations_entity ON translations (entity_type, entity_id, language_code, field_name);

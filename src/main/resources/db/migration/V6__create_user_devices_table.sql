@@ -1,4 +1,4 @@
-CREATE TABLE user_devices (
+CREATE TABLE IF NOT EXISTS user_devices (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     device_id VARCHAR(255) NOT NULL,
@@ -7,9 +7,9 @@ CREATE TABLE user_devices (
     CONSTRAINT uq_user_device UNIQUE (user_id, device_id)
 );
 
-CREATE INDEX idx_user_devices_user_id ON user_devices(user_id);
-CREATE INDEX idx_user_devices_device_id ON user_devices(device_id);
+CREATE INDEX IF NOT EXISTS idx_user_devices_user_id ON user_devices(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_devices_device_id ON user_devices(device_id);
 
--- Populate table with existing device IDs
 INSERT INTO user_devices (user_id, device_id)
-SELECT id, device_id FROM users WHERE device_id IS NOT NULL AND device_id != '';
+SELECT id, device_id FROM users WHERE device_id IS NOT NULL AND device_id != ''
+ON CONFLICT (user_id, device_id) DO NOTHING;
