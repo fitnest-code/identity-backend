@@ -7,9 +7,12 @@ import az.fitnest.identity.service.UserProfileGrpcClient;
 import az.fitnest.identity.service.WelcomeBonusService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,22 +26,36 @@ public class WelcomeBonusServiceImpl implements WelcomeBonusService {
     private final UserRepository userRepository;
     private final UserProfileGrpcClient userProfileGrpcClient;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public void tryPublishWelcomeBonusEligible(User user) {
-        if (user == null || user.isWelcomeBonusReceived()) {
+        if (user == null || user.getId() == null || user.isWelcomeBonusReceived()) {
             return;
         }
 
-        Map<String, Object> event = new HashMap<>();
-        event.put("eventType", "WELCOME_BONUS_ELIGIBLE");
-        event.put("userId", user.getId());
-        event.put("timestamp", System.currentTimeMillis());
-        event.put("phone", user.getMobile());
-        event.put("email", resolveEmail(user.getId()));
+        // Publish only after the registration transaction commits so payment can
+        // resolve the user when marking welcome bonus received.
+        applicationEventPublisher.publishEvent(
+                new WelcomeBonusEligibleEvent(
+                        user.getId(),
+                        user.getMobile(),
+                        resolveEmail(user.getId())
+                )
+        );
+    }
 
-        kafkaTemplate.send("user-events", user.getId().toString(), event);
-        log.info("Published WELCOME_BONUS_ELIGIBLE for userId={}", user.getId());
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onWelcomeBonusEligible(WelcomeBonusEligibleEvent event) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("eventType", "WELCOME_BONUS_ELIGIBLE");
+        payload.put("userId", event.userId());
+        payload.put("timestamp", System.currentTimeMillis());
+        payload.put("phone", event.phone());
+        payload.put("email", event.email());
+
+        kafkaTemplate.send("user-events", event.userId().toString(), payload);
+        log.info("Published WELCOME_BONUS_ELIGIBLE for userId={}", event.userId());
     }
 
     @Override
@@ -79,4 +96,6 @@ public class WelcomeBonusServiceImpl implements WelcomeBonusService {
         }
         return null;
     }
+
+    public record WelcomeBonusEligibleEvent(Long userId, String phone, String email) {}
 }
