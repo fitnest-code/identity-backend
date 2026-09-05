@@ -8,6 +8,8 @@ public interface WelcomeBonusService {
 
     void tryPublishWelcomeBonusEligible(User user);
 
+    void tryPublishWelcomeBonusEligible(User user, String email);
+
     boolean isWelcomeBonusReceived(Long userId);
 
     void markWelcomeBonusReceived(Long userId);

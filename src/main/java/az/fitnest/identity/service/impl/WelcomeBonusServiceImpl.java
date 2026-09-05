@@ -2,19 +2,19 @@ package az.fitnest.identity.service.impl;
 
 import az.fitnest.identity.exception.ResourceNotFoundException;
 import az.fitnest.identity.model.entity.User;
+import az.fitnest.identity.model.event.WelcomeBonusEligibleEvent;
 import az.fitnest.identity.repository.UserRepository;
-import az.fitnest.identity.service.UserProfileGrpcClient;
 import az.fitnest.identity.service.WelcomeBonusService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.kafka.core.KafkaTemplate;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,39 +23,48 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WelcomeBonusServiceImpl implements WelcomeBonusService {
 
+    private static final String USER_EVENTS_TOPIC = "user-events";
+    private static final String EVENT_TYPE = "WELCOME_BONUS_ELIGIBLE";
+
     private final UserRepository userRepository;
-    private final UserProfileGrpcClient userProfileGrpcClient;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public void tryPublishWelcomeBonusEligible(User user) {
+        tryPublishWelcomeBonusEligible(user, null);
+    }
+
+    @Override
+    public void tryPublishWelcomeBonusEligible(User user, String email) {
         if (user == null || user.getId() == null || user.isWelcomeBonusReceived()) {
             return;
         }
 
-        // Publish only after the registration transaction commits so payment can
-        // resolve the user when marking welcome bonus received.
+        // Defer Kafka I/O until AFTER_COMMIT so registration stays fast and payment
+        // can resolve the committed user when marking the bonus received.
         applicationEventPublisher.publishEvent(
-                new WelcomeBonusEligibleEvent(
-                        user.getId(),
-                        user.getMobile(),
-                        resolveEmail(user.getId())
-                )
+                new WelcomeBonusEligibleEvent(user.getId(), blankToNull(user.getMobile()), blankToNull(email))
         );
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onWelcomeBonusEligible(WelcomeBonusEligibleEvent event) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("eventType", "WELCOME_BONUS_ELIGIBLE");
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void publishWelcomeBonusEligibleToKafka(WelcomeBonusEligibleEvent event) {
+        Map<String, Object> payload = new LinkedHashMap<>(5);
+        payload.put("eventType", EVENT_TYPE);
         payload.put("userId", event.userId());
         payload.put("timestamp", System.currentTimeMillis());
         payload.put("phone", event.phone());
         payload.put("email", event.email());
 
-        kafkaTemplate.send("user-events", event.userId().toString(), payload);
-        log.info("Published WELCOME_BONUS_ELIGIBLE for userId={}", event.userId());
+        kafkaTemplate.send(USER_EVENTS_TOPIC, event.userId().toString(), payload)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to publish {} for userId={}", EVENT_TYPE, event.userId(), ex);
+                    } else {
+                        log.info("Published {} for userId={}", EVENT_TYPE, event.userId());
+                    }
+                });
     }
 
     @Override
@@ -85,17 +94,11 @@ public class WelcomeBonusServiceImpl implements WelcomeBonusService {
         return userRepository.findUserIdsPendingWelcomeBonus();
     }
 
-    private String resolveEmail(Long userId) {
-        try {
-            var profile = userProfileGrpcClient.getUserProfileDetails(userId);
-            if (profile != null && profile.getEmail() != null && !profile.getEmail().isBlank()) {
-                return profile.getEmail();
-            }
-        } catch (Exception e) {
-            log.debug("Could not resolve email for welcome bonus event userId={}: {}", userId, e.getMessage());
+    private static String blankToNull(String value) {
+        if (value == null) {
+            return null;
         }
-        return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
-
-    public record WelcomeBonusEligibleEvent(Long userId, String phone, String email) {}
 }

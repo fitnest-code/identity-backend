@@ -223,7 +223,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
 
         log.info("Issuing tokens for new user: {}", newUser.getId());
         legalService.autoAcceptLatestConsents(newUser.getId());
-        welcomeBonusService.tryPublishWelcomeBonusEligible(newUser);
+        welcomeBonusService.tryPublishWelcomeBonusEligible(newUser, email);
         return tokenIssuanceService.issueTokens(newUser, cleanPreviousSessionAndGetDeviceType(newUser.getId(), deviceType));
     }
 
