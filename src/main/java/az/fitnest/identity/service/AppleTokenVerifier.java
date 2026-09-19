@@ -57,7 +57,8 @@ public class AppleTokenVerifier {
             Date expirationTime = claims.getExpirationTime();
             String subject = claims.getSubject();
             String email = claims.getStringClaim("email");
-            Boolean emailVerified = claims.getBooleanClaim("email_verified");
+            // Apple may send email_verified as boolean or string ("true"/"false").
+            Boolean emailVerified = parseAppleBooleanClaim(claims, "email_verified");
 
             java.util.List<String> allowedAudiences = java.util.Arrays.stream(appleClientId.split(","))
                     .map(String::trim)
@@ -82,16 +83,45 @@ public class AppleTokenVerifier {
                 throw new UnauthorizedException(getMessage("error.auth.external_token_invalid"));
             }
 
+            // Names are never in the Apple identity JWT; they arrive only via the client
+            // body from ASAuthorizationAppleIDCredential on first authorization.
             String firstName = claims.getStringClaim("given_name");
             String lastName = claims.getStringClaim("family_name");
 
-            return new AppleTokenClaims(subject, email, true, firstName, lastName);
+            return new AppleTokenClaims(subject, email, emailVerified == null || emailVerified, firstName, lastName);
         } catch (ParseException | JOSEException e) {
             throw new UnauthorizedException(getMessage("error.auth.external_auth_failed"));
         } catch (UnauthorizedException e) {
             throw e;
         } catch (Exception e) {
             throw new UnauthorizedException(getMessage("error.service.external_auth_error"));
+        }
+    }
+
+    /**
+     * Apple documents email_verified / is_private_email as either boolean or string.
+     * Nimbus getBooleanClaim throws when the claim is a string, so normalize both forms.
+     */
+    private static Boolean parseAppleBooleanClaim(JWTClaimsSet claims, String name) throws ParseException {
+        Object raw = claims.getClaim(name);
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Boolean b) {
+            return b;
+        }
+        if (raw instanceof String s) {
+            if ("true".equalsIgnoreCase(s.trim())) {
+                return true;
+            }
+            if ("false".equalsIgnoreCase(s.trim())) {
+                return false;
+            }
+        }
+        try {
+            return claims.getBooleanClaim(name);
+        } catch (ParseException ignored) {
+            return null;
         }
     }
 

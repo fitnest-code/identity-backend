@@ -108,14 +108,15 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     public LoginResponse socialLoginApple(AppleSocialRequest request) {
         AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.identityToken());
 
-        String firstName = claims.firstName() != null ? claims.firstName() : request.firstName();
-        String lastName = claims.lastName() != null ? claims.lastName() : request.lastName();
-        String fullName = request.fullName() != null ? request.fullName() : "User";
+        String firstName = firstNonBlank(claims.firstName(), request.firstName());
+        String lastName = firstNonBlank(claims.lastName(), request.lastName());
+        String fullName = firstNonBlank(request.fullName(), null);
+        String email = firstNonBlank(claims.email(), request.email());
 
         return processSocialLogin(
                 SocialProvider.APPLE,
                 claims.userId(),
-                claims.email(),
+                email,
                 firstName,
                 lastName,
                 fullName,
@@ -130,14 +131,15 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     public LoginResponse socialLoginAppleV2(az.fitnest.identity.dto.request.AppleSocialRequestV2 request) {
         AppleTokenVerifier.AppleTokenClaims claims = appleTokenVerifier.verify(request.identityToken());
 
-        String firstName = claims.firstName() != null ? claims.firstName() : request.firstName();
-        String lastName = claims.lastName() != null ? claims.lastName() : request.lastName();
-        String fullName = request.fullName() != null ? request.fullName() : "User";
+        String firstName = firstNonBlank(claims.firstName(), request.firstName());
+        String lastName = firstNonBlank(claims.lastName(), request.lastName());
+        String fullName = firstNonBlank(request.fullName(), null);
+        String email = firstNonBlank(claims.email(), request.email());
 
         return processSocialLogin(
                 SocialProvider.APPLE,
                 claims.userId(),
-                claims.email(),
+                email,
                 firstName,
                 lastName,
                 fullName,
@@ -177,6 +179,11 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                     log.info("Updating profile image for existing user: {}", user.getId());
                     userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
                 }
+                try {
+                    backfillProfileIfMissing(user.getId(), profile, firstName, lastName, fullName, email);
+                } catch (Exception e) {
+                    log.warn("Failed to backfill profile for existing social user {}: {}", user.getId(), e.getMessage());
+                }
                 log.info("Issuing tokens for existing user: {}", user.getId());
                 return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
             } else {
@@ -201,6 +208,11 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                     if (profile == null || profile.getProfileImageUrl() == null || profile.getProfileImageUrl().isBlank()) {
                         log.info("Updating profile image for existing user (by email): {}", user.getId());
                         userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
+                    }
+                    try {
+                        backfillProfileIfMissing(user.getId(), profile, firstName, lastName, fullName, email);
+                    } catch (Exception e) {
+                        log.warn("Failed to backfill profile for email-linked social user {}: {}", user.getId(), e.getMessage());
                     }
                     self.linkSocialAccount(user.getId(), provider, providerId);
                     return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
@@ -292,6 +304,54 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                 throw new IllegalStateException("Failed to link social account and no existing link found", e);
             }
         }
+    }
+
+    private void backfillProfileIfMissing(Long userId,
+                                          az.fitnest.user.grpc.UserProfileDetailsResponse profile,
+                                          String firstName,
+                                          String lastName,
+                                          String fullName,
+                                          String email) {
+        NameParts incoming = resolveNameParts(firstName, lastName, fullName);
+        boolean missingFirst = profile == null || isMissingName(profile.getFirstName());
+        boolean missingLast = profile == null || isMissingName(profile.getLastName());
+        boolean missingEmail = profile == null || profile.getEmail() == null || profile.getEmail().isBlank();
+
+        String fillFirst = missingFirst ? incoming.firstName() : null;
+        String fillLast = missingLast ? incoming.lastName() : null;
+        String fillEmail = missingEmail ? firstNonBlank(email, null) : null;
+
+        if (fillFirst == null && fillLast == null && fillEmail == null) {
+            return;
+        }
+
+        log.info("Backfilling missing Apple/Google profile fields for user {}: firstName={}, lastName={}, email={}",
+                userId, fillFirst != null, fillLast != null, fillEmail != null);
+        userProfileGrpcClient.createUserProfile(userId, fillFirst, fillLast, fillEmail);
+    }
+
+    private static boolean isMissingName(String value) {
+        if (value == null) {
+            return true;
+        }
+        String v = value.trim();
+        return v.isEmpty() || "User".equalsIgnoreCase(v);
+    }
+
+    private static String firstNonBlank(String primary, String fallback) {
+        String a = normalizeBlank(primary);
+        if (a != null) {
+            return a;
+        }
+        return normalizeBlank(fallback);
+    }
+
+    private static String normalizeBlank(String value) {
+        if (value == null) {
+            return null;
+        }
+        String v = value.trim();
+        return v.isEmpty() ? null : v;
     }
 
     private NameParts resolveNameParts(String firstName, String lastName, String fullName) {
