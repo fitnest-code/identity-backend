@@ -60,7 +60,7 @@ public class LegalServiceImplTest {
     }
 
     @Test
-    void createDocument_shouldTriggerAutoTranslation_whenLanguageIsAz() {
+    void createDocument_shouldSaveAzSource_whenLanguageIsAz() {
         CreateLegalDocumentRequest request = new CreateLegalDocumentRequest(
                 LegalDocumentType.PRIVACY_POLICY,
                 "1.0",
@@ -79,11 +79,11 @@ public class LegalServiceImplTest {
         legalService.createDocument(request);
 
         verify(legalDocumentRepository).save(any(LegalDocument.class));
-        verify(translationService).autoTranslateAndSave("LEGAL_DOCUMENT", "123", "content", "Azerbaijan Content");
+        verify(translationService).saveOrUpdateTranslation("LEGAL_DOCUMENT", "123", "AZ", "content", "Azerbaijan Content");
     }
 
     @Test
-    void createDocument_shouldTriggerAutoTranslation_evenWhenLanguageIsNotAz() {
+    void createDocument_shouldSaveAzSource_evenWhenLanguageIsNotAz() {
         CreateLegalDocumentRequest request = new CreateLegalDocumentRequest(
                 LegalDocumentType.PRIVACY_POLICY,
                 "1.0",
@@ -102,11 +102,11 @@ public class LegalServiceImplTest {
         legalService.createDocument(request);
 
         verify(legalDocumentRepository).save(any(LegalDocument.class));
-        verify(translationService).autoTranslateAndSave("LEGAL_DOCUMENT", "124", "content", "English Content");
+        verify(translationService).saveOrUpdateTranslation("LEGAL_DOCUMENT", "124", "AZ", "content", "English Content");
     }
 
     @Test
-    void updateDocument_shouldTriggerAutoTranslation_whenLanguageIsAz() {
+    void updateDocument_shouldSaveAzSource_whenLanguageIsAz() {
         UpdateLegalDocumentRequest request = new UpdateLegalDocumentRequest(
                 "1.1",
                 "AZ",
@@ -128,7 +128,7 @@ public class LegalServiceImplTest {
         legalService.updateDocument(555L, request);
 
         verify(legalDocumentRepository).save(existingDoc);
-        verify(translationService).autoTranslateAndSave("LEGAL_DOCUMENT", "555", "content", "Updated Az Content");
+        verify(translationService).saveOrUpdateTranslation("LEGAL_DOCUMENT", "555", "AZ", "content", "Updated Az Content");
     }
 
     @Test

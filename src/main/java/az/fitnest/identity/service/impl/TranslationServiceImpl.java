@@ -6,16 +6,9 @@ import az.fitnest.identity.service.TranslationService;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import java.net.URI;
 
 @Service
 public class TranslationServiceImpl implements TranslationService {
@@ -23,31 +16,18 @@ public class TranslationServiceImpl implements TranslationService {
     
     private final TranslationRepository translationRepository;
     private final CacheManager cacheManager;
-    private final RestTemplate restTemplate;
-
-    @jakarta.persistence.PersistenceContext
-    private jakarta.persistence.EntityManager entityManager;
-
-    @org.springframework.beans.factory.annotation.Autowired
-    @org.springframework.context.annotation.Lazy
-    private TranslationServiceImpl self;
-
-    @org.springframework.beans.factory.annotation.Autowired
-    private TranslationEntityResolver translationEntityResolver;
 
     public TranslationServiceImpl(TranslationRepository translationRepository, CacheManager cacheManager) {
         this.translationRepository = translationRepository;
         this.cacheManager = cacheManager;
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(10000);
-        this.restTemplate = new RestTemplate(factory);
-        this.restTemplate.getMessageConverters().add(0, new org.springframework.http.converter.StringHttpMessageConverter(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     @Override
     @Cacheable(value = "translations", key = "#entityType + '_' + #entityId + '_' + #fieldName + '_' + #languageCode")
     public String getTranslatedValue(String entityType, String entityId, String fieldName, String languageCode) {
+        if (entityType == null || entityId == null || fieldName == null) {
+            return null;
+        }
         if (languageCode == null || languageCode.equalsIgnoreCase("AZ")) {
             return null;
         }
@@ -126,184 +106,11 @@ public class TranslationServiceImpl implements TranslationService {
             return existingValue;
         }
 
-        try {
-            Class<?> entityClass = translationEntityResolver.getEntityClass(entityType);
-            if (entityClass != null) {
-                Object entity = null;
-                try {
-                    Long longId = Long.parseLong(entityId);
-                    entity = entityManager.find(entityClass, longId);
-                } catch (NumberFormatException e) {
-                    entity = entityManager.find(entityClass, entityId);
-                }
-
-                if (entity != null) {
-                    String originalValueAz = translationEntityResolver.extractFieldValue(entity, fieldName);
-                    if (originalValueAz != null && !originalValueAz.trim().isEmpty()) {
-                        String translatedValue = translateText(originalValueAz, languageCode.toLowerCase());
-                        if (translatedValue != null && !translatedValue.trim().isEmpty()) {
-                            self.saveOrUpdateTranslation(entityType, entityId, languageCode, fieldName, translatedValue);
-                            return translatedValue;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Soft fallback translation failed for entityType={}, entityId={}, fieldName={}, lang={}",
-                    entityType, entityId, fieldName, languageCode, e);
-        }
-
+        // Manual translations only: AZ lives on its own entity table, EN/RU live in
+        // the translations table (admin-provided). No machine translation.
         return null;
     }
 
-    @Override
-    @Async
-    @CacheEvict(value = "translations", allEntries = true)
-    public void autoTranslateAndSave(String entityType, String entityId, String fieldName, String originalValueAz) {
-        if (originalValueAz == null || originalValueAz.trim().isEmpty()) {
-            log.warn("Auto-translation skipped: originalValueAz is null or empty for entityType={}, entityId={}, fieldName={}", 
-                entityType, entityId, fieldName);
-            return;
-        }
-
-        log.info("Starting auto-translation process for entityType={}, entityId={}, fieldName={}, originalValueAz='{}'", 
-            entityType, entityId, fieldName, originalValueAz);
-
-        // Translate to EN
-        String enValue = translateText(originalValueAz, "en");
-        if (enValue != null && !enValue.trim().isEmpty()) {
-            log.info("Auto-translated [AZ -> EN] success. Value: '{}'", enValue);
-            saveOrUpdateTranslation(entityType, entityId, "EN", fieldName, enValue);
-        } else {
-            log.warn("Auto-translation [AZ -> EN] returned empty or null value. Using fallback: '{}'", originalValueAz);
-            saveOrUpdateTranslation(entityType, entityId, "EN", fieldName, originalValueAz);
-        }
-
-        // Translate to RU
-        String ruValue = translateText(originalValueAz, "ru");
-        if (ruValue != null && !ruValue.trim().isEmpty()) {
-            log.info("Auto-translated [AZ -> RU] success. Value: '{}'", ruValue);
-            saveOrUpdateTranslation(entityType, entityId, "RU", fieldName, ruValue);
-        } else {
-            log.warn("Auto-translation [AZ -> RU] returned empty or null value. Using fallback: '{}'", originalValueAz);
-            saveOrUpdateTranslation(entityType, entityId, "RU", fieldName, originalValueAz);
-        }
-    }
-
-    private boolean isHtml(String text) {
-        if (text == null) return false;
-        return java.util.regex.Pattern.compile("</?[a-zA-Z0-9][^>]*>").matcher(text).find();
-    }
-
-    private String translateHtml(String html, String targetLanguage) {
-        if (html == null || html.trim().isEmpty()) {
-            return html;
-        }
-
-        java.util.List<String> tags = new java.util.ArrayList<>();
-        java.util.regex.Pattern tagPattern = java.util.regex.Pattern.compile("</?[a-zA-Z0-9][^>]*>");
-        java.util.regex.Matcher matcher = tagPattern.matcher(html);
-        
-        StringBuilder sb = new StringBuilder();
-        int lastEnd = 0;
-        int tagIndex = 0;
-        while (matcher.find()) {
-            sb.append(html, lastEnd, matcher.start());
-            String tag = matcher.group();
-            tags.add(tag);
-            sb.append(" XTAGX").append(tagIndex).append("X ");
-            tagIndex++;
-            lastEnd = matcher.end();
-        }
-        sb.append(html, lastEnd, html.length());
-        
-        String textToTranslate = sb.toString();
-        String translatedText = translateWithGoogle(textToTranslate, targetLanguage);
-        if (translatedText == null || translatedText.trim().isEmpty()) {
-            return null;
-        }
-
-        java.util.regex.Pattern placeholderPattern = java.util.regex.Pattern.compile("(?i)XTAGX\\s*(\\d+)\\s*X");
-        java.util.regex.Matcher restoreMatcher = placeholderPattern.matcher(translatedText);
-        StringBuilder restoredHtml = new StringBuilder();
-        int restoreLastEnd = 0;
-        while (restoreMatcher.find()) {
-            restoredHtml.append(translatedText, restoreLastEnd, restoreMatcher.start());
-            int idx = Integer.parseInt(restoreMatcher.group(1).trim());
-            if (idx >= 0 && idx < tags.size()) {
-                restoredHtml.append(tags.get(idx));
-            } else {
-                restoredHtml.append(restoreMatcher.group());
-            }
-            restoreLastEnd = restoreMatcher.end();
-        }
-        restoredHtml.append(translatedText, restoreLastEnd, translatedText.length());
-
-        return restoredHtml.toString();
-    }
-
-    private String translateText(String text, String targetLanguage) {
-        try {
-            if (isHtml(text)) {
-                log.info("HTML detected. Translating with tag preservation: '{}'", text.substring(0, Math.min(text.length(), 100)));
-                return translateHtml(text, targetLanguage);
-            }
-            String googleTranslated = translateWithGoogle(text, targetLanguage);
-            if (googleTranslated != null && !googleTranslated.trim().isEmpty()) {
-                log.info("Translation successful using Google Translate [AZ -> {}]: '{}' -> '{}'", 
-                    targetLanguage.toUpperCase(), text, googleTranslated);
-                return googleTranslated;
-            }
-        } catch (Exception e) {
-            log.error("Google Translate failed. Error: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    private String translateWithGoogle(String text, String targetLanguage) {
-        try {
-            URI uri = UriComponentsBuilder
-                .fromUriString("https://translate.googleapis.com/translate_a/single")
-                .queryParam("client", "gtx")
-                .queryParam("sl", "az")
-                .queryParam("tl", targetLanguage.toLowerCase())
-                .queryParam("dt", "t")
-                .build()
-                .toUri();
-
-            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-            headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
-
-            org.springframework.util.MultiValueMap<String, String> map = new org.springframework.util.LinkedMultiValueMap<>();
-            map.add("q", text);
-
-            org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, String>> request = 
-                new org.springframework.http.HttpEntity<>(map, headers);
-
-            log.info("Google Translate POST Request [AZ -> {}], text length: {}", targetLanguage.toUpperCase(), text.length());
-            String response = restTemplate.postForObject(uri, request, String.class);
-            if (response != null) {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode rootNode = mapper.readTree(response);
-                if (rootNode.isArray() && rootNode.size() > 0) {
-                    JsonNode firstArray = rootNode.get(0);
-                    if (firstArray.isArray() && firstArray.size() > 0) {
-                        StringBuilder translatedText = new StringBuilder();
-                        for (JsonNode pair : firstArray) {
-                            if (pair.isArray() && pair.size() > 0) {
-                                translatedText.append(pair.get(0).asText());
-                            }
-                        }
-                        return translatedText.toString();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Google Translation API failed for text of length {} to '{}': {}", 
-                text != null ? text.length() : 0, targetLanguage, e.getMessage(), e);
-        }
-        return null;
-    }
 
     @Override
     @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)

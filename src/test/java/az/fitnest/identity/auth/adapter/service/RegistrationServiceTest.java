@@ -13,6 +13,7 @@ import az.fitnest.identity.service.PasswordService;
 import az.fitnest.identity.service.RegistrationTokenService;
 import az.fitnest.identity.service.TokenIssuanceService;
 import az.fitnest.identity.service.UserService;
+import az.fitnest.identity.service.WelcomeBonusService;
 import az.fitnest.identity.service.impl.RegistrationServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,8 @@ public class RegistrationServiceTest {
     private RegistrationTokenService registrationTokenService;
     @Mock
     private LegalService legalService;
+    @Mock
+    private WelcomeBonusService welcomeBonusService;
 
     private RegistrationServiceImpl registrationService;
 
@@ -58,7 +61,8 @@ public class RegistrationServiceTest {
                 tokenIssuanceService,
                 otpService,
                 registrationTokenService,
-                legalService
+                legalService,
+                welcomeBonusService
         );
     }
 

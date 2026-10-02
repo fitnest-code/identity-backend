@@ -152,7 +152,9 @@ public class LegalServiceImpl implements LegalService {
 
         legalDocumentRepository.save(doc);
 
-        translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
+        if (doc.getContent() != null && !doc.getContent().isBlank()) {
+            translationService.saveOrUpdateTranslation("LEGAL_DOCUMENT", doc.getId().toString(), "AZ", "content", doc.getContent());
+        }
     }
 
     @Transactional
@@ -314,7 +316,7 @@ public class LegalServiceImpl implements LegalService {
             if ("AZ".equalsIgnoreCase(targetLanguage)) {
                 doc.setContent(request.content());
                 legalDocumentRepository.save(doc);
-                translationService.autoTranslateAndSave("LEGAL_DOCUMENT", doc.getId().toString(), "content", doc.getContent());
+                translationService.saveOrUpdateTranslation("LEGAL_DOCUMENT", doc.getId().toString(), "AZ", "content", doc.getContent());
             } else {
                 translationService.saveOrUpdateTranslation("LEGAL_DOCUMENT", doc.getId().toString(), targetLanguage, "content", request.content());
                 legalDocumentRepository.save(doc);
