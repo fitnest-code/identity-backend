@@ -55,6 +55,7 @@ public class UserServiceImpl implements UserService {
     private final ApplicationEventPublisher localEventPublisher;
     private final PasswordService passwordService;
     private final OtpService otpService;
+    private final az.fitnest.identity.service.PhoneVerifiedEventPublisher phoneVerifiedEventPublisher;
     private final UserSubscriptionGrpcClient userSubscriptionGrpcClient;
     private final UserResponseMapper userResponseMapper;
     private final az.fitnest.identity.service.UserProfileGrpcClient userProfileGrpcClient;
@@ -130,6 +131,7 @@ public class UserServiceImpl implements UserService {
             User saved = userRepository.save(user);
             log.info("Creating user profile in user-backend for user ID: {}", saved.getId());
             userProfileGrpcClient.createUserProfile(saved.getId(), firstName, lastName, null); // Email is null here because createNewUser doesn't take email.
+            phoneVerifiedEventPublisher.publishPhoneVerified(saved.getId(), mobile);
             return saved;
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
@@ -156,6 +158,7 @@ public class UserServiceImpl implements UserService {
             User saved = userRepository.save(user);
             log.info("Creating user profile (V3 passwordless) in user-backend for user ID: {}", saved.getId());
             userProfileGrpcClient.createUserProfile(saved.getId(), normalizeNamePart(firstName), normalizeNamePart(lastName), null);
+            phoneVerifiedEventPublisher.publishPhoneVerified(saved.getId(), normalizedMobile);
             return saved;
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             throw new ConflictException("error.service.operation_not_allowed", "DUPLICATE_MOBILE");
@@ -287,6 +290,7 @@ public class UserServiceImpl implements UserService {
         user.setMobile(normalizedMobile);
         User saved = userRepository.save(user);
         publishUserEvent("USER_UPDATED", userId);
+        phoneVerifiedEventPublisher.publishPhoneVerified(userId, normalizedMobile);
         return saved;
     }
 
