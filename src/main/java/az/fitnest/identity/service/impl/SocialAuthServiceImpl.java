@@ -58,6 +58,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private final UserConsentRepository userConsentRepository;
     private final WelcomeBonusService welcomeBonusService;
     private final SocialPhoneLinkService socialPhoneLinkService;
+    private final az.fitnest.identity.service.PhoneVerifiedEventPublisher phoneVerifiedEventPublisher;
 
     @Autowired
     @Lazy
@@ -532,6 +533,8 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         finalUser = deviceService.validateAndBindDeviceForLogin(finalUser, request.deviceId(), request.deviceType(), false);
 
         welcomeBonusService.tryPublishWelcomeBonusEligible(finalUser);
+
+        phoneVerifiedEventPublisher.publishPhoneVerified(finalUser.getId(), normalizedMobile);
 
         return tokenIssuanceService.issueTokens(finalUser, cleanPreviousSessionAndGetDeviceType(finalUser.getId(), request.deviceType()));
     }
