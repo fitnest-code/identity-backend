@@ -69,6 +69,9 @@ public class RedisTokenService {
         String key = sessionKey(userId, deviceType);
         long expiryScore = Instant.now().plus(ttl).getEpochSecond();
 
+        // Delete any existing key (string or ZSET) to avoid WRONGTYPE errors during migration
+        redisTemplate.delete(key);
+
         // Add new JTI to ZSET with expiry score
         redisTemplate.opsForZSet().add(key, jti, expiryScore);
 
@@ -83,18 +86,32 @@ public class RedisTokenService {
     /**
      * Returns the most recent valid JTI for the user/device category.
      * Removes expired entries (score < now) before returning.
+     * Handles migration from old string keys to ZSET.
      */
     public String getActiveSession(Long userId, String deviceType) {
         String key = sessionKey(userId, deviceType);
         long now = Instant.now().getEpochSecond();
 
-        // Remove expired entries (score < now)
-        redisTemplate.opsForZSet().removeRangeByScore(key, 0, now);
+        try {
+            // Remove expired entries (score < now)
+            redisTemplate.opsForZSet().removeRangeByScore(key, 0, now);
 
-        // Get the JTI with highest score (most recent)
-        Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet().reverseRangeWithScores(key, 0, 0);
-        if (tuples != null && !tuples.isEmpty()) {
-            return tuples.iterator().next().getValue();
+            // Get the JTI with highest score (most recent)
+            Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet().reverseRangeWithScores(key, 0, 0);
+            if (tuples != null && !tuples.isEmpty()) {
+                return tuples.iterator().next().getValue();
+            }
+        } catch (Exception e) {
+            // Fallback: if key exists as string (old format), read it and migrate
+            String oldValue = redisTemplate.opsForValue().get(key);
+            if (oldValue != null && !oldValue.isBlank()) {
+                // Migrate: delete string, add as ZSET with current time + 30s grace
+                redisTemplate.delete(key);
+                long graceExpiry = Instant.now().plusSeconds(30).getEpochSecond();
+                redisTemplate.opsForZSet().add(key, oldValue, graceExpiry);
+                redisTemplate.expire(key, Duration.ofMinutes(5));
+                return oldValue;
+            }
         }
         return null;
     }
@@ -106,6 +123,7 @@ public class RedisTokenService {
     /**
      * Checks if a specific JTI is currently valid for the user/device category.
      * This is the method the gateway should use for session validation.
+     * Handles migration from old string keys to ZSET.
      */
     public boolean isSessionValid(Long userId, String deviceType, String jti) {
         if (jti == null || jti.isBlank()) {
@@ -114,12 +132,26 @@ public class RedisTokenService {
         String key = sessionKey(userId, deviceType);
         long now = Instant.now().getEpochSecond();
 
-        // Clean expired entries
-        redisTemplate.opsForZSet().removeRangeByScore(key, 0, now);
+        try {
+            // Clean expired entries
+            redisTemplate.opsForZSet().removeRangeByScore(key, 0, now);
 
-        // Check if this JTI exists with score > now
-        Double score = redisTemplate.opsForZSet().score(key, jti);
-        return score != null && score > now;
+            // Check if this JTI exists with score > now
+            Double score = redisTemplate.opsForZSet().score(key, jti);
+            return score != null && score > now;
+        } catch (Exception e) {
+            // Fallback: if key exists as string (old format), check equality
+            String oldValue = redisTemplate.opsForValue().get(key);
+            if (oldValue != null && oldValue.equals(jti)) {
+                // Migrate to ZSET with grace period
+                redisTemplate.delete(key);
+                long graceExpiry = Instant.now().plusSeconds(30).getEpochSecond();
+                redisTemplate.opsForZSet().add(key, jti, graceExpiry);
+                redisTemplate.expire(key, Duration.ofMinutes(5));
+                return true;
+            }
+            return false;
+        }
     }
 
     public void removeActiveSession(Long userId, String deviceType) {
