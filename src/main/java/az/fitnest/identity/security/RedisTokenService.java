@@ -4,9 +4,12 @@ import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Set;
 
 @Service
 public class RedisTokenService {
@@ -50,20 +53,73 @@ public class RedisTokenService {
         redisTemplate.delete(accessKey(jti));
     }
 
+    /**
+     * Adds a JTI to the active sessions ZSET for the user/device category.
+     * Score = expiry timestamp (epoch seconds). Multiple JTIs can coexist during grace period.
+     * Old JTIs naturally expire when their score < current time.
+     */
     public void setActiveSession(Long userId, String deviceType, String jti, Duration ttl) {
-        redisTemplate.opsForValue().set(sessionKey(userId, deviceType), jti, ttl);
+        if (jti == null || jti.isBlank()) {
+            return;
+        }
+        if (ttl == null || ttl.isNegative() || ttl.isZero()) {
+            throw new IllegalArgumentException("ttl must be positive.");
+        }
+
+        String key = sessionKey(userId, deviceType);
+        long expiryScore = Instant.now().plus(ttl).getEpochSecond();
+
+        // Add new JTI to ZSET with expiry score
+        redisTemplate.opsForZSet().add(key, jti, expiryScore);
+
+        // Set TTL on the key itself (slightly longer than max token TTL for safety)
+        redisTemplate.expire(key, ttl.plus(Duration.ofMinutes(5)));
     }
 
     public void setActiveSession(Long userId, String jti, Duration ttl) {
         setActiveSession(userId, "web", jti, ttl);
     }
 
+    /**
+     * Returns the most recent valid JTI for the user/device category.
+     * Removes expired entries (score < now) before returning.
+     */
     public String getActiveSession(Long userId, String deviceType) {
-        return redisTemplate.opsForValue().get(sessionKey(userId, deviceType));
+        String key = sessionKey(userId, deviceType);
+        long now = Instant.now().getEpochSecond();
+
+        // Remove expired entries (score < now)
+        redisTemplate.opsForZSet().removeRangeByScore(key, 0, now);
+
+        // Get the JTI with highest score (most recent)
+        Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet().reverseRangeWithScores(key, 0, 0);
+        if (tuples != null && !tuples.isEmpty()) {
+            return tuples.iterator().next().getValue();
+        }
+        return null;
     }
 
     public String getActiveSession(Long userId) {
         return getActiveSession(userId, "web");
+    }
+
+    /**
+     * Checks if a specific JTI is currently valid for the user/device category.
+     * This is the method the gateway should use for session validation.
+     */
+    public boolean isSessionValid(Long userId, String deviceType, String jti) {
+        if (jti == null || jti.isBlank()) {
+            return false;
+        }
+        String key = sessionKey(userId, deviceType);
+        long now = Instant.now().getEpochSecond();
+
+        // Clean expired entries
+        redisTemplate.opsForZSet().removeRangeByScore(key, 0, now);
+
+        // Check if this JTI exists with score > now
+        Double score = redisTemplate.opsForZSet().score(key, jti);
+        return score != null && score > now;
     }
 
     public void removeActiveSession(Long userId, String deviceType) {
@@ -88,6 +144,9 @@ public class RedisTokenService {
                 revokeAccessToken(jti);
             }
         }
+        // Also remove session ZSETs for both categories
+        redisTemplate.delete(sessionKey(userId, "mobile"));
+        redisTemplate.delete(sessionKey(userId, "web"));
         redisTemplate.delete(key);
     }
 
