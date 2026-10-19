@@ -94,10 +94,11 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
                 throw new InvalidCredentialsException("Google account email is not verified");
             }
 
-            String givenName = (String) payload.get("given_name");
-            String familyName = (String) payload.get("family_name");
-            String name = (String) payload.get("name");
-            String picture = (String) payload.get("picture");
+            // Trim blanks — empty strings from Google must not block client-body name fallback.
+            String givenName = blankToNull((String) payload.get("given_name"));
+            String familyName = blankToNull((String) payload.get("family_name"));
+            String name = blankToNull((String) payload.get("name"));
+            String picture = blankToNull((String) payload.get("picture"));
             String issuer = payload.getIssuer();
 
             Object audience = payload.getAudience();
@@ -141,5 +142,13 @@ public class GoogleTokenVerifierImpl implements GoogleTokenVerifier {
             log.error("Google token verification failed", e);
             throw new UnauthorizedException("error.service.external_auth_error");
         }
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String v = value.trim();
+        return v.isEmpty() ? null : v;
     }
 }

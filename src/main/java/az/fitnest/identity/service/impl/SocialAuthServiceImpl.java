@@ -71,13 +71,21 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.idToken());
         log.info("Google token verified successfully for email: {}", claims.email());
 
+        // Prefer JWT claims; fall back to client body (parity with Apple) when Google omits names.
+        String firstName = firstNonBlank(claims.givenName(), request.firstName());
+        String lastName = firstNonBlank(claims.familyName(), request.lastName());
+        String fullName = firstNonBlank(claims.name(), request.fullName());
+        if (firstName == null && lastName == null && fullName == null) {
+            log.warn("Google social login with no name fields from token or client (email={})", claims.email());
+        }
+
         return processSocialLogin(
                 SocialProvider.GOOGLE,
                 claims.userId(),
                 claims.email(),
-                claims.givenName(),
-                claims.familyName(),
-                claims.name(),
+                firstName,
+                lastName,
+                fullName,
                 claims.picture(),
                 null,
                 null
@@ -91,13 +99,20 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         GoogleTokenVerifier.GoogleTokenClaims claims = googleTokenVerifier.verify(request.idToken());
         log.info("Google token verified successfully for email: {}", claims.email());
 
+        String firstName = firstNonBlank(claims.givenName(), request.firstName());
+        String lastName = firstNonBlank(claims.familyName(), request.lastName());
+        String fullName = firstNonBlank(claims.name(), request.fullName());
+        if (firstName == null && lastName == null && fullName == null) {
+            log.warn("Google V2 social login with no name fields from token or client (email={})", claims.email());
+        }
+
         return processSocialLogin(
                 SocialProvider.GOOGLE,
                 claims.userId(),
                 claims.email(),
-                claims.givenName(),
-                claims.familyName(),
-                claims.name(),
+                firstName,
+                lastName,
+                fullName,
                 claims.picture(),
                 request.deviceId(),
                 request.deviceType()
