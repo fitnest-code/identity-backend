@@ -162,7 +162,17 @@ public class SocialAuthServiceImpl implements SocialAuthService {
     private LoginResponse processSocialLogin(SocialProvider provider, String providerId, String email,
                                              String firstName, String lastName, String fullName, String pictureUrl,
                                              String deviceId, String deviceType) {
-        log.info("Processing social login for provider: {}, providerId: {}, email: {}", provider, providerId, email);
+        log.info("Processing social login for provider: {}, providerId: {}, email: {}, hasFirst={}, hasLast={}, hasFull={}",
+                provider, providerId, email,
+                firstName != null, lastName != null, fullName != null);
+
+        // Apple JWT never carries names — only the client body on first authorization (and iOS Keychain cache later).
+        if (provider == SocialProvider.APPLE
+                && firstName == null && lastName == null && fullName == null) {
+            log.warn("Apple social login with no name fields from client (providerId={}). "
+                    + "If this is first authorization, profile names will stay empty until backfill or manual edit.",
+                    providerId);
+        }
 
         Optional<SocialAuth> existingSocialAuth = socialAuthRepository.findByProviderAndProviderId(provider, providerId);
 
@@ -180,11 +190,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                     log.info("Updating profile image for existing user: {}", user.getId());
                     userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
                 }
-                try {
-                    backfillProfileIfMissing(user.getId(), profile, firstName, lastName, fullName, email);
-                } catch (Exception e) {
-                    log.warn("Failed to backfill profile for existing social user {}: {}", user.getId(), e.getMessage());
-                }
+                tryBackfillProfile(user.getId(), profile, firstName, lastName, fullName, email);
                 log.info("Issuing tokens for existing user: {}", user.getId());
                 return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
             } else {
@@ -210,11 +216,7 @@ public class SocialAuthServiceImpl implements SocialAuthService {
                         log.info("Updating profile image for existing user (by email): {}", user.getId());
                         userProfileGrpcClient.updateProfileImage(user.getId(), pictureUrl);
                     }
-                    try {
-                        backfillProfileIfMissing(user.getId(), profile, firstName, lastName, fullName, email);
-                    } catch (Exception e) {
-                        log.warn("Failed to backfill profile for email-linked social user {}: {}", user.getId(), e.getMessage());
-                    }
+                    tryBackfillProfile(user.getId(), profile, firstName, lastName, fullName, email);
                     self.linkSocialAccount(user.getId(), provider, providerId);
                     return tokenIssuanceService.issueTokens(user, cleanPreviousSessionAndGetDeviceType(user.getId(), deviceType));
                 } else {
@@ -226,8 +228,13 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         log.info("No existing user found. Creating new user for social login.");
         User newUser = self.createIdentityUser(deviceId);
         NameParts nameParts = resolveNameParts(firstName, lastName, fullName);
-        log.info("Creating user profile in user-backend for user ID: {}", newUser.getId());
+        log.info("Creating user profile in user-backend for user ID: {} firstNamePresent={} lastNamePresent={}",
+                newUser.getId(), nameParts.firstName() != null, nameParts.lastName() != null);
         userProfileGrpcClient.createUserProfile(newUser.getId(), nameParts.firstName(), nameParts.lastName(), email);
+
+        // Verify write landed; retry via backfill if client sent names but profile still empty (gRPC partial / race).
+        var createdProfile = userProfileGrpcClient.getUserProfileDetails(newUser.getId());
+        tryBackfillProfile(newUser.getId(), createdProfile, firstName, lastName, fullName, email);
 
         if (pictureUrl != null && !pictureUrl.isBlank()) {
             userProfileGrpcClient.updateProfileImage(newUser.getId(), pictureUrl);
@@ -238,6 +245,32 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         legalService.autoAcceptLatestConsents(newUser.getId());
         welcomeBonusService.tryPublishWelcomeBonusEligible(newUser, email);
         return tokenIssuanceService.issueTokens(newUser, cleanPreviousSessionAndGetDeviceType(newUser.getId(), deviceType));
+    }
+
+    /**
+     * Persist missing name/email from the social request. When the client sent names and backfill
+     * fails, rethrow so the login can retry (iOS still has AppleProfileCache values). Soft-fail
+     * only when there was nothing useful to write.
+     */
+    private void tryBackfillProfile(Long userId,
+                                    az.fitnest.user.grpc.UserProfileDetailsResponse profile,
+                                    String firstName,
+                                    String lastName,
+                                    String fullName,
+                                    String email) {
+        NameParts incoming = resolveNameParts(firstName, lastName, fullName);
+        boolean clientSentName = incoming.firstName() != null || incoming.lastName() != null;
+        try {
+            backfillProfileIfMissing(userId, profile, firstName, lastName, fullName, email);
+        } catch (Exception e) {
+            if (clientSentName) {
+                log.error("Failed to backfill social profile names for user {} (client sent names): {}",
+                        userId, e.getMessage(), e);
+                throw e instanceof RuntimeException re ? re : new IllegalStateException(e);
+            }
+            log.warn("Failed to backfill profile for social user {} (no client names to write): {}",
+                    userId, e.getMessage());
+        }
     }
 
     @Transactional
