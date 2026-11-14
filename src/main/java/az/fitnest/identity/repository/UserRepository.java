@@ -50,6 +50,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.mobile = :mobile")
     Optional<User> findByMobileIncludingDeleted(@Param("mobile") String mobile);
 
+    /**
+     * Stable, paginated lookup used by service-to-service promo audience backfills.
+     * {@code prefix} is the national significant part after +994 (e.g. "55").
+     */
+    @Query("""
+                SELECT u FROM User u
+                WHERE u.mobile LIKE CONCAT('+994', :prefix, '%')
+                  AND u.status <> :excludedStatus
+                ORDER BY u.id ASC
+            """)
+    Page<User> findByMobilePrefix(@Param("prefix") String prefix,
+                                  @Param("excludedStatus") UserStatus excludedStatus,
+                                  Pageable pageable);
+
     @Modifying
     @Transactional
     @Query("""

@@ -266,6 +266,53 @@ public class UserGrpcService extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
+    public void listUsersByMobilePrefix(az.fitnest.user.grpc.ListUsersByMobilePrefixRequest request,
+                                        StreamObserver<az.fitnest.user.grpc.ListUsersByMobilePrefixResponse> responseObserver) {
+        try {
+            String prefix = normalizeMobilePrefix(request.getPrefix());
+            if (prefix == null) {
+                responseObserver.onError(Status.INVALID_ARGUMENT
+                        .withDescription("prefix must be a two-digit national mobile prefix, e.g. 55")
+                        .asException());
+                return;
+            }
+            int page = Math.max(0, request.getPage());
+            int size = request.getSize() > 0 ? Math.min(request.getSize(), 500) : 200;
+            org.springframework.data.domain.Page<User> users = userRepository.findByMobilePrefix(
+                    prefix, UserStatus.DELETED, org.springframework.data.domain.PageRequest.of(page, size));
+
+            az.fitnest.user.grpc.ListUsersByMobilePrefixResponse.Builder response =
+                    az.fitnest.user.grpc.ListUsersByMobilePrefixResponse.newBuilder()
+                            .setPage(page)
+                            .setSize(size)
+                            .setTotalElements(users.getTotalElements())
+                            .setTotalPages(users.getTotalPages())
+                            .setHasNext(users.hasNext());
+            users.forEach(user -> response.addUsers(buildUserResponse(user)));
+
+            responseObserver.onNext(response.build());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Error in listUsersByMobilePrefix for prefix {}: {}", request.getPrefix(), e.getMessage(), e);
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("Failed to list users by mobile prefix: " + e.getMessage())
+                    .withCause(e)
+                    .asException());
+        }
+    }
+
+    private static String normalizeMobilePrefix(String raw) {
+        if (raw == null) return null;
+        String digits = raw.replaceAll("\\D", "");
+        if (digits.startsWith("994") && digits.length() > 3) {
+            digits = digits.substring(3);
+        } else if (digits.startsWith("0") && digits.length() > 1) {
+            digits = digits.substring(1);
+        }
+        return digits.matches("\\d{2}") ? digits : null;
+    }
+
+    @Override
     public void getUserIdsByRoles(az.fitnest.user.grpc.GetUserIdsByRolesRequest request, io.grpc.stub.StreamObserver<az.fitnest.user.grpc.GetUserIdsByRolesResponse> responseObserver) {
         try {
             java.util.List<String> roleNames = request.getRoleNamesList();
