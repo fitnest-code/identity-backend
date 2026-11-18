@@ -401,8 +401,9 @@ public class OtpServiceImpl implements OtpService {
             String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
             if (activeJti != null) {
                 redisTokenService.revokeAccessToken(activeJti);
-                authTokenRepository.deleteByJti(activeJti);
             }
+            // Drop orphaned Web refresh rows too, not only the Redis-tracked JTI.
+            authTokenRepository.deleteByUserIdAndDeviceType(user.getId(), deviceType);
 
             az.fitnest.identity.dto.response.LoginResponse loginResponse = tokenIssuanceService.issueTokens(user, deviceType);
 

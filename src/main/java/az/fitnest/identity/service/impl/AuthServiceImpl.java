@@ -92,11 +92,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String deviceType = "Web";
-        String activeJti = redisTokenService.getActiveSession(result.user().getId(), deviceType);
-        if (activeJti != null) {
-            redisTokenService.revokeAccessToken(activeJti);
-            authTokenRepository.deleteByJti(activeJti);
-        }
+        revokeDeviceSessions(result.user().getId(), deviceType);
 
         User user = result.user();
         if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
@@ -137,11 +133,7 @@ public class AuthServiceImpl implements AuthService {
 
         user = deviceService.validateAndBindDeviceForLogin(user, request.deviceId(), request.deviceType(), true);
 
-        String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
-        if (activeJti != null) {
-            redisTokenService.revokeAccessToken(activeJti);
-            authTokenRepository.deleteByJti(activeJti);
-        }
+        revokeDeviceSessions(user.getId(), deviceType);
 
         if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);
@@ -150,6 +142,25 @@ public class AuthServiceImpl implements AuthService {
 
         LoginResponse tokens = tokenIssuanceService.issueTokens(user, deviceType);
         return LoginResult.success(tokens);
+    }
+
+    /**
+     * Called right before issuing a fresh login session for a device category. Deletes ALL auth_tokens
+     * rows for user+deviceType (not just the Redis-tracked JTI) so orphaned refresh rows cannot survive
+     * next to the new session, and revokes the currently active access JTI. The old JTI is not removed
+     * from the session ZSET here: RedisTokenService.setActiveSession demotes it to a short grace window
+     * so in-flight requests from the replaced session do not fail mid-call.
+     * Scoped to the exact deviceType, so a Web login never wipes iOS/Android rows.
+     */
+    private void revokeDeviceSessions(Long userId, String deviceType) {
+        if (deviceType == null || deviceType.isBlank()) {
+            return;
+        }
+        String activeJti = redisTokenService.getActiveSession(userId, deviceType);
+        if (activeJti != null) {
+            redisTokenService.revokeAccessToken(activeJti);
+        }
+        authTokenRepository.deleteByUserIdAndDeviceType(userId, deviceType);
     }
 
     @Transactional
@@ -354,7 +365,10 @@ public class AuthServiceImpl implements AuthService {
 
             String activeJti = redisTokenService.getActiveSession(userId, deviceType);
             if (jti.equals(activeJti)) {
+                // Logging out the newest session also drops any rotation-grace members.
                 redisTokenService.removeActiveSession(userId, deviceType);
+            } else {
+                redisTokenService.removeSessionMember(userId, deviceType, jti);
             }
 
             // Revoke ONLY the current session/JTI instead of all user tokens
@@ -448,11 +462,7 @@ public class AuthServiceImpl implements AuthService {
         user = deviceService.validateAndBindDeviceForVerification(user, request.deviceId(), deviceType);
 
         // Clean previous session for this device type
-        String activeJti = redisTokenService.getActiveSession(user.getId(), deviceType);
-        if (activeJti != null) {
-            redisTokenService.revokeAccessToken(activeJti);
-            authTokenRepository.deleteByJti(activeJti);
-        }
+        revokeDeviceSessions(user.getId(), deviceType);
 
         if (user.getSessionStatus() != SessionStatus.HAVE_SESSIONS) {
             user.setSessionStatus(SessionStatus.HAVE_SESSIONS);

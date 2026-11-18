@@ -42,6 +42,19 @@ public interface AuthTokenRepository extends JpaRepository<AuthToken, Long> {
                   AND (t.refreshExpiresAt IS NULL OR t.refreshExpiresAt > :now)
             """)
     int consumeRefreshToken(@Param("userId") Long userId, @Param("hash") String hash, @Param("now") Instant now);
+
+    /**
+     * Wipes every refresh row for a user+device category in one indexed statement. Login used to delete
+     * only the Redis-tracked active JTI, so rows orphaned by earlier rotations/races stayed revoked=false
+     * and kept valid refresh tokens alive next to the new session, which fed the multi-tab
+     * invalid_credentials cascade for admin Web. Callers pass an exact deviceType so a Web login never
+     * touches iOS/Android rows.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM AuthToken t WHERE t.userId = :userId AND t.deviceType = :deviceType")
+    int deleteByUserIdAndDeviceType(@Param("userId") Long userId, @Param("deviceType") String deviceType);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM AuthToken t WHERE t.refreshExpiresAt < :now")

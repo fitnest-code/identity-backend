@@ -169,7 +169,11 @@ public class SocialAuthServiceImpl implements SocialAuthService {
         String activeJti = redisTokenService.getActiveSession(userId, deviceType);
         if (activeJti != null) {
             redisTokenService.revokeAccessToken(activeJti);
-            authTokenRepository.deleteByJti(activeJti);
+        }
+        // Delete all rows for the device category (not just the active JTI) so orphaned refresh rows
+        // cannot outlive the new session; see AuthTokenRepository#deleteByUserIdAndDeviceType.
+        if (deviceType != null && !deviceType.isBlank()) {
+            authTokenRepository.deleteByUserIdAndDeviceType(userId, deviceType);
         }
         return deviceType;
     }
