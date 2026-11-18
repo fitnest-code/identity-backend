@@ -3,6 +3,7 @@ package az.fitnest.identity.security;
 import az.fitnest.identity.model.enums.UserStatus;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,18 @@ public class RedisTokenService {
     private final String accessPrefix;
     private final String sessionPrefix;
 
+    private final long sessionGraceSeconds;
+
     public RedisTokenService(
             StringRedisTemplate redisTemplate,
             @Value("${security.redis.access-token-prefix:auth:token:access:}") String accessPrefix,
-            @Value("${security.redis.session-prefix:auth:user:session:}") String sessionPrefix
+            @Value("${security.redis.session-prefix:auth:user:session:}") String sessionPrefix,
+            @Value("${security.redis.session-grace-seconds:45}") long sessionGraceSeconds
     ) {
         this.redisTemplate = redisTemplate;
         this.accessPrefix = accessPrefix;
         this.sessionPrefix = sessionPrefix;
+        this.sessionGraceSeconds = Math.max(0, sessionGraceSeconds);
     }
 
     public boolean isAccessTokenActive(String jti) {
@@ -55,8 +60,14 @@ public class RedisTokenService {
 
     /**
      * Adds a JTI to the active sessions ZSET for the user/device category.
-     * Score = expiry timestamp (epoch seconds). Multiple JTIs can coexist during grace period.
-     * Old JTIs naturally expire when their score < current time.
+     * Score = expiry timestamp (epoch seconds).
+     *
+     * Rotation keeps the previous JTI(s) alive for {@code sessionGraceSeconds}: the old member's score is
+     * lowered to now+grace instead of deleting the key. Replacing the ZSET outright made every API call
+     * still in flight with the previous access token fail with SESSION_NOT_FOUND, which triggered a
+     * refresh storm across admin tabs. The grace window is bounded and the new JTI always has the highest
+     * score, so there is still one logical session per category (getActiveSession returns the newest).
+     * The gateway only checks "score > now" for the presented JTI, so no gateway change is required.
      */
     public void setActiveSession(Long userId, String deviceType, String jti, Duration ttl) {
         if (jti == null || jti.isBlank()) {
@@ -69,11 +80,33 @@ public class RedisTokenService {
         String key = sessionKey(userId, deviceType);
         long expiryScore = Instant.now().plus(ttl).getEpochSecond();
 
-        // Delete any existing key (string or ZSET) to avoid WRONGTYPE errors during migration
-        redisTemplate.delete(key);
+        // Legacy string-format keys would raise WRONGTYPE on ZSET ops; drop them (no grace for the legacy value).
+        DataType existingType = redisTemplate.type(key);
+        if (existingType != null && existingType != DataType.NONE && existingType != DataType.ZSET) {
+            redisTemplate.delete(key);
+        }
+
+        long now = Instant.now().getEpochSecond();
+        long graceExpiry = now + sessionGraceSeconds;
+        ZSetOperations<String, String> zset = redisTemplate.opsForZSet();
+        zset.removeRangeByScore(key, 0, now);
+        Set<ZSetOperations.TypedTuple<String>> previous = zset.rangeWithScores(key, 0, -1);
+        if (previous != null) {
+            for (ZSetOperations.TypedTuple<String> entry : previous) {
+                String previousJti = entry.getValue();
+                Double score = entry.getScore();
+                if (previousJti == null || previousJti.equals(jti)) {
+                    continue;
+                }
+                // Only ever shorten: a member already inside its grace window keeps its earlier deadline.
+                if (score != null && score > graceExpiry) {
+                    zset.add(key, previousJti, graceExpiry);
+                }
+            }
+        }
 
         // Add new JTI to ZSET with expiry score
-        redisTemplate.opsForZSet().add(key, jti, expiryScore);
+        zset.add(key, jti, expiryScore);
 
         // Set TTL on the key itself (slightly longer than max token TTL for safety)
         redisTemplate.expire(key, ttl.plus(Duration.ofMinutes(5)));
@@ -151,6 +184,18 @@ public class RedisTokenService {
                 return true;
             }
             return false;
+        }
+    }
+
+    /** Removes one JTI (e.g. explicit logout of that token) without touching other members in its grace window. */
+    public void removeSessionMember(Long userId, String deviceType, String jti) {
+        if (jti == null || jti.isBlank()) {
+            return;
+        }
+        try {
+            redisTemplate.opsForZSet().remove(sessionKey(userId, deviceType), jti);
+        } catch (Exception ignored) {
+            // Legacy string key: nothing member-level to remove.
         }
     }
 

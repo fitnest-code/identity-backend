@@ -197,6 +197,13 @@ jwt:
   access-ttl-seconds: ${JWT_ACCESS_TTL_SECONDS:3600}
   refresh-ttl-seconds: ${JWT_REFRESH_TTL_SECONDS:604800}
 
+security:
+  redis:
+    # On session rotation the previous access JTI stays valid this long so in-flight requests
+    # (and parallel admin tabs) do not hit SESSION_NOT_FOUND mid-call. Not a second session:
+    # the newest JTI is still the only one that lives until refresh expiry.
+    session-grace-seconds: ${SESSION_GRACE_SECONDS:45}
+
 otp:
   ttl-seconds: 180
   resend-cooldown-seconds: 60

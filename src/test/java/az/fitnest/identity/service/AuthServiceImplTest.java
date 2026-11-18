@@ -213,6 +213,39 @@ public class AuthServiceImplTest {
     }
 
     @Test
+    void login_web_shouldDeleteAllWebRowsAndRevokeActiveJtiBeforeIssuing_onEveryLogin() {
+        Long userId = 200L;
+        User user = User.builder()
+                .status(UserStatus.ACTIVE)
+                .sessionStatus(SessionStatus.HAVE_SESSIONS)
+                .passwordHash("hash")
+                .build();
+        user.setId(userId);
+
+        LoginResponse issued = new LoginResponse("a", "r", mock(UserResponse.class));
+        when(userRepository.findFirstByMobile(anyString())).thenReturn(Optional.of(user));
+        when(passwordService.verifyPassword(any(), any()))
+                .thenReturn(new az.fitnest.identity.dto.response.PasswordVerificationResultResponse(true, false));
+        when(redisTokenService.getActiveSession(userId, "Web")).thenReturn("old-jti");
+        when(tokenIssuanceService.issueTokens(user, "Web")).thenReturn(issued);
+
+        var request = new az.fitnest.identity.dto.request.LoginRequest("0501234567", "SecurePass123!");
+        authService.login(request);
+        authService.login(request);
+
+        // Each Web login wipes the whole Web device category, so only the freshly issued row survives.
+        var order = inOrder(authTokenRepository, tokenIssuanceService);
+        order.verify(authTokenRepository).deleteByUserIdAndDeviceType(userId, "Web");
+        order.verify(tokenIssuanceService).issueTokens(user, "Web");
+        order.verify(authTokenRepository).deleteByUserIdAndDeviceType(userId, "Web");
+        order.verify(tokenIssuanceService).issueTokens(user, "Web");
+        verify(redisTokenService, times(2)).revokeAccessToken("old-jti");
+        // Mobile rows must never be touched by a Web login.
+        verify(authTokenRepository, never()).deleteByUserIdAndDeviceType(anyLong(), eq("iOS"));
+        verify(authTokenRepository, never()).deleteByUserIdAndDeviceType(anyLong(), eq("Android"));
+    }
+
+    @Test
     void refresh_shouldThrowUnauthorizedException_whenTokenIsExpired() {
         String refreshToken = "expired-refresh-token";
         Long userId = 102L;
